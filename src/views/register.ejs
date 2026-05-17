@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="en">
+<head><%- include('partials/head') %></head>
+<body class="min-h-screen bg-slate-50 text-slate-900 flex flex-col">
+  <%- include('partials/nav') %>
+  <main class="flex-1">
+    <div class="max-w-md mx-auto px-6 py-12">
+      <div class="card p-8 shadow-sm">
+        <h1 class="font-display text-3xl font-bold">Create account</h1>
+        <p class="text-sm text-slate-600 mt-1">It takes about a minute.</p>
+        <% if (error) { %>
+          <div class="mt-4 bg-amber-50 border border-amber-200 text-amber-800 text-sm p-3 rounded"><%= error %></div>
+        <% } %>
+        <form action="/register" method="post" class="mt-6 space-y-4">
+          <div><label class="block text-sm font-medium text-slate-700">Username</label>
+            <input name="username" required minlength="3" class="mt-1 block w-full rounded-md border border-slate-300 px-3 py-2 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 focus:outline-none"></div>
+          <div><label class="block text-sm font-medium text-slate-700">Email <span class="text-slate-400">(optional)</span></label>
+            <input type="email" name="email" class="mt-1 block w-full rounded-md border border-slate-300 px-3 py-2 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 focus:outline-none"></div>
+          <div><label class="block text-sm font-medium text-slate-700">Password</label>
+            <input type="password" name="password" required minlength="8" class="mt-1 block w-full rounded-md border border-slate-300 px-3 py-2 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 focus:outline-none"></div>
+          <div><label class="block text-sm font-medium text-slate-700">Role</label>
+            <select name="role" required class="mt-1 block w-full rounded-md border border-slate-300 px-3 py-2 bg-white focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 focus:outline-none">
+              <option value="author">Author</option>
+              <option value="reviewer">Reviewer</option>
+              <option value="editor">Editor</option>
+              <option value="reader">Reader</option>
+            </select></div>
+          <div><label class="block text-sm font-medium text-slate-700">Affiliation <span class="text-slate-400">(used for conflict-of-interest detection)</span></label>
+            <input name="affiliation" placeholder="e.g. University of Auckland" class="mt-1 block w-full rounded-md border border-slate-300 px-3 py-2 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 focus:outline-none"></div>
+          <div><label class="block text-sm font-medium text-slate-700">Expertise tags <span class="text-slate-400">(reviewers only, comma-separated)</span></label>
+            <input name="expertise" placeholder="e.g. NLP, transformers, machine learning" class="mt-1 block w-full rounded-md border border-slate-300 px-3 py-2 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 focus:outline-none"></div>
+          <button class="w-full bg-indigo-600 hover:bg-indigo-500 text-white py-2.5 rounded-md font-medium transition">Create account</button>
+        </form>
+      </div>
+    </div>
+  </main>
+  <%- include('partials/footer') %>
+</body>
+</html>

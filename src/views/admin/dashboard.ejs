@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="en">
+<head><%- include('../partials/head') %></head>
+<body class="min-h-screen bg-slate-50 text-slate-900 flex flex-col">
+  <%- include('../partials/nav') %>
+  <main class="flex-1">
+    <div class="max-w-7xl mx-auto px-6 py-8">
+      <div class="flex items-center justify-between mb-6">
+        <div>
+          <h1 class="font-display text-3xl font-bold">Admin dashboard</h1>
+          <p class="text-sm text-slate-600 mt-1">Audit and operational overview.</p>
+        </div>
+        <a href="/admin/export.xlsx" class="bg-emerald-600 hover:bg-emerald-500 text-white px-4 py-2 rounded-md text-sm font-medium transition">⬇ Export XLSX</a>
+      </div>
+
+      <div class="grid grid-cols-3 gap-3 mb-8">
+        <div class="card p-5"><div class="stat-num text-3xl"><%= papers.length %></div><div class="text-xs uppercase tracking-wider text-slate-500 mt-1">Papers</div></div>
+        <div class="card p-5"><div class="stat-num text-3xl text-indigo-600"><%= reviews.length %></div><div class="text-xs uppercase tracking-wider text-slate-500 mt-1">Reviews</div></div>
+        <div class="card p-5"><div class="stat-num text-3xl text-amber-600"><%= aiUsage.reduce((a, r) => a + r.n, 0) %></div><div class="text-xs uppercase tracking-wider text-slate-500 mt-1">AI assists</div></div>
+      </div>
+
+      <h2 class="font-display text-lg font-semibold mb-3">All submissions</h2>
+      <div class="card overflow-hidden mb-8">
+        <table class="w-full text-sm">
+          <thead class="bg-slate-50 border-b border-slate-200">
+            <tr>
+              <th class="text-left px-3 py-2 font-medium text-slate-600">ID</th>
+              <th class="text-left px-3 py-2 font-medium text-slate-600">Title</th>
+              <th class="text-left px-3 py-2 font-medium text-slate-600">Author</th>
+              <th class="text-left px-3 py-2 font-medium text-slate-600">Status</th>
+              <th class="text-right px-3 py-2 font-medium text-slate-600">Sim</th>
+              <th class="text-right px-3 py-2 font-medium text-slate-600">AI%</th>
+            </tr>
+          </thead>
+          <tbody>
+            <% papers.forEach(p => { %>
+              <tr class="border-t border-slate-100 hover:bg-slate-50">
+                <td class="px-3 py-2 text-slate-500"><%= p.id %></td>
+                <td class="px-3 py-2 font-medium"><%= p.title %></td>
+                <td class="px-3 py-2"><%= p.author_username %></td>
+                <td class="px-3 py-2"><%- include('../partials/status', { status: p.review_status }) %></td>
+                <td class="px-3 py-2 text-right"><%= (p.similarity_score * 100).toFixed(0) %>%</td>
+                <td class="px-3 py-2 text-right"><%= (p.ai_text_likelihood * 100).toFixed(0) %>%</td>
+              </tr>
+            <% }) %>
+          </tbody>
+        </table>
+      </div>
+
+      <h2 class="font-display text-lg font-semibold mb-3">AI usage by action</h2>
+      <div class="card overflow-hidden">
+        <table class="w-full text-sm">
+          <thead class="bg-slate-50 border-b border-slate-200">
+            <tr>
+              <th class="text-left px-3 py-2 font-medium text-slate-600">Action</th>
+              <th class="text-left px-3 py-2 font-medium text-slate-600">Provider</th>
+              <th class="text-right px-3 py-2 font-medium text-slate-600">Calls</th>
+            </tr>
+          </thead>
+          <tbody>
+            <% aiUsage.forEach(r => { %>
+              <tr class="border-t border-slate-100">
+                <td class="px-3 py-2"><code class="bg-slate-100 px-1.5 py-0.5 rounded text-xs"><%= r.action %></code></td>
+                <td class="px-3 py-2"><code class="bg-slate-100 px-1.5 py-0.5 rounded text-xs"><%= r.provider %></code></td>
+                <td class="px-3 py-2 text-right font-semibold"><%= r.n %></td>
+              </tr>
+            <% }) %>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </main>
+  <%- include('../partials/footer') %>
+</body>
+</html>

@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="en">
+<head><%- include('../partials/head') %></head>
+<body class="min-h-screen bg-slate-50 text-slate-900 flex flex-col">
+  <%- include('../partials/nav') %>
+  <main class="flex-1">
+    <div class="max-w-3xl mx-auto px-6 py-8">
+      <div class="mb-6">
+        <h1 class="font-display text-3xl font-bold">Submit a paper</h1>
+        <p class="text-sm text-slate-600 mt-1">Three AI assists live below the abstract — all optional, all local by default.</p>
+      </div>
+      <% if (error) { %>
+        <div class="mb-4 bg-amber-50 border border-amber-200 text-amber-800 text-sm p-3 rounded"><%= error %></div>
+      <% } %>
+
+      <form action="/author/submit" method="post" enctype="multipart/form-data" class="card p-6 space-y-5 shadow-sm">
+        <div>
+          <label class="block text-sm font-medium text-slate-700">Title</label>
+          <input id="title" name="title" required class="mt-1 block w-full rounded-md border border-slate-300 px-3 py-2 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 focus:outline-none">
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-slate-700">Authors <span class="text-slate-400">(comma-separated)</span></label>
+          <input name="authors" required class="mt-1 block w-full rounded-md border border-slate-300 px-3 py-2 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 focus:outline-none">
+        </div>
+
+        <div>
+          <div class="flex items-center justify-between mb-1">
+            <label class="block text-sm font-medium text-slate-700" for="abstract">Abstract</label>
+            <div class="flex gap-2">
+              <button type="button" id="polishBtn" class="inline-flex items-center gap-1 text-xs bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 px-2.5 py-1 rounded-md font-medium transition">✨ Polish</button>
+              <button type="button" id="titlesBtn" class="inline-flex items-center gap-1 text-xs bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 px-2.5 py-1 rounded-md font-medium transition">💡 Titles</button>
+              <button type="button" id="kwBtn"     class="inline-flex items-center gap-1 text-xs bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 px-2.5 py-1 rounded-md font-medium transition">🏷 Keywords</button>
+            </div>
+          </div>
+          <textarea id="abstract" name="abstract" rows="8" required class="block w-full rounded-md border border-slate-300 px-3 py-2 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 focus:outline-none"></textarea>
+          <div id="aiPanel" class="hidden mt-3 bg-indigo-50 border border-indigo-200 text-indigo-900 text-sm p-3 rounded-md space-y-2"></div>
+        </div>
+
+        <div class="grid md:grid-cols-2 gap-4">
+          <div>
+            <label class="block text-sm font-medium text-slate-700">Keywords <span class="text-slate-400">(optional)</span></label>
+            <input id="keywords" name="keywords" class="mt-1 block w-full rounded-md border border-slate-300 px-3 py-2 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 focus:outline-none">
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-slate-700">Tags <span class="text-slate-400">(optional, comma-separated)</span></label>
+            <input name="tags" placeholder="e.g. NLP, ML" class="mt-1 block w-full rounded-md border border-slate-300 px-3 py-2 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 focus:outline-none">
+          </div>
+        </div>
+
+        <div>
+          <label class="block text-sm font-medium text-slate-700">Manuscript file</label>
+          <input type="file" name="paperFile" accept=".pdf,.doc,.docx,.txt" class="mt-1 block w-full text-sm">
+          <p class="text-xs text-slate-500 mt-1">PDF, DOC, DOCX, or TXT — up to 10 MB.</p>
+        </div>
+
+        <div class="flex items-center justify-end pt-2">
+          <button class="bg-indigo-600 hover:bg-indigo-500 text-white px-5 py-2.5 rounded-md font-medium transition">Submit for review</button>
+        </div>
+      </form>
+    </div>
+  </main>
+  <%- include('../partials/footer') %>
+
+  <script>
+    const $ = (id) => document.getElementById(id);
+    const panel = $('aiPanel');
+    const showPanel = (html) => { panel.classList.remove('hidden'); panel.innerHTML = html; };
+    const callAI = async (path, body) => {
+      const r = await fetch(path, { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify(body) });
+      if (!r.ok) throw new Error('AI request failed');
+      return r.json();
+    };
+    $('polishBtn').addEventListener('click', async () => {
+      const text = $('abstract').value.trim();
+      if (!text) return showPanel('<em>Write something first.</em>');
+      showPanel('<em>Polishing…</em>');
+      try {
+        const out = await callAI('/api/ai/polish', { text });
+        const tips = (out.suggestions || []).map(s => '<li>' + s + '</li>').join('');
+        showPanel(`<div class="font-semibold">Suggested revision (review before applying):</div>
+                   <div class="bg-white p-3 rounded border border-indigo-200 text-slate-700">${out.revised || ''}</div>
+                   ${tips ? '<ul class="list-disc list-inside text-slate-700">' + tips + '</ul>' : ''}
+                   <button id="applyPolish" class="mt-1 text-xs bg-indigo-600 hover:bg-indigo-500 text-white px-3 py-1 rounded-md">Apply</button>`);
+        document.getElementById('applyPolish').onclick = () => { $('abstract').value = out.revised || $('abstract').value; };
+      } catch (e) { showPanel('<em>Could not contact AI service.</em>'); }
+    });
+    $('titlesBtn').addEventListener('click', async () => {
+      const abs = $('abstract').value.trim();
+      if (!abs) return showPanel('<em>Write an abstract first.</em>');
+      showPanel('<em>Thinking…</em>');
+      try {
+        const out = await callAI('/api/ai/titles', { abstract: abs });
+        showPanel('<div class="font-semibold">Suggested titles:</div><ul class="list-disc list-inside text-slate-700">' +
+          (out.titles || []).map(t => `<li><button class="text-left hover:underline" data-title="${t.replace(/"/g,'&quot;')}">${t}</button></li>`).join('') + '</ul>');
+        panel.querySelectorAll('button[data-title]').forEach(b => b.onclick = () => { $('title').value = b.dataset.title; });
+      } catch (e) { showPanel('<em>Could not contact AI service.</em>'); }
+    });
+    $('kwBtn').addEventListener('click', async () => {
+      const abs = $('abstract').value.trim();
+      if (!abs) return showPanel('<em>Write an abstract first.</em>');
+      try {
+        const out = await callAI('/api/ai/keywords', { abstract: abs });
+        $('keywords').value = (out.keywords || []).join(', ');
+        showPanel('<em>Keywords filled in below.</em>');
+      } catch (e) { showPanel('<em>Could not contact AI service.</em>'); }
+    });
+  </script>
+</body>
+</html>

@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="en">
+<head><%- include('../partials/head') %></head>
+<body class="min-h-screen bg-slate-50 text-slate-900 flex flex-col">
+  <%- include('../partials/nav') %>
+  <main class="flex-1">
+    <div class="max-w-6xl mx-auto px-6 py-8">
+      <h1 class="font-display text-3xl font-bold">Review assignments</h1>
+      <p class="text-sm text-slate-600 mt-1">Click into a paper to write or edit your review. Use the AI draft button if you want a starting point.</p>
+
+      <% if (papers.length === 0) { %>
+        <div class="card p-12 text-center mt-6">
+          <p class="text-slate-600">You have no review assignments.</p>
+        </div>
+      <% } else { %>
+        <div class="card overflow-hidden mt-6">
+          <table class="w-full text-sm">
+            <thead class="bg-slate-50 border-b border-slate-200">
+              <tr>
+                <th class="text-left px-4 py-3 font-medium text-slate-600">Title</th>
+                <th class="text-left px-4 py-3 font-medium text-slate-600">Assigned</th>
+                <th class="text-left px-4 py-3 font-medium text-slate-600">Recommendation</th>
+                <th class="px-4 py-3"></th>
+              </tr>
+            </thead>
+            <tbody>
+              <% papers.forEach(p => { %>
+                <tr class="border-t border-slate-100 hover:bg-slate-50 transition">
+                  <td class="px-4 py-3 font-medium"><%= p.title %></td>
+                  <td class="px-4 py-3 text-slate-500"><%= new Date(p.assigned_at).toLocaleDateString() %></td>
+                  <td class="px-4 py-3">
+                    <% if (p.recommendation) { %>
+                      <span class="inline-block px-2 py-0.5 rounded-full text-xs font-medium bg-slate-100 text-slate-700"><%= p.recommendation.replace('_', ' ') %></span>
+                    <% } else { %><span class="text-xs text-slate-400">—</span><% } %>
+                  </td>
+                  <td class="px-4 py-3 text-right">
+                    <a class="text-indigo-600 hover:text-indigo-500 font-medium link-line" href="/reviewer/papers/<%= p.id %>">
+                      <%= p.recommendation ? 'Edit' : 'Review' %>
+                    </a>
+                  </td>
+                </tr>
+              <% }) %>
+            </tbody>
+          </table>
+        </div>
+      <% } %>
+    </div>
+  </main>
+  <%- include('../partials/footer') %>
+</body>
+</html>

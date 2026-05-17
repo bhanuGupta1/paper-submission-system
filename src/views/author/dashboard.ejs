@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="en">
+<head><%- include('../partials/head') %></head>
+<body class="min-h-screen bg-slate-50 text-slate-900 flex flex-col">
+  <%- include('../partials/nav') %>
+  <main class="flex-1">
+    <div class="max-w-6xl mx-auto px-6 py-8">
+      <div class="flex items-center justify-between mb-6">
+        <div>
+          <h1 class="font-display text-3xl font-bold">My submissions</h1>
+          <p class="text-sm text-slate-600 mt-1">All your papers in one place.</p>
+        </div>
+        <a href="/author/submit" class="bg-indigo-600 hover:bg-indigo-500 text-white px-4 py-2 rounded-md font-medium transition">+ Submit a paper</a>
+      </div>
+
+      <div class="grid grid-cols-2 md:grid-cols-5 gap-3 mb-8">
+        <div class="card p-4">
+          <div class="stat-num text-3xl"><%= (stats && stats.total) || 0 %></div>
+          <div class="text-xs uppercase tracking-wider text-slate-500 mt-1">Total</div>
+        </div>
+        <div class="card p-4">
+          <div class="stat-num text-3xl text-amber-600"><%= (stats && stats.in_review) || 0 %></div>
+          <div class="text-xs uppercase tracking-wider text-slate-500 mt-1">In review</div>
+        </div>
+        <div class="card p-4">
+          <div class="stat-num text-3xl text-emerald-600"><%= (stats && stats.accepted) || 0 %></div>
+          <div class="text-xs uppercase tracking-wider text-slate-500 mt-1">Accepted</div>
+        </div>
+        <div class="card p-4">
+          <div class="stat-num text-3xl text-indigo-600"><%= (stats && stats.revisions) || 0 %></div>
+          <div class="text-xs uppercase tracking-wider text-slate-500 mt-1">Revisions</div>
+        </div>
+        <div class="card p-4">
+          <div class="stat-num text-3xl text-rose-600"><%= (stats && stats.rejected) || 0 %></div>
+          <div class="text-xs uppercase tracking-wider text-slate-500 mt-1">Rejected</div>
+        </div>
+      </div>
+
+      <% if (papers.length === 0) { %>
+        <div class="card p-12 text-center">
+          <p class="text-slate-600">You haven't submitted anything yet.</p>
+          <a href="/author/submit" class="inline-block mt-4 bg-indigo-600 hover:bg-indigo-500 text-white px-4 py-2 rounded-md font-medium">Submit your first paper</a>
+        </div>
+      <% } else { %>
+        <div class="card overflow-hidden">
+          <table class="w-full text-sm">
+            <thead class="bg-slate-50 border-b border-slate-200">
+              <tr>
+                <th class="text-left px-4 py-3 font-medium text-slate-600">Title</th>
+                <th class="text-left px-4 py-3 font-medium text-slate-600">Status</th>
+                <th class="text-left px-4 py-3 font-medium text-slate-600">Reviews</th>
+                <th class="text-left px-4 py-3 font-medium text-slate-600">Submitted</th>
+                <th class="px-4 py-3"></th>
+              </tr>
+            </thead>
+            <tbody>
+              <% papers.forEach(p => { %>
+                <tr class="border-t border-slate-100 hover:bg-slate-50 transition">
+                  <td class="px-4 py-3 font-medium"><%= p.title %></td>
+                  <td class="px-4 py-3"><%- include('../partials/status', { status: p.review_status }) %></td>
+                  <td class="px-4 py-3"><%= p.review_count %></td>
+                  <td class="px-4 py-3 text-slate-500"><%= new Date(p.submission_date).toLocaleDateString() %></td>
+                  <td class="px-4 py-3 text-right">
+                    <a href="/author/papers/<%= p.id %>" class="text-indigo-600 hover:text-indigo-500 font-medium link-line">View</a>
+                  </td>
+                </tr>
+              <% }) %>
+            </tbody>
+          </table>
+        </div>
+      <% } %>
+    </div>
+  </main>
+  <%- include('../partials/footer') %>
+</body>
+</html>

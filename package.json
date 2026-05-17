@@ -1,0 +1,61 @@
+{
+  "name": "paper-submission-system",
+  "version": "2.0.0",
+  "description": "AI-augmented academic paper submission and peer-review platform with LLM-based reviewer assistance, semantic reviewer matching, plagiarism detection, and an author writing assistant.",
+  "main": "src/server.js",
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "scripts": {
+    "start": "node src/server.js",
+    "dev": "nodemon src/server.js",
+    "migrate": "node src/db/migrate.js",
+    "seed": "node src/db/seed.js",
+    "setup": "npm run migrate && npm run seed",
+    "test": "jest --runInBand",
+    "test:unit": "jest tests/unit",
+    "test:integration": "jest tests/integration",
+    "lint": "eslint src tests"
+  },
+  "keywords": [
+    "express",
+    "ejs",
+    "sqlite",
+    "peer-review",
+    "generative-ai",
+    "llm",
+    "embeddings",
+    "claude",
+    "anthropic"
+  ],
+  "author": "Bhanu Gupta",
+  "license": "MIT",
+  "dependencies": {
+    "bcrypt": "^5.1.1",
+    "connect-sqlite3": "^0.9.13",
+    "csurf": "^1.11.0",
+    "dotenv": "^16.4.5",
+    "ejs": "^3.1.10",
+    "exceljs": "^4.4.0",
+    "express": "^4.19.2",
+    "express-rate-limit": "^7.4.0",
+    "express-session": "^1.18.0",
+    "express-validator": "^7.2.0",
+    "helmet": "^7.1.0",
+    "mammoth": "^1.8.0",
+    "multer": "^1.4.5-lts.1",
+    "pdf-parse": "^1.1.1",
+    "pino": "^9.4.0",
+    "pino-pretty": "^11.2.2",
+    "sqlite3": "^5.1.7"
+  },
+  "optionalDependencies": {
+    "@anthropic-ai/sdk": "^0.27.0"
+  },
+  "devDependencies": {
+    "eslint": "^9.10.0",
+    "jest": "^29.7.0",
+    "nodemon": "^3.1.4",
+    "supertest": "^7.0.0"
+  }
+}

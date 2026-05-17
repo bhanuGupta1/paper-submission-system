@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="en">
+<head><%- include('../partials/head') %></head>
+<body class="min-h-screen bg-slate-50 text-slate-900 flex flex-col">
+  <%- include('../partials/nav') %>
+  <main class="flex-1">
+    <div class="max-w-4xl mx-auto px-6 py-8">
+      <a href="/reviewer" class="text-sm text-indigo-600 hover:text-indigo-500 link-line">← Back</a>
+      <h1 class="font-display text-3xl font-bold mt-2 leading-tight"><%= paper.title %></h1>
+      <p class="text-sm text-slate-500 mt-1">By <%= paper.authors %></p>
+
+      <div class="card p-6 mt-4">
+        <h2 class="font-display text-lg font-semibold">Abstract</h2>
+        <p class="text-slate-700 mt-2 leading-relaxed whitespace-pre-line"><%= paper.abstract %></p>
+      </div>
+
+      <div class="flex justify-between items-center mt-6 mb-3">
+        <h2 class="font-display text-lg font-semibold">Your review</h2>
+        <button id="aiDraftBtn" class="text-xs bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 px-3 py-1.5 rounded-md font-medium transition">🧠 Generate AI draft</button>
+      </div>
+
+      <form action="/reviewer/reviews/<%= review.id %>" method="post" class="card p-6 space-y-4">
+        <input type="hidden" name="ai_assisted" id="ai_assisted" value="0">
+
+        <div><label class="block text-sm font-medium text-slate-700">Summary</label>
+          <textarea name="summary" id="summary" rows="3" class="mt-1 block w-full rounded-md border border-slate-300 px-3 py-2 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 focus:outline-none"><%= review.summary || '' %></textarea></div>
+        <div><label class="block text-sm font-medium text-slate-700">Strengths</label>
+          <textarea name="strengths" id="strengths" rows="3" class="mt-1 block w-full rounded-md border border-slate-300 px-3 py-2 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 focus:outline-none"><%= review.strengths || '' %></textarea></div>
+        <div><label class="block text-sm font-medium text-slate-700">Weaknesses</label>
+          <textarea name="weaknesses" id="weaknesses" rows="3" class="mt-1 block w-full rounded-md border border-slate-300 px-3 py-2 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 focus:outline-none"><%= review.weaknesses || '' %></textarea></div>
+
+        <div class="grid md:grid-cols-3 gap-3">
+          <div><label class="block text-sm font-medium text-slate-700">Novelty (1-5)</label>
+            <input type="number" min="1" max="5" name="novelty_score" id="novelty_score" value="<%= review.novelty_score || '' %>" class="mt-1 block w-full rounded-md border border-slate-300 px-3 py-2 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 focus:outline-none"></div>
+          <div><label class="block text-sm font-medium text-slate-700">Clarity (1-5)</label>
+            <input type="number" min="1" max="5" name="clarity_score" id="clarity_score" value="<%= review.clarity_score || '' %>" class="mt-1 block w-full rounded-md border border-slate-300 px-3 py-2 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 focus:outline-none"></div>
+          <div><label class="block text-sm font-medium text-slate-700">Significance (1-5)</label>
+            <input type="number" min="1" max="5" name="significance_score" id="significance_score" value="<%= review.significance_score || '' %>" class="mt-1 block w-full rounded-md border border-slate-300 px-3 py-2 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 focus:outline-none"></div>
+        </div>
+
+        <div><label class="block text-sm font-medium text-slate-700">Recommendation</label>
+          <select name="recommendation" id="recommendation" class="mt-1 block w-full rounded-md border border-slate-300 px-3 py-2 bg-white focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 focus:outline-none">
+            <option value="">— pick one —</option>
+            <% ['accept','minor_revisions','major_revisions','reject'].forEach(r => { %>
+              <option value="<%= r %>" <%= review.recommendation === r ? 'selected' : '' %>><%= r.replace('_', ' ') %></option>
+            <% }) %>
+          </select></div>
+
+        <div><label class="block text-sm font-medium text-slate-700">Free-form notes <span class="text-slate-400">(optional)</span></label>
+          <textarea name="review_text" rows="3" class="mt-1 block w-full rounded-md border border-slate-300 px-3 py-2 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 focus:outline-none"><%= review.review_text || '' %></textarea></div>
+
+        <div class="flex items-center justify-end pt-2">
+          <button class="bg-indigo-600 hover:bg-indigo-500 text-white px-5 py-2.5 rounded-md font-medium transition">Submit review</button>
+        </div>
+      </form>
+    </div>
+  </main>
+  <%- include('../partials/footer') %>
+
+  <script>
+    document.getElementById('aiDraftBtn').addEventListener('click', async () => {
+      const btn = document.getElementById('aiDraftBtn');
+      btn.disabled = true; const orig = btn.textContent; btn.textContent = 'Generating…';
+      try {
+        const r = await fetch('/reviewer/papers/<%= paper.id %>/ai-draft');
+        const d = await r.json();
+        if (d.summary)            document.getElementById('summary').value = d.summary;
+        if (d.strengths)          document.getElementById('strengths').value = d.strengths;
+        if (d.weaknesses)         document.getElementById('weaknesses').value = d.weaknesses;
+        if (d.novelty_score)      document.getElementById('novelty_score').value = d.novelty_score;
+        if (d.clarity_score)      document.getElementById('clarity_score').value = d.clarity_score;
+        if (d.significance_score) document.getElementById('significance_score').value = d.significance_score;
+        if (d.recommendation)     document.getElementById('recommendation').value = d.recommendation;
+        document.getElementById('ai_assisted').value = '1';
+        btn.textContent = '✓ Draft inserted · please edit';
+      } catch (e) { btn.textContent = 'Failed · try again'; }
+      finally { btn.disabled = false; setTimeout(() => { btn.textContent = orig; }, 6000); }
+    });
+  </script>
+</body>
+</html>

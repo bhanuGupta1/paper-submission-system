@@ -1,0 +1,13 @@
+'use strict';
+const express = require('express');
+const { requireRole } = require('../middleware/auth');
+const ctl = require('../controllers/editorController');
+const router = express.Router();
+router.use(requireRole('editor', 'admin'));
+router.get('/', ctl.dashboard);
+router.post('/assign-reviewer', ctl.assignReviewer);
+router.post('/decide', ctl.decide);
+router.post('/papers/:id/tags', ctl.updateTags);
+router.get('/papers/:id/download', ctl.downloadManuscript);
+router.get('/papers/:id/audit', ctl.auditTrail);
+module.exports = router;

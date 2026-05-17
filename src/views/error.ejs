@@ -1,0 +1,15 @@
+<!DOCTYPE html>
+<html lang="en">
+<head><%- include('partials/head') %></head>
+<body class="min-h-screen bg-slate-50 text-slate-900 flex flex-col">
+  <%- include('partials/nav') %>
+  <main class="flex-1 flex items-center">
+    <div class="max-w-md mx-auto px-6 py-16 text-center">
+      <h1 class="font-display text-4xl font-bold"><%= title %></h1>
+      <p class="text-slate-600 mt-4"><%= message %></p>
+      <a href="/" class="inline-block mt-8 bg-indigo-600 hover:bg-indigo-500 text-white px-5 py-2.5 rounded-md font-medium transition">Back home</a>
+    </div>
+  </main>
+  <%- include('partials/footer') %>
+</body>
+</html>

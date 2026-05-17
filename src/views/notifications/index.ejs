@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="en">
+<head><%- include('../partials/head') %></head>
+<body class="min-h-screen bg-slate-50 text-slate-900 flex flex-col">
+  <%- include('../partials/nav') %>
+  <main class="flex-1">
+    <div class="max-w-3xl mx-auto px-6 py-8">
+      <div class="flex items-center justify-between mb-6">
+        <div>
+          <h1 class="font-display text-3xl font-bold">Inbox</h1>
+          <p class="text-sm text-slate-600 mt-1"><%= items.length %> notification<%= items.length === 1 ? '' : 's' %></p>
+        </div>
+        <% if (items.some(i => !i.read_at)) { %>
+          <form method="post" action="/notifications/mark-all-read">
+            <button class="text-sm bg-slate-100 hover:bg-slate-200 text-slate-700 px-3 py-1.5 rounded-md border border-slate-300 transition">Mark all read</button>
+          </form>
+        <% } %>
+      </div>
+
+      <% if (items.length === 0) { %>
+        <div class="card p-12 text-center">
+          <p class="text-slate-600">You're all caught up.</p>
+        </div>
+      <% } else { %>
+        <div class="space-y-2">
+          <% items.forEach(n => { %>
+            <div class="card p-4 flex items-start gap-3 <%= n.read_at ? 'opacity-60' : '' %>">
+              <div class="h-8 w-8 rounded-full flex items-center justify-center text-xs font-bold <%= n.kind === 'decision' ? 'bg-emerald-100 text-emerald-700' : n.kind === 'assignment' ? 'bg-indigo-100 text-indigo-700' : 'bg-amber-100 text-amber-700' %>">
+                <%= n.kind.slice(0,1).toUpperCase() %>
+              </div>
+              <div class="flex-1">
+                <div class="flex items-start justify-between gap-3">
+                  <div>
+                    <div class="font-medium"><%= n.title %></div>
+                    <% if (n.body) { %><div class="text-sm text-slate-600 mt-1"><%= n.body %></div><% } %>
+                    <div class="text-xs text-slate-500 mt-1"><%= new Date(n.created_at).toLocaleString() %></div>
+                  </div>
+                  <div class="flex items-center gap-2 shrink-0">
+                    <% if (n.link) { %>
+                      <a href="<%= n.link %>" class="text-xs text-indigo-600 hover:text-indigo-500 font-medium link-line">Open</a>
+                    <% } %>
+                    <% if (!n.read_at) { %>
+                      <form method="post" action="/notifications/<%= n.id %>/read" class="inline">
+                        <button class="text-xs text-slate-500 hover:text-slate-700">Mark read</button>
+                      </form>
+                    <% } %>
+                  </div>
+                </div>
+              </div>
+            </div>
+          <% }) %>
+        </div>
+      <% } %>
+    </div>
+  </main>
+  <%- include('../partials/footer') %>
+</body>
+</html>
