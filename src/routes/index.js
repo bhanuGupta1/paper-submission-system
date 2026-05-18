@@ -10,6 +10,7 @@ const admin = require('./admin');
 const reader = require('./reader');
 const ai = require('./ai');
 const notifications = require('./notifications');
+const health = require('./health');
 
 router.get('/', (req, res) => {
   res.render('home', {
@@ -19,6 +20,7 @@ router.get('/', (req, res) => {
 });
 
 router.use(auth);
+router.use('/health', health);
 router.use('/author', author);
 router.use('/reviewer', reviewer);
 router.use('/editor', editor);

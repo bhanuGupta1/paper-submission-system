@@ -6,6 +6,7 @@ const Review = require('../models/Review');
 const User = require('../models/User');
 const reviewerMatcher = require('../services/reviewerMatcher');
 const coi = require('../services/conflictOfInterest');
+const analytics = require('../services/operationsAnalytics');
 const N = require('../services/notifications');
 const { all } = require('../db/connection');
 
@@ -19,6 +20,10 @@ async function dashboard(req, res, next) {
     const total = await Paper.countAll({ status, q });
     const papers = await Paper.listAll({ limit: pageSize, offset, status, q });
     const reviewers = await User.listReviewers();
+    const ops = {
+      statusBreakdown: await analytics.getStatusBreakdown(),
+      reviewFunnel: await analytics.getReviewFunnel(),
+    };
 
     const enriched = await Promise.all(papers.map(async (p) => {
       const ranked = await reviewerMatcher.rankReviewers(p, { excludeUserId: p.author_id, topK: 3 });
@@ -29,7 +34,7 @@ async function dashboard(req, res, next) {
 
     res.render('editor/dashboard', {
       title: 'Editor dashboard',
-      papers: enriched, reviewers,
+      papers: enriched, reviewers, ops,
       filter: { status, q, page, pageSize, total, pageCount: Math.max(1, Math.ceil(total / pageSize)) },
     });
   } catch (err) { next(err); }

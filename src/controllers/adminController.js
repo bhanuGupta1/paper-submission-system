@@ -5,6 +5,7 @@ const fs = require('fs/promises');
 const ExcelJS = require('exceljs');
 const Paper = require('../models/Paper');
 const Review = require('../models/Review');
+const analytics = require('../services/operationsAnalytics');
 const { all } = require('../db/connection');
 const config = require('../config');
 
@@ -18,7 +19,8 @@ async function dashboard(req, res, next) {
        GROUP BY action, provider
        ORDER BY n DESC`
     );
-    res.render('admin/dashboard', { title: 'Admin dashboard', papers, reviews, aiUsage });
+    const ops = await analytics.getAdminAnalytics();
+    res.render('admin/dashboard', { title: 'Admin dashboard', papers, reviews, aiUsage, ops });
   } catch (err) {
     next(err);
   }

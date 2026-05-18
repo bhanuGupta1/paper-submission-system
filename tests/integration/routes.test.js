@@ -36,6 +36,14 @@ describe('smoke', () => {
     expect(r.text).toMatch(/Paper Submission System/);
   });
 
+  test('GET /health reports deployment readiness', async () => {
+    const r = await request(app).get('/health');
+    expect(r.status).toBe(200);
+    expect(r.body.status).toBe('ok');
+    expect(r.body.database).toBe('ok');
+    expect(r.body.service).toBe('paper-submission-system');
+  });
+
   test('protected pages redirect when not logged in', async () => {
     const r = await request(app).get('/author');
     expect([302, 401, 403]).toContain(r.status);

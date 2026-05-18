@@ -23,7 +23,7 @@ function createApp() {
         scriptSrc: ["'self'", 'https://cdn.tailwindcss.com', "'unsafe-inline'"],
         styleSrc: ["'self'", 'https://cdn.tailwindcss.com', 'https://fonts.googleapis.com', "'unsafe-inline'"],
         fontSrc: ["'self'", 'https://fonts.gstatic.com'],
-        imgSrc: ["'self'", 'data:'],
+        imgSrc: ["'self'", 'data:', 'https://images.unsplash.com'],
       },
     },
   }));

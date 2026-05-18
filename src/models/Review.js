@@ -4,7 +4,7 @@ const { run, get, all } = require('../db/connection');
 
 function assign(paperId, reviewerId) {
   return run(
-    'INSERT INTO reviews (paper_id, reviewer_id) VALUES (?,?)',
+    'INSERT OR IGNORE INTO reviews (paper_id, reviewer_id) VALUES (?,?)',
     [paperId, reviewerId]
   );
 }

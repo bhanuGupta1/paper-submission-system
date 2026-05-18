@@ -143,6 +143,7 @@ async function migrate() {
   await run('CREATE INDEX IF NOT EXISTS idx_papers_status ON papers(review_status)');
   await run('CREATE INDEX IF NOT EXISTS idx_reviews_paper ON reviews(paper_id)');
   await run('CREATE INDEX IF NOT EXISTS idx_reviews_reviewer ON reviews(reviewer_id)');
+  await run('CREATE UNIQUE INDEX IF NOT EXISTS idx_reviews_unique_assignment ON reviews(paper_id, reviewer_id)').catch(() => {});
   await run('CREATE INDEX IF NOT EXISTS idx_embeddings_ref ON embeddings(kind, ref_id)');
   await run('CREATE INDEX IF NOT EXISTS idx_notifications_user ON notifications(user_id, read_at)');
   await run('CREATE INDEX IF NOT EXISTS idx_decisions_paper ON decisions(paper_id)');
