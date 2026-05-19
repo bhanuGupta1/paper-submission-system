@@ -46,7 +46,7 @@ function countAll({ status = null, q = null } = {}) {
 
 function listForReviewer(reviewerId, { limit = 100, offset = 0 } = {}) {
   return all(
-    `SELECT p.*, r.id AS review_id, r.recommendation, r.review_date, r.assigned_at
+    `SELECT p.*, r.id AS review_id, r.recommendation, r.review_date, r.assigned_at, r.ai_assisted
      FROM papers p JOIN reviews r ON r.paper_id = p.id
      WHERE r.reviewer_id = ? ORDER BY r.assigned_at DESC LIMIT ? OFFSET ?`,
     [reviewerId, limit, offset]

@@ -4,38 +4,52 @@
 <body class="min-h-screen bg-slate-50 text-slate-900 flex flex-col">
   <%- include('../partials/nav') %>
   <main class="flex-1">
-    <section class="hero-grad">
-      <div class="max-w-5xl mx-auto px-6 py-12 text-center">
-        <h1 class="font-display text-4xl md:text-5xl font-bold leading-tight">Published articles</h1>
-        <p class="text-slate-600 mt-3 max-w-xl mx-auto">Public feed of accepted papers — no account needed.</p>
-        <form method="get" action="/reader" class="max-w-xl mx-auto mt-6">
-          <div class="flex gap-2">
-            <input name="q" value="<%= q %>" placeholder="Search title, abstract, keywords…" class="flex-1 rounded-md border border-slate-300 bg-white px-4 py-2.5 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 focus:outline-none">
-            <button class="bg-indigo-600 hover:bg-indigo-500 text-white px-5 rounded-md font-medium transition">Search</button>
+    <section class="hero-grad text-white">
+      <div class="max-w-6xl mx-auto px-6 py-16">
+        <p class="eyebrow text-indigo-200">Public research library</p>
+        <h1 class="font-display text-5xl font-bold mt-2 leading-tight">Published articles</h1>
+        <p class="text-slate-200 mt-3 max-w-2xl">Accepted manuscripts are available here without an account. Search across titles, abstracts, and keywords.</p>
+        <form method="get" action="/reader" class="max-w-2xl mt-7">
+          <div class="flex flex-col sm:flex-row gap-2">
+            <input name="q" value="<%= q %>" placeholder="Search title, abstract, keywords..." class="flex-1 rounded-md border border-white/20 bg-white/95 text-slate-900 px-4 py-2.5 focus:border-indigo-300 focus:ring-1 focus:ring-indigo-300 focus:outline-none">
+            <button class="bg-indigo-500 hover:bg-indigo-400 text-white px-5 py-2.5 rounded-md font-semibold transition">Search</button>
           </div>
         </form>
       </div>
     </section>
 
-    <div class="max-w-6xl mx-auto px-6 py-10">
+    <div class="max-w-7xl mx-auto px-6 py-10">
       <% if (papers.length === 0) { %>
-        <p class="text-center text-slate-500"><%= q ? 'No matching articles found.' : 'No published articles yet.' %></p>
+        <div class="card p-12 text-center">
+          <p class="eyebrow text-indigo-700"><%= q ? 'No matches' : 'Library opening soon' %></p>
+          <h2 class="font-display text-3xl font-bold mt-2"><%= q ? 'No matching articles found.' : 'No published articles yet.' %></h2>
+          <p class="text-slate-600 mt-3"><%= q ? 'Try a broader keyword or clear the search.' : 'Accepted papers will appear here automatically.' %></p>
+        </div>
       <% } %>
-      <div class="grid md:grid-cols-2 gap-4">
+      <div class="grid md:grid-cols-2 xl:grid-cols-3 gap-5">
         <% papers.forEach(p => { %>
-          <article class="card p-6 hover:shadow-md transition">
-            <h2 class="font-display text-xl font-bold leading-snug"><%= p.title %></h2>
-            <div class="text-xs text-slate-500 mt-1 mb-3">By <%= p.authors %> · Published <%= new Date(p.submission_date).toLocaleDateString() %></div>
-            <p class="text-sm text-slate-700 line-clamp-4 leading-relaxed"><%= p.abstract %></p>
+          <article class="publication-card p-6 flex flex-col">
+            <div class="flex items-center justify-between gap-3">
+              <span class="text-xs uppercase tracking-wider text-slate-500 font-bold">Published</span>
+              <span class="text-xs text-slate-500"><%= new Date(p.submission_date).toLocaleDateString() %></span>
+            </div>
+            <h2 class="font-display text-2xl font-bold leading-tight mt-3"><%= p.title %></h2>
+            <div class="text-xs text-slate-500 mt-2">By <%= p.authors %></div>
+            <p class="text-sm text-slate-700 line-clamp-5 leading-relaxed mt-4 flex-1"><%= p.abstract %></p>
             <% if (p.keywords) { %>
-              <div class="mt-4 flex flex-wrap gap-1.5">
+              <div class="mt-5 flex flex-wrap gap-1.5">
                 <% p.keywords.split(',').slice(0, 5).forEach(k => { %>
-                  <span class="inline-block text-xs bg-slate-100 text-slate-700 px-2 py-0.5 rounded-full"><%= k.trim() %></span>
+                  <span class="inline-block text-xs bg-indigo-50 text-indigo-800 border border-indigo-100 px-2 py-0.5 rounded-full"><%= k.trim() %></span>
                 <% }) %>
               </div>
             <% } %>
-            <div class="flex items-center justify-end mt-4">
-              <a href="/reader/papers/<%= p.id %>/download" class="text-sm bg-indigo-600 hover:bg-indigo-500 text-white px-3 py-1.5 rounded-md font-medium transition">Download full article</a>
+            <% if (p.ai_summary) { %>
+              <div class="mt-4 rounded-md border border-slate-200 bg-slate-50 p-3 text-xs text-slate-600">
+                <strong class="text-slate-800">AI summary:</strong> <%= p.ai_summary %>
+              </div>
+            <% } %>
+            <div class="flex items-center justify-end mt-5">
+              <a href="/reader/papers/<%= p.id %>/download" class="text-sm bg-slate-950 hover:bg-slate-800 text-white px-3 py-2 rounded-md font-semibold transition">Download article</a>
             </div>
           </article>
         <% }) %>

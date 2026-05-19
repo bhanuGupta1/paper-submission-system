@@ -7,7 +7,15 @@ const aiReviewer = require('../services/aiReviewer');
 async function dashboard(req, res, next) {
   try {
     const papers = await Paper.listForReviewer(req.user.id);
-    res.render('reviewer/dashboard', { title: 'Reviewer dashboard', papers });
+    const stats = papers.reduce((acc, paper) => {
+      acc.total += 1;
+      if (paper.recommendation) acc.completed += 1;
+      else acc.pending += 1;
+      if (paper.ai_assisted) acc.aiAssisted += 1;
+      return acc;
+    }, { total: 0, completed: 0, pending: 0, aiAssisted: 0 });
+    stats.completionRate = stats.total ? Math.round((stats.completed / stats.total) * 100) : 0;
+    res.render('reviewer/dashboard', { title: 'Reviewer dashboard', papers, stats });
   } catch (err) {
     next(err);
   }

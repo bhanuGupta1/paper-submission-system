@@ -22,6 +22,7 @@ fs.mkdirSync(process.env.UPLOAD_DIR, { recursive: true });
 const request = require('supertest');
 const migrate = require('../../src/db/migrate');
 const createApp = require('../../src/app');
+const User = require('../../src/models/User');
 
 let app;
 beforeAll(async () => {
@@ -67,5 +68,50 @@ describe('smoke', () => {
     const r3 = await agent.get('/author');
     expect(r3.status).toBe(200);
     expect(r3.text).toMatch(/My submissions/);
+  });
+
+  test('registration stores affiliation metadata for COI checks', async () => {
+    const agent = request.agent(app);
+    await agent.post('/register').type('form').send({
+      username: 'reviewer_meta',
+      password: 'Password123!',
+      role: 'reviewer',
+      affiliation: 'Auckland Research Lab',
+      expertise: 'NLP, peer review',
+    });
+
+    const user = await User.findByUsername('reviewer_meta');
+    expect(user.affiliation).toBe('Auckland Research Lab');
+    expect(user.expertise).toBe('NLP, peer review');
+  });
+
+  test('reviewer and editor dashboards render for their roles', async () => {
+    const reviewer = request.agent(app);
+    await reviewer.post('/register').type('form').send({
+      username: 'reviewer_smoke',
+      password: 'Password123!',
+      role: 'reviewer',
+    });
+    await reviewer.post('/login').type('form').send({
+      username: 'reviewer_smoke',
+      password: 'Password123!',
+    });
+    const reviewerPage = await reviewer.get('/reviewer');
+    expect(reviewerPage.status).toBe(200);
+    expect(reviewerPage.text).toMatch(/Review assignments/);
+
+    const editor = request.agent(app);
+    await editor.post('/register').type('form').send({
+      username: 'editor_smoke',
+      password: 'Password123!',
+      role: 'editor',
+    });
+    await editor.post('/login').type('form').send({
+      username: 'editor_smoke',
+      password: 'Password123!',
+    });
+    const editorPage = await editor.get('/editor');
+    expect(editorPage.status).toBe(200);
+    expect(editorPage.text).toMatch(/Editor dashboard/);
   });
 });

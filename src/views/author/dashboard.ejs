@@ -4,69 +4,90 @@
 <body class="min-h-screen bg-slate-50 text-slate-900 flex flex-col">
   <%- include('../partials/nav') %>
   <main class="flex-1">
-    <div class="max-w-6xl mx-auto px-6 py-8">
-      <div class="flex items-center justify-between mb-6">
+    <div class="max-w-7xl mx-auto px-6 py-8">
+      <div class="dashboard-hero mb-6">
         <div>
-          <h1 class="font-display text-3xl font-bold">My submissions</h1>
-          <p class="text-sm text-slate-600 mt-1">All your papers in one place.</p>
+          <p class="eyebrow text-indigo-200">Author workspace</p>
+          <h1 class="font-display text-4xl font-bold text-white mt-2">My submissions</h1>
+          <p class="text-sm text-slate-300 mt-2 max-w-2xl">Track every manuscript, review signal, and editorial status from one polished workspace.</p>
         </div>
-        <a href="/author/submit" class="bg-indigo-600 hover:bg-indigo-500 text-white px-4 py-2 rounded-md font-medium transition">+ Submit a paper</a>
+        <a href="/author/submit" class="inline-flex items-center justify-center bg-white text-slate-950 hover:bg-indigo-50 px-4 py-2 rounded-md text-sm font-semibold transition">Submit a paper</a>
       </div>
 
-      <div class="grid grid-cols-2 md:grid-cols-5 gap-3 mb-8">
-        <div class="card p-4">
+      <div class="grid grid-cols-2 lg:grid-cols-5 gap-3 mb-8">
+        <div class="metric-card">
           <div class="stat-num text-3xl"><%= (stats && stats.total) || 0 %></div>
-          <div class="text-xs uppercase tracking-wider text-slate-500 mt-1">Total</div>
+          <div class="metric-label">Total</div>
         </div>
-        <div class="card p-4">
+        <div class="metric-card">
           <div class="stat-num text-3xl text-amber-600"><%= (stats && stats.in_review) || 0 %></div>
-          <div class="text-xs uppercase tracking-wider text-slate-500 mt-1">In review</div>
+          <div class="metric-label">In review</div>
         </div>
-        <div class="card p-4">
+        <div class="metric-card">
           <div class="stat-num text-3xl text-emerald-600"><%= (stats && stats.accepted) || 0 %></div>
-          <div class="text-xs uppercase tracking-wider text-slate-500 mt-1">Accepted</div>
+          <div class="metric-label">Accepted</div>
         </div>
-        <div class="card p-4">
+        <div class="metric-card">
           <div class="stat-num text-3xl text-indigo-600"><%= (stats && stats.revisions) || 0 %></div>
-          <div class="text-xs uppercase tracking-wider text-slate-500 mt-1">Revisions</div>
+          <div class="metric-label">Revisions</div>
         </div>
-        <div class="card p-4">
+        <div class="metric-card">
           <div class="stat-num text-3xl text-rose-600"><%= (stats && stats.rejected) || 0 %></div>
-          <div class="text-xs uppercase tracking-wider text-slate-500 mt-1">Rejected</div>
+          <div class="metric-label">Rejected</div>
         </div>
       </div>
 
       <% if (papers.length === 0) { %>
         <div class="card p-12 text-center">
-          <p class="text-slate-600">You haven't submitted anything yet.</p>
-          <a href="/author/submit" class="inline-block mt-4 bg-indigo-600 hover:bg-indigo-500 text-white px-4 py-2 rounded-md font-medium">Submit your first paper</a>
+          <p class="eyebrow text-indigo-700">Ready when you are</p>
+          <h2 class="font-display text-3xl font-bold mt-2">Start your first manuscript journey.</h2>
+          <p class="text-slate-600 mt-3">Submit a paper, get AI keyword help, and let the system route it into editorial review.</p>
+          <a href="/author/submit" class="inline-block mt-5 bg-indigo-600 hover:bg-indigo-500 text-white px-4 py-2 rounded-md font-semibold">Submit your first paper</a>
         </div>
       <% } else { %>
-        <div class="card overflow-hidden">
-          <table class="w-full text-sm">
-            <thead class="bg-slate-50 border-b border-slate-200">
-              <tr>
-                <th class="text-left px-4 py-3 font-medium text-slate-600">Title</th>
-                <th class="text-left px-4 py-3 font-medium text-slate-600">Status</th>
-                <th class="text-left px-4 py-3 font-medium text-slate-600">Reviews</th>
-                <th class="text-left px-4 py-3 font-medium text-slate-600">Submitted</th>
-                <th class="px-4 py-3"></th>
-              </tr>
-            </thead>
-            <tbody>
-              <% papers.forEach(p => { %>
-                <tr class="border-t border-slate-100 hover:bg-slate-50 transition">
-                  <td class="px-4 py-3 font-medium"><%= p.title %></td>
-                  <td class="px-4 py-3"><%- include('../partials/status', { status: p.review_status }) %></td>
-                  <td class="px-4 py-3"><%= p.review_count %></td>
-                  <td class="px-4 py-3 text-slate-500"><%= new Date(p.submission_date).toLocaleDateString() %></td>
-                  <td class="px-4 py-3 text-right">
-                    <a href="/author/papers/<%= p.id %>" class="text-indigo-600 hover:text-indigo-500 font-medium link-line">View</a>
-                  </td>
-                </tr>
-              <% }) %>
-            </tbody>
-          </table>
+        <div class="grid lg:grid-cols-[0.72fr_0.28fr] gap-5">
+          <section class="space-y-3">
+            <% papers.forEach(p => { %>
+              <article class="submission-row p-4 flex gap-4">
+                <div class="status-rail shrink-0"></div>
+                <div class="flex-1 min-w-0">
+                  <div class="flex flex-wrap items-start justify-between gap-3">
+                    <div>
+                      <h2 class="font-display text-xl font-bold leading-snug"><%= p.title %></h2>
+                      <p class="text-xs text-slate-500 mt-1">Submitted <%= new Date(p.submission_date).toLocaleDateString() %></p>
+                    </div>
+                    <%- include('../partials/status', { status: p.review_status }) %>
+                  </div>
+                  <div class="mt-4 flex flex-wrap gap-2 text-xs text-slate-600">
+                    <span class="score-chip"><strong><%= p.review_count %></strong> reviews</span>
+                    <span class="score-chip">Similarity <strong><%= (p.similarity_score * 100).toFixed(0) %>%</strong></span>
+                    <span class="score-chip">AI signal <strong><%= (p.ai_text_likelihood * 100).toFixed(0) %>%</strong></span>
+                  </div>
+                </div>
+                <div class="flex items-center">
+                  <a href="/author/papers/<%= p.id %>" class="bg-slate-950 hover:bg-slate-800 text-white text-sm px-3 py-2 rounded-md font-semibold transition">View</a>
+                </div>
+              </article>
+            <% }) %>
+          </section>
+
+          <aside class="card p-5 h-fit">
+            <p class="eyebrow text-indigo-700">Next best actions</p>
+            <div class="space-y-4 mt-4">
+              <div>
+                <h3 class="font-semibold">Keep metadata sharp</h3>
+                <p class="text-sm text-slate-600 mt-1">Update your profile with affiliation and expertise so COI and matching stay explainable.</p>
+              </div>
+              <div>
+                <h3 class="font-semibold">Watch review signals</h3>
+                <p class="text-sm text-slate-600 mt-1">Similarity and AI-text scores are triage indicators for editorial transparency.</p>
+              </div>
+              <div>
+                <h3 class="font-semibold">Download records</h3>
+                <p class="text-sm text-slate-600 mt-1">Each paper detail page keeps reviews, decisions, and manuscript access together.</p>
+              </div>
+            </div>
+          </aside>
         </div>
       <% } %>
     </div>

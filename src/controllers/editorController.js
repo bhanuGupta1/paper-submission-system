@@ -126,7 +126,7 @@ async function auditTrail(req, res, next) {
        ORDER BY ai_audit.created_at DESC LIMIT 100`,
       [paper.id, paper.author_id]
     );
-    res.render('editor/audit', { title: `Audit · ${paper.title}`, paper, reviews, decisions, aiCalls });
+    res.render('editor/audit', { title: `Audit | ${paper.title}`, paper, reviews, decisions, aiCalls });
   } catch (err) { next(err); }
 }
 

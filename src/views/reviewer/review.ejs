@@ -4,55 +4,92 @@
 <body class="min-h-screen bg-slate-50 text-slate-900 flex flex-col">
   <%- include('../partials/nav') %>
   <main class="flex-1">
-    <div class="max-w-4xl mx-auto px-6 py-8">
-      <a href="/reviewer" class="text-sm text-indigo-600 hover:text-indigo-500 link-line">← Back</a>
-      <h1 class="font-display text-3xl font-bold mt-2 leading-tight"><%= paper.title %></h1>
-      <p class="text-sm text-slate-500 mt-1">By <%= paper.authors %></p>
+    <div class="max-w-7xl mx-auto px-6 py-8">
+      <a href="/reviewer" class="text-sm text-indigo-600 hover:text-indigo-500 link-line">Back to assignments</a>
+      <div class="grid lg:grid-cols-[0.38fr_0.62fr] gap-6 mt-4">
+        <aside class="space-y-4">
+          <div class="card p-6">
+            <p class="eyebrow text-indigo-700">Manuscript</p>
+            <h1 class="font-display text-3xl font-bold mt-2 leading-tight"><%= paper.title %></h1>
+            <p class="text-sm text-slate-500 mt-2">By <%= paper.authors %></p>
+            <div class="mt-4 flex flex-wrap gap-2 text-xs text-slate-600">
+              <span class="score-chip">Similarity <strong><%= (paper.similarity_score * 100).toFixed(0) %>%</strong></span>
+              <span class="score-chip">AI signal <strong><%= (paper.ai_text_likelihood * 100).toFixed(0) %>%</strong></span>
+            </div>
+          </div>
+          <div class="card p-6">
+            <h2 class="font-display text-xl font-semibold">Abstract</h2>
+            <p class="text-slate-700 mt-3 leading-relaxed whitespace-pre-line"><%= paper.abstract %></p>
+          </div>
+          <div class="card p-5">
+            <h2 class="font-display text-xl font-semibold">Review guardrails</h2>
+            <p class="text-sm text-slate-600 mt-2 leading-relaxed">AI drafts are starting points only. Edit for accuracy, fairness, and evidence before submitting.</p>
+          </div>
+        </aside>
 
-      <div class="card p-6 mt-4">
-        <h2 class="font-display text-lg font-semibold">Abstract</h2>
-        <p class="text-slate-700 mt-2 leading-relaxed whitespace-pre-line"><%= paper.abstract %></p>
+        <section>
+          <div class="flex flex-wrap justify-between items-center gap-3 mb-3">
+            <div>
+              <p class="eyebrow text-indigo-700">Structured review</p>
+              <h2 class="font-display text-3xl font-bold mt-1">Your assessment</h2>
+            </div>
+            <button id="aiDraftBtn" class="text-sm bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 px-3 py-2 rounded-md font-semibold transition">Generate AI draft</button>
+          </div>
+
+          <form action="/reviewer/reviews/<%= review.id %>" method="post" class="card p-6 space-y-5">
+            <input type="hidden" name="ai_assisted" id="ai_assisted" value="0">
+
+            <div>
+              <label class="block text-sm font-semibold text-slate-700">Summary</label>
+              <textarea name="summary" id="summary" rows="3" class="mt-1 block w-full rounded-md border border-slate-300 px-3 py-2.5 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 focus:outline-none"><%= review.summary || '' %></textarea>
+            </div>
+            <div class="grid md:grid-cols-2 gap-4">
+              <div>
+                <label class="block text-sm font-semibold text-slate-700">Strengths</label>
+                <textarea name="strengths" id="strengths" rows="4" class="mt-1 block w-full rounded-md border border-slate-300 px-3 py-2.5 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 focus:outline-none"><%= review.strengths || '' %></textarea>
+              </div>
+              <div>
+                <label class="block text-sm font-semibold text-slate-700">Weaknesses</label>
+                <textarea name="weaknesses" id="weaknesses" rows="4" class="mt-1 block w-full rounded-md border border-slate-300 px-3 py-2.5 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 focus:outline-none"><%= review.weaknesses || '' %></textarea>
+              </div>
+            </div>
+
+            <div class="grid md:grid-cols-3 gap-3">
+              <div>
+                <label class="block text-sm font-semibold text-slate-700">Novelty</label>
+                <input type="number" min="1" max="5" name="novelty_score" id="novelty_score" value="<%= review.novelty_score || '' %>" class="mt-1 block w-full rounded-md border border-slate-300 px-3 py-2.5 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 focus:outline-none">
+              </div>
+              <div>
+                <label class="block text-sm font-semibold text-slate-700">Clarity</label>
+                <input type="number" min="1" max="5" name="clarity_score" id="clarity_score" value="<%= review.clarity_score || '' %>" class="mt-1 block w-full rounded-md border border-slate-300 px-3 py-2.5 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 focus:outline-none">
+              </div>
+              <div>
+                <label class="block text-sm font-semibold text-slate-700">Significance</label>
+                <input type="number" min="1" max="5" name="significance_score" id="significance_score" value="<%= review.significance_score || '' %>" class="mt-1 block w-full rounded-md border border-slate-300 px-3 py-2.5 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 focus:outline-none">
+              </div>
+            </div>
+
+            <div>
+              <label class="block text-sm font-semibold text-slate-700">Recommendation</label>
+              <select name="recommendation" id="recommendation" class="mt-1 block w-full rounded-md border border-slate-300 px-3 py-2.5 bg-white focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 focus:outline-none">
+                <option value="">Pick one</option>
+                <% ['accept','minor_revisions','major_revisions','reject'].forEach(r => { %>
+                  <option value="<%= r %>" <%= review.recommendation === r ? 'selected' : '' %>><%= r.replace('_', ' ') %></option>
+                <% }) %>
+              </select>
+            </div>
+
+            <div>
+              <label class="block text-sm font-semibold text-slate-700">Free-form notes <span class="text-slate-400 font-normal">(optional)</span></label>
+              <textarea name="review_text" rows="3" class="mt-1 block w-full rounded-md border border-slate-300 px-3 py-2.5 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 focus:outline-none"><%= review.review_text || '' %></textarea>
+            </div>
+
+            <div class="flex items-center justify-end pt-2">
+              <button class="bg-slate-950 hover:bg-slate-800 text-white px-5 py-2.5 rounded-md font-semibold transition">Submit review</button>
+            </div>
+          </form>
+        </section>
       </div>
-
-      <div class="flex justify-between items-center mt-6 mb-3">
-        <h2 class="font-display text-lg font-semibold">Your review</h2>
-        <button id="aiDraftBtn" class="text-xs bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 px-3 py-1.5 rounded-md font-medium transition">🧠 Generate AI draft</button>
-      </div>
-
-      <form action="/reviewer/reviews/<%= review.id %>" method="post" class="card p-6 space-y-4">
-        <input type="hidden" name="ai_assisted" id="ai_assisted" value="0">
-
-        <div><label class="block text-sm font-medium text-slate-700">Summary</label>
-          <textarea name="summary" id="summary" rows="3" class="mt-1 block w-full rounded-md border border-slate-300 px-3 py-2 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 focus:outline-none"><%= review.summary || '' %></textarea></div>
-        <div><label class="block text-sm font-medium text-slate-700">Strengths</label>
-          <textarea name="strengths" id="strengths" rows="3" class="mt-1 block w-full rounded-md border border-slate-300 px-3 py-2 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 focus:outline-none"><%= review.strengths || '' %></textarea></div>
-        <div><label class="block text-sm font-medium text-slate-700">Weaknesses</label>
-          <textarea name="weaknesses" id="weaknesses" rows="3" class="mt-1 block w-full rounded-md border border-slate-300 px-3 py-2 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 focus:outline-none"><%= review.weaknesses || '' %></textarea></div>
-
-        <div class="grid md:grid-cols-3 gap-3">
-          <div><label class="block text-sm font-medium text-slate-700">Novelty (1-5)</label>
-            <input type="number" min="1" max="5" name="novelty_score" id="novelty_score" value="<%= review.novelty_score || '' %>" class="mt-1 block w-full rounded-md border border-slate-300 px-3 py-2 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 focus:outline-none"></div>
-          <div><label class="block text-sm font-medium text-slate-700">Clarity (1-5)</label>
-            <input type="number" min="1" max="5" name="clarity_score" id="clarity_score" value="<%= review.clarity_score || '' %>" class="mt-1 block w-full rounded-md border border-slate-300 px-3 py-2 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 focus:outline-none"></div>
-          <div><label class="block text-sm font-medium text-slate-700">Significance (1-5)</label>
-            <input type="number" min="1" max="5" name="significance_score" id="significance_score" value="<%= review.significance_score || '' %>" class="mt-1 block w-full rounded-md border border-slate-300 px-3 py-2 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 focus:outline-none"></div>
-        </div>
-
-        <div><label class="block text-sm font-medium text-slate-700">Recommendation</label>
-          <select name="recommendation" id="recommendation" class="mt-1 block w-full rounded-md border border-slate-300 px-3 py-2 bg-white focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 focus:outline-none">
-            <option value="">— pick one —</option>
-            <% ['accept','minor_revisions','major_revisions','reject'].forEach(r => { %>
-              <option value="<%= r %>" <%= review.recommendation === r ? 'selected' : '' %>><%= r.replace('_', ' ') %></option>
-            <% }) %>
-          </select></div>
-
-        <div><label class="block text-sm font-medium text-slate-700">Free-form notes <span class="text-slate-400">(optional)</span></label>
-          <textarea name="review_text" rows="3" class="mt-1 block w-full rounded-md border border-slate-300 px-3 py-2 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 focus:outline-none"><%= review.review_text || '' %></textarea></div>
-
-        <div class="flex items-center justify-end pt-2">
-          <button class="bg-indigo-600 hover:bg-indigo-500 text-white px-5 py-2.5 rounded-md font-medium transition">Submit review</button>
-        </div>
-      </form>
     </div>
   </main>
   <%- include('../partials/footer') %>
@@ -60,21 +97,27 @@
   <script>
     document.getElementById('aiDraftBtn').addEventListener('click', async () => {
       const btn = document.getElementById('aiDraftBtn');
-      btn.disabled = true; const orig = btn.textContent; btn.textContent = 'Generating…';
+      btn.disabled = true;
+      const original = btn.textContent;
+      btn.textContent = 'Generating...';
       try {
         const r = await fetch('/reviewer/papers/<%= paper.id %>/ai-draft');
         const d = await r.json();
-        if (d.summary)            document.getElementById('summary').value = d.summary;
-        if (d.strengths)          document.getElementById('strengths').value = d.strengths;
-        if (d.weaknesses)         document.getElementById('weaknesses').value = d.weaknesses;
-        if (d.novelty_score)      document.getElementById('novelty_score').value = d.novelty_score;
-        if (d.clarity_score)      document.getElementById('clarity_score').value = d.clarity_score;
+        if (d.summary) document.getElementById('summary').value = d.summary;
+        if (d.strengths) document.getElementById('strengths').value = d.strengths;
+        if (d.weaknesses) document.getElementById('weaknesses').value = d.weaknesses;
+        if (d.novelty_score) document.getElementById('novelty_score').value = d.novelty_score;
+        if (d.clarity_score) document.getElementById('clarity_score').value = d.clarity_score;
         if (d.significance_score) document.getElementById('significance_score').value = d.significance_score;
-        if (d.recommendation)     document.getElementById('recommendation').value = d.recommendation;
+        if (d.recommendation) document.getElementById('recommendation').value = d.recommendation;
         document.getElementById('ai_assisted').value = '1';
-        btn.textContent = '✓ Draft inserted · please edit';
-      } catch (e) { btn.textContent = 'Failed · try again'; }
-      finally { btn.disabled = false; setTimeout(() => { btn.textContent = orig; }, 6000); }
+        btn.textContent = 'Draft inserted - please edit';
+      } catch (e) {
+        btn.textContent = 'Failed - try again';
+      } finally {
+        btn.disabled = false;
+        setTimeout(() => { btn.textContent = original; }, 6000);
+      }
     });
   </script>
 </body>

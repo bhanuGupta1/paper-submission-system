@@ -4,59 +4,83 @@
 <body class="min-h-screen bg-slate-50 text-slate-900 flex flex-col">
   <%- include('../partials/nav') %>
   <main class="flex-1">
-    <div class="max-w-3xl mx-auto px-6 py-8">
-      <div class="mb-6">
-        <h1 class="font-display text-3xl font-bold">Submit a paper</h1>
-        <p class="text-sm text-slate-600 mt-1">Three AI assists live below the abstract — all optional, all local by default.</p>
+    <div class="max-w-7xl mx-auto px-6 py-8">
+      <div class="dashboard-hero mb-6">
+        <div>
+          <p class="eyebrow text-indigo-200">New submission</p>
+          <h1 class="font-display text-4xl font-bold text-white mt-2">Submit a paper</h1>
+          <p class="text-sm text-slate-300 mt-2 max-w-2xl">Use optional AI assistance to refine metadata before your manuscript enters reviewer matching.</p>
+        </div>
       </div>
+
       <% if (error) { %>
-        <div class="mb-4 bg-amber-50 border border-amber-200 text-amber-800 text-sm p-3 rounded"><%= error %></div>
+        <div class="mb-4 bg-amber-50 border border-amber-200 text-amber-800 text-sm p-3 rounded-md"><%= error %></div>
       <% } %>
 
-      <form action="/author/submit" method="post" enctype="multipart/form-data" class="card p-6 space-y-5 shadow-sm">
-        <div>
-          <label class="block text-sm font-medium text-slate-700">Title</label>
-          <input id="title" name="title" required class="mt-1 block w-full rounded-md border border-slate-300 px-3 py-2 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 focus:outline-none">
-        </div>
-        <div>
-          <label class="block text-sm font-medium text-slate-700">Authors <span class="text-slate-400">(comma-separated)</span></label>
-          <input name="authors" required class="mt-1 block w-full rounded-md border border-slate-300 px-3 py-2 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 focus:outline-none">
-        </div>
-
-        <div>
-          <div class="flex items-center justify-between mb-1">
-            <label class="block text-sm font-medium text-slate-700" for="abstract">Abstract</label>
-            <div class="flex gap-2">
-              <button type="button" id="polishBtn" class="inline-flex items-center gap-1 text-xs bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 px-2.5 py-1 rounded-md font-medium transition">✨ Polish</button>
-              <button type="button" id="titlesBtn" class="inline-flex items-center gap-1 text-xs bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 px-2.5 py-1 rounded-md font-medium transition">💡 Titles</button>
-              <button type="button" id="kwBtn"     class="inline-flex items-center gap-1 text-xs bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 px-2.5 py-1 rounded-md font-medium transition">🏷 Keywords</button>
+      <div class="grid lg:grid-cols-[0.68fr_0.32fr] gap-6">
+        <form action="/author/submit" method="post" enctype="multipart/form-data" class="card p-6 space-y-5">
+          <div class="grid md:grid-cols-2 gap-4">
+            <div class="md:col-span-2">
+              <label class="block text-sm font-semibold text-slate-700">Title</label>
+              <input id="title" name="title" required class="mt-1 block w-full rounded-md border border-slate-300 px-3 py-2.5 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 focus:outline-none">
+            </div>
+            <div class="md:col-span-2">
+              <label class="block text-sm font-semibold text-slate-700">Authors <span class="text-slate-400 font-normal">(comma-separated)</span></label>
+              <input name="authors" required class="mt-1 block w-full rounded-md border border-slate-300 px-3 py-2.5 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 focus:outline-none">
             </div>
           </div>
-          <textarea id="abstract" name="abstract" rows="8" required class="block w-full rounded-md border border-slate-300 px-3 py-2 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 focus:outline-none"></textarea>
-          <div id="aiPanel" class="hidden mt-3 bg-indigo-50 border border-indigo-200 text-indigo-900 text-sm p-3 rounded-md space-y-2"></div>
-        </div>
 
-        <div class="grid md:grid-cols-2 gap-4">
           <div>
-            <label class="block text-sm font-medium text-slate-700">Keywords <span class="text-slate-400">(optional)</span></label>
-            <input id="keywords" name="keywords" class="mt-1 block w-full rounded-md border border-slate-300 px-3 py-2 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 focus:outline-none">
+            <div class="flex flex-wrap items-center justify-between gap-3 mb-2">
+              <label class="block text-sm font-semibold text-slate-700" for="abstract">Abstract</label>
+              <div class="flex flex-wrap gap-2">
+                <button type="button" id="polishBtn" class="text-xs bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 px-2.5 py-1 rounded-md font-semibold transition">Polish</button>
+                <button type="button" id="titlesBtn" class="text-xs bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 px-2.5 py-1 rounded-md font-semibold transition">Suggest titles</button>
+                <button type="button" id="kwBtn" class="text-xs bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 px-2.5 py-1 rounded-md font-semibold transition">Extract keywords</button>
+              </div>
+            </div>
+            <textarea id="abstract" name="abstract" rows="9" required class="block w-full rounded-md border border-slate-300 px-3 py-2.5 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 focus:outline-none"></textarea>
+            <div id="aiPanel" class="hidden mt-3 bg-indigo-50 border border-indigo-200 text-indigo-950 text-sm p-4 rounded-md space-y-2"></div>
           </div>
-          <div>
-            <label class="block text-sm font-medium text-slate-700">Tags <span class="text-slate-400">(optional, comma-separated)</span></label>
-            <input name="tags" placeholder="e.g. NLP, ML" class="mt-1 block w-full rounded-md border border-slate-300 px-3 py-2 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 focus:outline-none">
+
+          <div class="grid md:grid-cols-2 gap-4">
+            <div>
+              <label class="block text-sm font-semibold text-slate-700">Keywords <span class="text-slate-400 font-normal">(optional)</span></label>
+              <input id="keywords" name="keywords" class="mt-1 block w-full rounded-md border border-slate-300 px-3 py-2.5 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 focus:outline-none">
+            </div>
+            <div>
+              <label class="block text-sm font-semibold text-slate-700">Tags <span class="text-slate-400 font-normal">(optional)</span></label>
+              <input name="tags" placeholder="NLP, ML, education" class="mt-1 block w-full rounded-md border border-slate-300 px-3 py-2.5 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 focus:outline-none">
+            </div>
           </div>
-        </div>
 
-        <div>
-          <label class="block text-sm font-medium text-slate-700">Manuscript file</label>
-          <input type="file" name="paperFile" accept=".pdf,.doc,.docx,.txt" class="mt-1 block w-full text-sm">
-          <p class="text-xs text-slate-500 mt-1">PDF, DOC, DOCX, or TXT — up to 10 MB.</p>
-        </div>
+          <div class="rounded-md border border-dashed border-slate-300 bg-slate-50 p-5">
+            <label class="block text-sm font-semibold text-slate-700">Manuscript file</label>
+            <input type="file" name="paperFile" accept=".pdf,.doc,.docx,.txt" class="mt-2 block w-full text-sm">
+            <p class="text-xs text-slate-500 mt-2">PDF, DOC, DOCX, or TXT - up to 10 MB.</p>
+          </div>
 
-        <div class="flex items-center justify-end pt-2">
-          <button class="bg-indigo-600 hover:bg-indigo-500 text-white px-5 py-2.5 rounded-md font-medium transition">Submit for review</button>
-        </div>
-      </form>
+          <div class="flex items-center justify-end pt-2">
+            <button class="bg-slate-950 hover:bg-slate-800 text-white px-5 py-2.5 rounded-md font-semibold transition">Submit for review</button>
+          </div>
+        </form>
+
+        <aside class="space-y-4">
+          <div class="card p-5">
+            <p class="eyebrow text-indigo-700">Review pipeline</p>
+            <div class="space-y-4 mt-4">
+              <div class="process-step"><h3 class="font-semibold">1. Metadata</h3><p class="text-sm text-slate-600 mt-1">Title, authors, abstract, keywords, and optional tags.</p></div>
+              <div class="process-step"><h3 class="font-semibold">2. Integrity signals</h3><p class="text-sm text-slate-600 mt-1">Similarity and AI-text likelihood are recorded for editor triage.</p></div>
+              <div class="process-step"><h3 class="font-semibold">3. Reviewer matching</h3><p class="text-sm text-slate-600 mt-1">Expertise vectors and COI checks suggest the best reviewers.</p></div>
+              <div class="process-step"><h3 class="font-semibold">4. Decision</h3><p class="text-sm text-slate-600 mt-1">Editors make the final call with a full audit trail.</p></div>
+            </div>
+          </div>
+          <div class="card p-5">
+            <h2 class="font-display text-xl font-semibold">AI transparency</h2>
+            <p class="text-sm text-slate-600 mt-2 leading-relaxed">Assists are optional, logged, and designed to support human authors rather than replace editorial judgement.</p>
+          </div>
+        </aside>
+      </div>
     </div>
   </main>
   <%- include('../partials/footer') %>
@@ -65,6 +89,7 @@
     const $ = (id) => document.getElementById(id);
     const panel = $('aiPanel');
     const showPanel = (html) => { panel.classList.remove('hidden'); panel.innerHTML = html; };
+    const escapeHtml = (value) => String(value || '').replace(/[&<>"']/g, (ch) => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
     const callAI = async (path, body) => {
       const r = await fetch(path, { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify(body) });
       if (!r.ok) throw new Error('AI request failed');
@@ -72,32 +97,34 @@
     };
     $('polishBtn').addEventListener('click', async () => {
       const text = $('abstract').value.trim();
-      if (!text) return showPanel('<em>Write something first.</em>');
-      showPanel('<em>Polishing…</em>');
+      if (!text) return showPanel('<em>Write an abstract first.</em>');
+      showPanel('<em>Polishing the abstract...</em>');
       try {
         const out = await callAI('/api/ai/polish', { text });
-        const tips = (out.suggestions || []).map(s => '<li>' + s + '</li>').join('');
-        showPanel(`<div class="font-semibold">Suggested revision (review before applying):</div>
-                   <div class="bg-white p-3 rounded border border-indigo-200 text-slate-700">${out.revised || ''}</div>
+        const revised = escapeHtml(out.revised || '');
+        const tips = (out.suggestions || []).map((s) => '<li>' + escapeHtml(s) + '</li>').join('');
+        showPanel(`<div class="font-semibold">Suggested revision</div>
+                   <div class="bg-white p-3 rounded-md border border-indigo-200 text-slate-700">${revised}</div>
                    ${tips ? '<ul class="list-disc list-inside text-slate-700">' + tips + '</ul>' : ''}
-                   <button id="applyPolish" class="mt-1 text-xs bg-indigo-600 hover:bg-indigo-500 text-white px-3 py-1 rounded-md">Apply</button>`);
+                   <button id="applyPolish" type="button" class="mt-1 text-xs bg-indigo-600 hover:bg-indigo-500 text-white px-3 py-1 rounded-md">Apply revision</button>`);
         document.getElementById('applyPolish').onclick = () => { $('abstract').value = out.revised || $('abstract').value; };
       } catch (e) { showPanel('<em>Could not contact AI service.</em>'); }
     });
     $('titlesBtn').addEventListener('click', async () => {
       const abs = $('abstract').value.trim();
       if (!abs) return showPanel('<em>Write an abstract first.</em>');
-      showPanel('<em>Thinking…</em>');
+      showPanel('<em>Generating titles...</em>');
       try {
         const out = await callAI('/api/ai/titles', { abstract: abs });
-        showPanel('<div class="font-semibold">Suggested titles:</div><ul class="list-disc list-inside text-slate-700">' +
-          (out.titles || []).map(t => `<li><button class="text-left hover:underline" data-title="${t.replace(/"/g,'&quot;')}">${t}</button></li>`).join('') + '</ul>');
-        panel.querySelectorAll('button[data-title]').forEach(b => b.onclick = () => { $('title').value = b.dataset.title; });
+        showPanel('<div class="font-semibold">Suggested titles</div><ul class="list-disc list-inside text-slate-700">' +
+          (out.titles || []).map((t) => `<li><button type="button" class="text-left hover:underline" data-title="${escapeHtml(t)}">${escapeHtml(t)}</button></li>`).join('') + '</ul>');
+        panel.querySelectorAll('button[data-title]').forEach((b) => { b.onclick = () => { $('title').value = b.dataset.title; }; });
       } catch (e) { showPanel('<em>Could not contact AI service.</em>'); }
     });
     $('kwBtn').addEventListener('click', async () => {
       const abs = $('abstract').value.trim();
       if (!abs) return showPanel('<em>Write an abstract first.</em>');
+      showPanel('<em>Extracting keywords...</em>');
       try {
         const out = await callAI('/api/ai/keywords', { abstract: abs });
         $('keywords').value = (out.keywords || []).join(', ');

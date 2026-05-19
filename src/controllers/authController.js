@@ -38,7 +38,7 @@ async function login(req, res, next) {
 
 async function register(req, res, next) {
   try {
-    const { username, email, password, role, expertise } = req.body;
+    const { username, email, password, role, expertise, affiliation } = req.body;
     if (!username || !password || !role) {
       return res.redirect('/register?error=All required fields must be provided');
     }
@@ -52,7 +52,7 @@ async function register(req, res, next) {
     if (existing) {
       return res.redirect('/register?error=Username is already taken');
     }
-    await User.create({ username, email, password, role, expertise: expertise || '' });
+    await User.create({ username, email, password, role, expertise: expertise || '', affiliation: affiliation || '' });
     return res.redirect('/login?error=Account created - please sign in');
   } catch (err) {
     next(err);
