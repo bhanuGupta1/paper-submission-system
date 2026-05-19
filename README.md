@@ -98,6 +98,27 @@ docker compose up --build
 
 ---
 
+## Render deployment notes
+
+For hosted deployments behind Render's proxy, set these environment variables:
+
+```bash
+NODE_ENV=production
+SESSION_SECRET=<long-random-secret>
+TRUST_PROXY=1
+```
+
+If you use the SQLite build on Render, attach a persistent disk and point the app at it:
+
+```bash
+DB_PATH=/var/data/paper_submission.db
+UPLOAD_DIR=/var/data/uploads
+```
+
+Without `TRUST_PROXY=1`, production secure session cookies may not be accepted after login. Without a persistent disk, newly registered users can disappear after a Render restart because the default SQLite database lives on ephemeral storage.
+
+---
+
 ## 🔑 Switching to Claude
 
 ```bash

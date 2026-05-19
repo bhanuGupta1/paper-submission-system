@@ -55,6 +55,7 @@ describe('smoke', () => {
     const r1 = await agent.post('/register').type('form').send({
       username: 'testuser',
       password: 'Password123!',
+      confirmPassword: 'Password123!',
       role: 'author',
     });
     expect([200, 302]).toContain(r1.status);
@@ -75,6 +76,7 @@ describe('smoke', () => {
     await agent.post('/register').type('form').send({
       username: 'reviewer_meta',
       password: 'Password123!',
+      confirmPassword: 'Password123!',
       role: 'reviewer',
       affiliation: 'Auckland Research Lab',
       expertise: 'NLP, peer review',
@@ -85,11 +87,38 @@ describe('smoke', () => {
     expect(user.expertise).toBe('NLP, peer review');
   });
 
+  test('registration rejects mismatched password confirmation', async () => {
+    const agent = request.agent(app);
+    const r = await agent.post('/register').type('form').send({
+      username: 'mismatch_user',
+      password: 'Password123!',
+      confirmPassword: 'Password124!',
+      role: 'author',
+    });
+    expect(r.status).toBe(302);
+    expect(r.headers.location).toMatch(/Passwords%20do%20not%20match/);
+    await expect(User.findByUsername('mismatch_user')).resolves.toBeUndefined();
+  });
+
+  test('public registration cannot create privileged editor or admin accounts', async () => {
+    const agent = request.agent(app);
+    const r = await agent.post('/register').type('form').send({
+      username: 'public_editor',
+      password: 'Password123!',
+      confirmPassword: 'Password123!',
+      role: 'editor',
+    });
+    expect(r.status).toBe(302);
+    expect(r.headers.location).toMatch(/Invalid%20role/);
+    await expect(User.findByUsername('public_editor')).resolves.toBeUndefined();
+  });
+
   test('reviewer and editor dashboards render for their roles', async () => {
     const reviewer = request.agent(app);
     await reviewer.post('/register').type('form').send({
       username: 'reviewer_smoke',
       password: 'Password123!',
+      confirmPassword: 'Password123!',
       role: 'reviewer',
     });
     await reviewer.post('/login').type('form').send({
@@ -100,12 +129,8 @@ describe('smoke', () => {
     expect(reviewerPage.status).toBe(200);
     expect(reviewerPage.text).toMatch(/Review assignments/);
 
+    await User.create({ username: 'editor_smoke', password: 'Password123!', role: 'editor' });
     const editor = request.agent(app);
-    await editor.post('/register').type('form').send({
-      username: 'editor_smoke',
-      password: 'Password123!',
-      role: 'editor',
-    });
     await editor.post('/login').type('form').send({
       username: 'editor_smoke',
       password: 'Password123!',

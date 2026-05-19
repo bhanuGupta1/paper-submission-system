@@ -15,6 +15,7 @@ function createApp() {
   const app = express();
   app.set('view engine', 'ejs');
   app.set('views', path.join(__dirname, 'views'));
+  if (config.trustProxy) app.set('trust proxy', config.trustProxy);
 
   app.use(helmet({
     contentSecurityPolicy: {
@@ -32,11 +33,13 @@ function createApp() {
   app.use(express.static(path.join(__dirname, '..', 'public')));
 
   app.use(session({
+    name: config.session.name,
     store: new SQLiteStore({ db: 'sessions.db', dir: path.join(config.paths.root, 'data') }),
     secret: config.sessionSecret,
     resave: false,
     saveUninitialized: false,
-    cookie: { httpOnly: true, secure: config.env === 'production', sameSite: 'lax', maxAge: 1000 * 60 * 60 * 8 },
+    proxy: Boolean(config.trustProxy),
+    cookie: { httpOnly: true, secure: config.session.secureCookies, sameSite: 'lax', maxAge: 1000 * 60 * 60 * 8 },
   }));
 
   // Make user info + unread-notifications count available to every view.

@@ -34,13 +34,17 @@
             <input type="password" name="password" required minlength="8" class="mt-1 block w-full rounded-md border border-slate-300 px-3 py-2.5 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 focus:outline-none">
           </div>
           <div>
+            <label class="block text-sm font-semibold text-slate-700">Confirm password</label>
+            <input type="password" name="confirmPassword" required minlength="8" class="mt-1 block w-full rounded-md border border-slate-300 px-3 py-2.5 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 focus:outline-none">
+          </div>
+          <div>
             <label class="block text-sm font-semibold text-slate-700">Role</label>
             <select name="role" required class="mt-1 block w-full rounded-md border border-slate-300 px-3 py-2.5 bg-white focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 focus:outline-none">
               <option value="author">Author</option>
               <option value="reviewer">Reviewer</option>
-              <option value="editor">Editor</option>
               <option value="reader">Reader</option>
             </select>
+            <p class="text-xs text-slate-500 mt-1">Editor and admin accounts are provisioned by the platform owner.</p>
           </div>
           <div>
             <label class="block text-sm font-semibold text-slate-700">Affiliation <span class="text-slate-400 font-normal">(used for COI detection)</span></label>
