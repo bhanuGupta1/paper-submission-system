@@ -12,6 +12,8 @@ describe('config', () => {
     jest.resetModules();
     process.env.NODE_ENV = 'production';
     process.env.SESSION_SECRET = 'test-production-secret';
+    process.env.JWT_SECRET = 'test-jwt-secret';
+    process.env.JWT_REFRESH_SECRET = 'test-jwt-refresh-secret';
     delete process.env.TRUST_PROXY;
 
     const config = require('../../src/config');

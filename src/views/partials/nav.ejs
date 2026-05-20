@@ -1,7 +1,16 @@
+<!-- Global toast notification container -->
+<div id="toast-container" class="fixed top-4 right-4 z-[100] flex flex-col gap-2 pointer-events-none" aria-live="polite"></div>
+
+<!-- Session timeout warning -->
+<div id="session-warning" class="hidden fixed inset-x-0 top-0 z-[90] bg-amber-500 text-white text-sm px-4 py-2 flex items-center justify-between" role="alert">
+  <span>Your session will expire in <strong id="session-countdown">5:00</strong>. Please save your work.</span>
+  <button onclick="extendSession()" class="ml-4 underline font-medium hover:no-underline">Extend session</button>
+</div>
+
 <nav class="nav-shell sticky top-0 z-40 backdrop-blur">
   <div class="max-w-7xl mx-auto px-6 py-3 flex flex-wrap items-center justify-between gap-3">
-    <a href="/" class="flex items-center gap-3 text-slate-100">
-      <span class="brand-mark inline-flex h-8 w-8 items-center justify-center rounded-md text-sm font-black text-white">P</span>
+    <a href="/" class="flex items-center gap-3 text-slate-100" aria-label="PaperSub.AI home">
+      <span class="brand-mark inline-flex h-8 w-8 items-center justify-center rounded-md text-sm font-black text-white" aria-hidden="true">P</span>
       <span class="font-semibold tracking-tight text-base">PaperSub<span class="text-cyan-300">.AI</span></span>
     </a>
     <div class="flex flex-wrap items-center justify-end gap-1 text-sm">
@@ -10,6 +19,7 @@
         <% if (currentUser.role === 'author') { %>
           <a class="nav-link" href="/author">Papers</a>
           <a class="nav-link" href="/author/submit">Submit</a>
+          <a class="nav-link" href="/author/profile">Profile</a>
         <% } %>
         <% if (currentUser.role === 'reviewer') { %>
           <a class="nav-link" href="/reviewer">Reviews</a>
@@ -19,23 +29,98 @@
         <% } %>
         <% if (currentUser.role === 'admin') { %>
           <a class="nav-link" href="/admin">Admin</a>
+          <a class="nav-link" href="/admin/users">Users</a>
           <a class="nav-link" href="/editor">Editor</a>
         <% } %>
-        <a class="nav-link relative" href="/notifications">
+        <a class="nav-link relative" href="/notifications" aria-label="Inbox<%= unreadCount > 0 ? `, ${unreadCount} unread` : '' %>">
           Inbox
           <% if (unreadCount > 0) { %>
-            <span class="absolute -top-1 -right-1 inline-flex items-center justify-center min-w-[18px] h-[18px] px-1 rounded-full bg-rose-500 text-white text-[10px] font-bold"><%= unreadCount %></span>
+            <span class="absolute -top-1 -right-1 inline-flex items-center justify-center min-w-[18px] h-[18px] px-1 rounded-full bg-rose-500 text-white text-[10px] font-bold" aria-hidden="true"><%= unreadCount %></span>
           <% } %>
         </a>
-        <% if (currentUser.role === 'author') { %>
-          <a class="nav-link" href="/author/profile">Profile</a>
-        <% } %>
-        <span class="ml-2 text-xs text-slate-400 hidden sm:inline">@<%= currentUser.username %></span>
+        <button onclick="toggleDark()" class="nav-link" id="darkToggle" title="Toggle dark mode" aria-label="Toggle dark mode">
+          <span id="darkIcon">☾</span>
+        </button>
+        <span class="ml-2 text-xs text-slate-400 hidden sm:inline" aria-label="Logged in as <%= currentUser.username %>">@<%= currentUser.username %></span>
         <a class="nav-link text-rose-200 hover:text-rose-100 hover:bg-rose-500/10" href="/logout">Sign out</a>
       <% } else { %>
+        <button onclick="toggleDark()" class="nav-link" id="darkToggle" title="Toggle dark mode" aria-label="Toggle dark mode">
+          <span id="darkIcon">☾</span>
+        </button>
         <a class="nav-link" href="/login">Sign in</a>
         <a class="nav-cta ml-1 font-semibold hover:opacity-95" href="/register">Create account</a>
       <% } %>
     </div>
   </div>
 </nav>
+
+<script>
+// ── Toast system ──────────────────────────────────────────────────────────────
+window.showToast = function(message, type = 'info', duration = 4000) {
+  const container = document.getElementById('toast-container');
+  const colors = { success: 'bg-emerald-600', error: 'bg-red-600', warning: 'bg-amber-500', info: 'bg-slate-800' };
+  const icons = { success: '✓', error: '✕', warning: '⚠', info: 'ℹ' };
+  const toast = document.createElement('div');
+  toast.className = `pointer-events-auto flex items-center gap-2 px-4 py-3 rounded-lg shadow-lg text-white text-sm font-medium max-w-sm transition-all opacity-0 translate-y-2 ${colors[type] || colors.info}`;
+  toast.setAttribute('role', 'status');
+  toast.innerHTML = `<span class="shrink-0">${icons[type] || icons.info}</span><span>${message}</span>`;
+  container.appendChild(toast);
+  requestAnimationFrame(() => { toast.style.opacity = '1'; toast.style.transform = 'translateY(0)'; });
+  setTimeout(() => {
+    toast.style.opacity = '0';
+    toast.style.transform = 'translateY(-8px)';
+    setTimeout(() => toast.remove(), 300);
+  }, duration);
+};
+
+// ── Dark mode ─────────────────────────────────────────────────────────────────
+function applyDark(dark) {
+  document.documentElement.classList.toggle('dark', dark);
+  const icon = document.getElementById('darkIcon');
+  if (icon) icon.textContent = dark ? '☀' : '☾';
+}
+function toggleDark() {
+  const dark = !document.documentElement.classList.contains('dark');
+  localStorage.setItem('theme', dark ? 'dark' : 'light');
+  applyDark(dark);
+}
+(function() {
+  const saved = localStorage.getItem('theme');
+  const prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+  applyDark(saved === 'dark' || (!saved && prefersDark));
+})();
+
+// ── Session timeout warning (client-side, 8h max age with 5-min warning) ─────
+<% if (currentUser) { %>
+(function() {
+  const SESSION_MS = 8 * 60 * 60 * 1000;
+  const WARNING_MS = 5 * 60 * 1000;
+  const startedAt = parseInt(sessionStorage.getItem('sessionStart') || '0', 10) || Date.now();
+  if (!sessionStorage.getItem('sessionStart')) sessionStorage.setItem('sessionStart', String(startedAt));
+  const remaining = SESSION_MS - (Date.now() - startedAt);
+  const warningAt = remaining - WARNING_MS;
+  if (warningAt > 0) setTimeout(startWarning, warningAt);
+  else if (remaining > 0) startWarning();
+
+  function startWarning() {
+    const warn = document.getElementById('session-warning');
+    const countdown = document.getElementById('session-countdown');
+    if (!warn) return;
+    warn.classList.remove('hidden');
+    let secs = Math.max(0, Math.floor((SESSION_MS - (Date.now() - startedAt)) / 1000));
+    const iv = setInterval(() => {
+      secs = Math.max(0, secs - 1);
+      const m = Math.floor(secs / 60), s = secs % 60;
+      countdown.textContent = `${m}:${s.toString().padStart(2, '0')}`;
+      if (secs <= 0) clearInterval(iv);
+    }, 1000);
+  }
+  window.extendSession = function() {
+    sessionStorage.setItem('sessionStart', String(Date.now()));
+    fetch('/health').catch(() => {});
+    document.getElementById('session-warning').classList.add('hidden');
+    showToast('Session extended', 'success');
+  };
+})();
+<% } %>
+</script>

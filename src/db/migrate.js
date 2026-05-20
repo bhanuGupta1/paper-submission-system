@@ -139,6 +139,125 @@ async function migrate() {
     )
   `);
 
+  // v4: email verification, password reset, JWT refresh tokens
+  await run(`ALTER TABLE users ADD COLUMN email_verified INTEGER NOT NULL DEFAULT 0`).catch(() => {});
+  await run(`ALTER TABLE users ADD COLUMN is_active INTEGER NOT NULL DEFAULT 1`).catch(() => {});
+  await run(`ALTER TABLE users ADD COLUMN last_login TEXT`).catch(() => {});
+
+  await run(`
+    CREATE TABLE IF NOT EXISTS email_tokens (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      user_id INTEGER NOT NULL,
+      token TEXT NOT NULL UNIQUE,
+      kind TEXT NOT NULL CHECK(kind IN ('verify','reset')),
+      expires_at TEXT NOT NULL,
+      used_at TEXT,
+      created_at TEXT NOT NULL DEFAULT (datetime('now')),
+      FOREIGN KEY(user_id) REFERENCES users(id) ON DELETE CASCADE
+    )
+  `);
+
+  await run(`
+    CREATE TABLE IF NOT EXISTS refresh_tokens (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      user_id INTEGER NOT NULL,
+      token_hash TEXT NOT NULL UNIQUE,
+      family TEXT NOT NULL,
+      expires_at TEXT NOT NULL,
+      revoked_at TEXT,
+      created_at TEXT NOT NULL DEFAULT (datetime('now')),
+      FOREIGN KEY(user_id) REFERENCES users(id) ON DELETE CASCADE
+    )
+  `);
+
+  // v4: paper versioning / revision history
+  await run(`
+    CREATE TABLE IF NOT EXISTS paper_versions (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      paper_id INTEGER NOT NULL,
+      version_number INTEGER NOT NULL DEFAULT 1,
+      title TEXT NOT NULL,
+      abstract TEXT NOT NULL,
+      authors TEXT NOT NULL,
+      keywords TEXT,
+      file_path TEXT,
+      file_text TEXT,
+      change_note TEXT,
+      submitted_at TEXT NOT NULL DEFAULT (datetime('now')),
+      FOREIGN KEY(paper_id) REFERENCES papers(id) ON DELETE CASCADE
+    )
+  `);
+  await run(`ALTER TABLE papers ADD COLUMN current_version INTEGER NOT NULL DEFAULT 1`).catch(() => {});
+  await run(`ALTER TABLE papers ADD COLUMN revision_note TEXT`).catch(() => {});
+
+  // v4: review deadlines
+  await run(`ALTER TABLE reviews ADD COLUMN deadline TEXT`).catch(() => {});
+  await run(`ALTER TABLE reviews ADD COLUMN reminder_sent INTEGER NOT NULL DEFAULT 0`).catch(() => {});
+  await run(`ALTER TABLE reviews ADD COLUMN declined_at TEXT`).catch(() => {});
+  await run(`ALTER TABLE reviews ADD COLUMN decline_reason TEXT`).catch(() => {});
+
+  // v4: COI declarations by reviewers
+  await run(`
+    CREATE TABLE IF NOT EXISTS coi_declarations (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      paper_id INTEGER NOT NULL,
+      reviewer_id INTEGER NOT NULL,
+      reason TEXT NOT NULL,
+      declared_at TEXT NOT NULL DEFAULT (datetime('now')),
+      FOREIGN KEY(paper_id) REFERENCES papers(id) ON DELETE CASCADE,
+      FOREIGN KEY(reviewer_id) REFERENCES users(id) ON DELETE CASCADE,
+      UNIQUE(paper_id, reviewer_id)
+    )
+  `);
+
+  // v4: editor-reviewer discussion threads
+  await run(`
+    CREATE TABLE IF NOT EXISTS discussions (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      paper_id INTEGER NOT NULL,
+      author_id INTEGER NOT NULL,
+      parent_id INTEGER,
+      message TEXT NOT NULL,
+      created_at TEXT NOT NULL DEFAULT (datetime('now')),
+      FOREIGN KEY(paper_id) REFERENCES papers(id) ON DELETE CASCADE,
+      FOREIGN KEY(author_id) REFERENCES users(id) ON DELETE CASCADE,
+      FOREIGN KEY(parent_id) REFERENCES discussions(id) ON DELETE SET NULL
+    )
+  `);
+
+  // v4: decision letters
+  await run(`
+    CREATE TABLE IF NOT EXISTS decision_letters (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      paper_id INTEGER NOT NULL,
+      decision_id INTEGER NOT NULL,
+      editor_id INTEGER NOT NULL,
+      subject TEXT NOT NULL,
+      body TEXT NOT NULL,
+      sent_at TEXT,
+      created_at TEXT NOT NULL DEFAULT (datetime('now')),
+      FOREIGN KEY(paper_id) REFERENCES papers(id) ON DELETE CASCADE,
+      FOREIGN KEY(decision_id) REFERENCES decisions(id) ON DELETE CASCADE,
+      FOREIGN KEY(editor_id) REFERENCES users(id) ON DELETE CASCADE
+    )
+  `);
+
+  // v4: conference tracks
+  await run(`
+    CREATE TABLE IF NOT EXISTS tracks (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      name TEXT NOT NULL UNIQUE,
+      description TEXT,
+      submission_deadline TEXT,
+      review_deadline TEXT,
+      is_active INTEGER NOT NULL DEFAULT 1,
+      created_by INTEGER,
+      created_at TEXT NOT NULL DEFAULT (datetime('now')),
+      FOREIGN KEY(created_by) REFERENCES users(id) ON DELETE SET NULL
+    )
+  `);
+  await run(`ALTER TABLE papers ADD COLUMN track_id INTEGER REFERENCES tracks(id) ON DELETE SET NULL`).catch(() => {});
+
   await run('CREATE INDEX IF NOT EXISTS idx_papers_author ON papers(author_id)');
   await run('CREATE INDEX IF NOT EXISTS idx_papers_status ON papers(review_status)');
   await run('CREATE INDEX IF NOT EXISTS idx_reviews_paper ON reviews(paper_id)');
@@ -148,8 +267,13 @@ async function migrate() {
   await run('CREATE INDEX IF NOT EXISTS idx_notifications_user ON notifications(user_id, read_at)');
   await run('CREATE INDEX IF NOT EXISTS idx_decisions_paper ON decisions(paper_id)');
   await run('CREATE INDEX IF NOT EXISTS idx_audit_paper ON ai_audit(paper_id)');
+  await run('CREATE INDEX IF NOT EXISTS idx_email_tokens_user ON email_tokens(user_id, kind)');
+  await run('CREATE INDEX IF NOT EXISTS idx_refresh_tokens_user ON refresh_tokens(user_id)');
+  await run('CREATE INDEX IF NOT EXISTS idx_paper_versions_paper ON paper_versions(paper_id)');
+  await run('CREATE INDEX IF NOT EXISTS idx_discussions_paper ON discussions(paper_id)');
+  await run('CREATE INDEX IF NOT EXISTS idx_coi_declarations_paper ON coi_declarations(paper_id)');
 
-  logger.info('Migration complete');
+  logger.info('Migration complete (v4)');
 }
 
 if (require.main === module) {

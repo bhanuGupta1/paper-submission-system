@@ -14,18 +14,24 @@
         <h2 class="font-display text-3xl font-bold">Sign in</h2>
         <p class="text-sm text-slate-600 mt-1">Use your project account credentials.</p>
         <% if (error) { %>
-          <div class="mt-4 bg-amber-50 border border-amber-200 text-amber-800 text-sm p-3 rounded-md"><%= error %></div>
+          <div class="mt-4 bg-amber-50 border border-amber-200 text-amber-800 text-sm p-3 rounded-md" role="alert"><%= error %></div>
         <% } %>
-        <form action="/login" method="post" class="mt-6 space-y-4">
+        <% if (success) { %>
+          <div class="mt-4 bg-emerald-50 border border-emerald-200 text-emerald-800 text-sm p-3 rounded-md" role="alert"><%= success %></div>
+        <% } %>
+        <form action="/login" method="post" class="mt-6 space-y-4" autocomplete="on">
           <div>
-            <label class="block text-sm font-semibold text-slate-700">Username</label>
-            <input name="username" required autofocus class="mt-1 block w-full rounded-md border border-slate-300 px-3 py-2.5 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 focus:outline-none">
+            <label for="username" class="block text-sm font-semibold text-slate-700">Username</label>
+            <input id="username" name="username" required autofocus autocomplete="username" class="mt-1 block w-full rounded-md border border-slate-300 px-3 py-2.5 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 focus:outline-none">
           </div>
           <div>
-            <label class="block text-sm font-semibold text-slate-700">Password</label>
-            <input type="password" name="password" required class="mt-1 block w-full rounded-md border border-slate-300 px-3 py-2.5 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 focus:outline-none">
+            <div class="flex justify-between items-center">
+              <label for="password" class="block text-sm font-semibold text-slate-700">Password</label>
+              <a href="/auth/forgot-password" class="text-xs text-indigo-600 hover:text-indigo-500">Forgot password?</a>
+            </div>
+            <input id="password" type="password" name="password" required autocomplete="current-password" class="mt-1 block w-full rounded-md border border-slate-300 px-3 py-2.5 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 focus:outline-none">
           </div>
-          <button class="w-full bg-slate-950 hover:bg-slate-800 text-white py-2.5 rounded-md font-semibold transition">Sign in</button>
+          <button type="submit" class="w-full bg-slate-950 hover:bg-slate-800 text-white py-2.5 rounded-md font-semibold transition">Sign in</button>
         </form>
         <p class="text-sm mt-5 text-slate-600 text-center">No account? <a href="/register" class="text-indigo-600 hover:text-indigo-500 font-semibold link-line">Create one</a></p>
       </section>

@@ -57,4 +57,26 @@ function all(sql, params = []) {
   });
 }
 
-module.exports = { db, run, get, all };
+// Transaction helper: runs fn(db) inside BEGIN/COMMIT, rolls back on error.
+function withTransaction(fn) {
+  return new Promise((resolve, reject) => {
+    db.serialize(() => {
+      db.run('BEGIN EXCLUSIVE', (beginErr) => {
+        if (beginErr) return reject(beginErr);
+        Promise.resolve()
+          .then(() => fn({ run, get, all }))
+          .then((result) => {
+            db.run('COMMIT', (commitErr) => {
+              if (commitErr) return reject(commitErr);
+              resolve(result);
+            });
+          })
+          .catch((err) => {
+            db.run('ROLLBACK', () => reject(err));
+          });
+      });
+    });
+  });
+}
+
+module.exports = { db, run, get, all, withTransaction };

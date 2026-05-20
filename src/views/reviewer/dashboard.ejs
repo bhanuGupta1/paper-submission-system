@@ -13,18 +13,22 @@
         </div>
       </div>
 
-      <div class="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-8">
+      <div class="grid grid-cols-2 lg:grid-cols-5 gap-3 mb-8">
         <div class="metric-card">
           <div class="stat-num text-3xl"><%= stats.total %></div>
           <div class="metric-label">Assigned</div>
         </div>
         <div class="metric-card">
           <div class="stat-num text-3xl text-amber-600"><%= stats.pending %></div>
-          <div class="metric-label">Open</div>
+          <div class="metric-label">Pending</div>
         </div>
         <div class="metric-card">
           <div class="stat-num text-3xl text-emerald-600"><%= stats.completed %></div>
           <div class="metric-label">Completed</div>
+        </div>
+        <div class="metric-card">
+          <div class="stat-num text-3xl <%= stats.overdue > 0 ? 'text-red-600' : 'text-slate-400' %>"><%= stats.overdue %></div>
+          <div class="metric-label">Overdue</div>
         </div>
         <div class="metric-card">
           <div class="stat-num text-3xl text-indigo-600"><%= stats.completionRate %>%</div>
@@ -32,7 +36,7 @@
         </div>
       </div>
 
-      <% if (papers.length === 0) { %>
+      <% if (assignments.length === 0) { %>
         <div class="card p-12 text-center">
           <p class="eyebrow text-indigo-700">Clear desk</p>
           <h2 class="font-display text-3xl font-bold mt-2">No active review assignments.</h2>
@@ -40,34 +44,48 @@
         </div>
       <% } else { %>
         <div class="review-grid">
-          <% papers.forEach(p => { %>
+          <% assignments.filter(a => !a.declined_at).forEach(p => { %>
             <article class="publication-card p-5">
               <div class="flex items-start justify-between gap-3">
-                <div>
+                <div class="flex-1 min-w-0">
                   <p class="text-xs uppercase tracking-wider text-slate-500 font-bold">Assigned <%= new Date(p.assigned_at).toLocaleDateString() %></p>
-                  <h2 class="font-display text-xl font-bold mt-2 leading-snug"><%= p.title %></h2>
+                  <h2 class="font-display text-xl font-bold mt-2 leading-snug"><%= p.paper_title || p.title %></h2>
                 </div>
                 <% if (p.recommendation) { %>
-                  <span class="inline-flex rounded-full border border-emerald-200 bg-emerald-50 px-2.5 py-0.5 text-xs font-semibold text-emerald-800">Done</span>
+                  <span class="shrink-0 inline-flex rounded-full border border-emerald-200 bg-emerald-50 px-2.5 py-0.5 text-xs font-semibold text-emerald-800">Done</span>
+                <% } else if (p.deadline && new Date(p.deadline) < new Date()) { %>
+                  <span class="shrink-0 inline-flex rounded-full border border-red-200 bg-red-50 px-2.5 py-0.5 text-xs font-semibold text-red-700">Overdue</span>
                 <% } else { %>
-                  <span class="inline-flex rounded-full border border-amber-200 bg-amber-50 px-2.5 py-0.5 text-xs font-semibold text-amber-800">Open</span>
+                  <span class="shrink-0 inline-flex rounded-full border border-amber-200 bg-amber-50 px-2.5 py-0.5 text-xs font-semibold text-amber-800">Pending</span>
                 <% } %>
               </div>
-              <p class="text-sm text-slate-600 mt-3 line-clamp-3 leading-relaxed"><%= p.abstract %></p>
+              <% if (p.abstract) { %>
+                <p class="text-sm text-slate-600 mt-3 line-clamp-3 leading-relaxed"><%= p.abstract %></p>
+              <% } %>
               <div class="mt-4 flex flex-wrap gap-2 text-xs text-slate-600">
                 <% if (p.recommendation) { %>
-                  <span class="score-chip">Recommendation <strong><%= p.recommendation.replace('_', ' ') %></strong></span>
+                  <span class="score-chip">Rec: <strong><%= p.recommendation.replace('_', ' ') %></strong></span>
                 <% } else { %>
-                  <span class="score-chip">Recommendation <strong>pending</strong></span>
+                  <span class="score-chip">Rec: <strong>pending</strong></span>
+                <% } %>
+                <% if (p.deadline) { %>
+                  <span class="score-chip">Due: <strong><%= new Date(p.deadline).toLocaleDateString() %></strong></span>
                 <% } %>
                 <% if (p.ai_assisted) { %>
                   <span class="score-chip">AI draft used</span>
                 <% } %>
               </div>
-              <div class="mt-5 flex justify-end">
-                <a class="bg-slate-950 hover:bg-slate-800 text-white text-sm px-3 py-2 rounded-md font-semibold transition" href="/reviewer/papers/<%= p.id %>">
-                  <%= p.recommendation ? 'Edit review' : 'Start review' %>
+              <div class="mt-5 flex justify-between items-center gap-2">
+                <a class="bg-slate-950 hover:bg-slate-800 text-white text-sm px-3 py-2 rounded-md font-semibold transition" href="/reviewer/papers/<%= p.paper_id %>">
+                  <%= p.recommendation ? 'View review' : 'Start review' %>
                 </a>
+                <% if (!p.recommendation) { %>
+                  <button
+                    onclick="declareCoi(<%= p.paper_id %>, '<%= (p.paper_title || '').replace(/'/g, '\\\'') %>')"
+                    class="text-xs text-amber-600 hover:text-amber-700 font-medium px-2 py-1.5 border border-amber-200 rounded-md">
+                    Declare COI
+                  </button>
+                <% } %>
               </div>
             </article>
           <% }) %>
@@ -76,5 +94,43 @@
     </div>
   </main>
   <%- include('../partials/footer') %>
+
+  <!-- COI Declaration Modal -->
+  <div id="coiModal" class="hidden fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+    <div class="bg-white dark:bg-slate-800 rounded-xl shadow-xl w-full max-w-md p-6">
+      <h2 class="font-semibold text-lg mb-1">Declare Conflict of Interest</h2>
+      <p id="coiPaperTitle" class="text-sm text-slate-500 mb-4"></p>
+      <textarea id="coiReason" rows="3" placeholder="Describe the nature of the conflict (e.g. co-author, shared institution, personal relationship)..."
+        class="w-full border border-slate-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:border-amber-500 mb-4"></textarea>
+      <div class="flex gap-3">
+        <button onclick="submitCoi()" class="bg-amber-500 hover:bg-amber-600 text-white px-4 py-2 rounded-md text-sm font-medium">Declare & Decline</button>
+        <button onclick="document.getElementById('coiModal').classList.add('hidden')" class="px-4 py-2 border border-slate-300 rounded-md text-sm text-slate-700">Cancel</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    let _coiPaperId = null;
+    function declareCoi(paperId, title) {
+      _coiPaperId = paperId;
+      document.getElementById('coiPaperTitle').textContent = title;
+      document.getElementById('coiReason').value = '';
+      document.getElementById('coiModal').classList.remove('hidden');
+    }
+    async function submitCoi() {
+      const reason = document.getElementById('coiReason').value.trim();
+      if (!reason) { showToast('Please describe the conflict', 'warning'); return; }
+      try {
+        const r = await fetch(`/reviewer/papers/${_coiPaperId}/coi`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ reason }),
+        });
+        const data = await r.json();
+        if (r.ok) { showToast('COI declared and assignment declined', 'success'); document.getElementById('coiModal').classList.add('hidden'); setTimeout(() => location.reload(), 1200); }
+        else showToast(data.error || 'Error', 'error');
+      } catch { showToast('Network error', 'error'); }
+    }
+  </script>
 </body>
 </html>

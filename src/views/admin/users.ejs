@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="en">
+<head><%- include('../partials/head') %></head>
+<body class="min-h-screen bg-slate-50 text-slate-900 flex flex-col">
+  <%- include('../partials/nav') %>
+  <main class="flex-1">
+    <div class="max-w-7xl mx-auto px-6 py-10">
+      <div class="flex items-center justify-between mb-8">
+        <div>
+          <a href="/admin" class="text-indigo-600 hover:text-indigo-500 text-sm">← Admin dashboard</a>
+          <h1 class="font-display text-3xl font-bold mt-1">User Management</h1>
+          <p class="text-slate-500 mt-1"><%= filter.total %> user<%= filter.total !== 1 ? 's' : '' %></p>
+        </div>
+      </div>
+
+      <!-- Filters -->
+      <form method="get" class="flex flex-wrap gap-3 mb-6">
+        <input name="q" value="<%= q || '' %>" placeholder="Search username or email…"
+          class="px-3 py-2 border border-slate-300 rounded-md text-sm focus:outline-none focus:border-indigo-500 w-60">
+        <select name="role" class="px-3 py-2 border border-slate-300 rounded-md text-sm focus:outline-none focus:border-indigo-500">
+          <option value="">All roles</option>
+          <% roles.forEach(r => { %>
+            <option value="<%= r %>" <%= role === r ? 'selected' : '' %>><%= r %></option>
+          <% }) %>
+        </select>
+        <button type="submit" class="px-4 py-2 bg-indigo-600 text-white rounded-md text-sm font-medium hover:bg-indigo-700">Filter</button>
+        <a href="/admin/users" class="px-4 py-2 border border-slate-300 rounded-md text-sm text-slate-700 hover:bg-slate-50">Clear</a>
+      </form>
+
+      <div id="toast" class="hidden fixed top-4 right-4 z-50 px-4 py-3 rounded-lg shadow-lg text-sm font-medium transition-all"></div>
+
+      <!-- Table -->
+      <div class="card overflow-hidden">
+        <div class="overflow-x-auto">
+          <table class="w-full text-sm">
+            <thead class="bg-slate-50 border-b border-slate-200">
+              <tr>
+                <th class="text-left px-4 py-3 font-semibold text-slate-600">User</th>
+                <th class="text-left px-4 py-3 font-semibold text-slate-600">Email</th>
+                <th class="text-left px-4 py-3 font-semibold text-slate-600">Role</th>
+                <th class="text-left px-4 py-3 font-semibold text-slate-600">Status</th>
+                <th class="text-left px-4 py-3 font-semibold text-slate-600">Joined</th>
+                <th class="text-left px-4 py-3 font-semibold text-slate-600">Actions</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-slate-100">
+              <% users.forEach(u => { %>
+              <tr class="hover:bg-slate-50 transition" data-user-id="<%= u.id %>">
+                <td class="px-4 py-3">
+                  <div class="font-medium text-slate-900"><%= u.username %></div>
+                  <% if (u.affiliation) { %><div class="text-xs text-slate-500"><%= u.affiliation %></div><% } %>
+                </td>
+                <td class="px-4 py-3 text-slate-600"><%= u.email || '—' %></td>
+                <td class="px-4 py-3">
+                  <select class="role-select text-xs border border-slate-300 rounded px-2 py-1" data-user-id="<%= u.id %>">
+                    <% roles.forEach(r => { %>
+                      <option value="<%= r %>" <%= u.role === r ? 'selected' : '' %>><%= r %></option>
+                    <% }) %>
+                  </select>
+                </td>
+                <td class="px-4 py-3">
+                  <% if (u.is_active) { %>
+                    <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-emerald-100 text-emerald-700">Active</span>
+                  <% } else { %>
+                    <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-slate-100 text-slate-600">Inactive</span>
+                  <% } %>
+                  <% if (u.email_verified) { %>
+                    <span class="ml-1 inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-700">Verified</span>
+                  <% } %>
+                </td>
+                <td class="px-4 py-3 text-slate-500 text-xs"><%= new Date(u.created_at).toLocaleDateString() %></td>
+                <td class="px-4 py-3">
+                  <div class="flex gap-2">
+                    <% if (u.is_active) { %>
+                      <button onclick="userAction(<%= u.id %>, 'deactivate')" class="text-xs text-red-600 hover:text-red-700 font-medium">Deactivate</button>
+                    <% } else { %>
+                      <button onclick="userAction(<%= u.id %>, 'activate')" class="text-xs text-emerald-600 hover:text-emerald-700 font-medium">Activate</button>
+                    <% } %>
+                  </div>
+                </td>
+              </tr>
+              <% }) %>
+              <% if (!users.length) { %>
+              <tr><td colspan="6" class="px-4 py-12 text-center text-slate-500">No users found.</td></tr>
+              <% } %>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Pagination -->
+      <% if (filter.pageCount > 1) { %>
+      <div class="flex justify-center gap-2 mt-6">
+        <% for (let p = 1; p <= filter.pageCount; p++) { %>
+          <a href="?page=<%= p %><%= q ? `&q=${encodeURIComponent(q)}` : '' %><%= role ? `&role=${role}` : '' %>"
+             class="px-3 py-1.5 rounded-md text-sm <%= p === filter.page ? 'bg-indigo-600 text-white' : 'border border-slate-300 text-slate-700 hover:bg-slate-50' %>">
+            <%= p %>
+          </a>
+        <% } %>
+      </div>
+      <% } %>
+    </div>
+  </main>
+  <%- include('../partials/footer') %>
+  <script>
+    function showToast(msg, ok) {
+      const t = document.getElementById('toast');
+      t.textContent = msg;
+      t.className = `fixed top-4 right-4 z-50 px-4 py-3 rounded-lg shadow-lg text-sm font-medium ${ok ? 'bg-emerald-600 text-white' : 'bg-red-600 text-white'}`;
+      setTimeout(() => { t.className = 'hidden'; }, 3000);
+    }
+
+    async function userAction(userId, action) {
+      if (!confirm(`${action.charAt(0).toUpperCase() + action.slice(1)} this user?`)) return;
+      try {
+        const r = await fetch('/admin/users/update', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+          body: JSON.stringify({ userId, action }),
+        });
+        const data = await r.json();
+        if (r.ok) { showToast('Done', true); setTimeout(() => location.reload(), 1000); }
+        else showToast(data.error || 'Error', false);
+      } catch { showToast('Network error', false); }
+    }
+
+    // Role change
+    document.querySelectorAll('.role-select').forEach(sel => {
+      sel.addEventListener('change', async () => {
+        const userId = sel.dataset.userId;
+        const role = sel.value;
+        if (!confirm(`Change role to "${role}"?`)) { sel.value = sel.dataset.original || sel.value; return; }
+        try {
+          const r = await fetch('/admin/users/update', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+            body: JSON.stringify({ userId, action: 'set-role', role }),
+          });
+          const data = await r.json();
+          if (r.ok) showToast('Role updated', true);
+          else showToast(data.error || 'Error', false);
+        } catch { showToast('Network error', false); }
+      });
+      sel.dataset.original = sel.value;
+    });
+  </script>
+</body>
+</html>

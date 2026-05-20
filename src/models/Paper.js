@@ -2,12 +2,18 @@
 
 const { run, get, all } = require('../db/connection');
 
-function create({ authorId, title, authors, abstract, keywords, filePath, fileText, tags }) {
-  return run(
-    `INSERT INTO papers (author_id, title, authors, abstract, keywords, file_path, file_text, tags)
-     VALUES (?,?,?,?,?,?,?,?)`,
-    [authorId, title, authors, abstract, keywords || null, filePath || null, fileText || null, tags || null]
+async function create({ authorId, title, authors, abstract, keywords, filePath, fileText, tags, trackId }) {
+  const result = await run(
+    'INSERT INTO papers (author_id, title, authors, abstract, keywords, file_path, file_text, tags, track_id) VALUES (?,?,?,?,?,?,?,?,?)',
+    [authorId, title, authors, abstract, keywords || null, filePath || null, fileText || null, tags || null, trackId || null]
   );
+  const paper = await findById(result.lastID);
+  // snapshot version 1
+  await run(
+    'INSERT INTO paper_versions (paper_id, version_number, title, abstract, authors, keywords, file_path, file_text) VALUES (?,1,?,?,?,?,?,?)',
+    [paper.id, title, abstract, authors, keywords || null, filePath || null, fileText || null]
+  );
+  return paper;
 }
 
 function findById(id) {
@@ -102,7 +108,37 @@ function authorStats(authorId) {
   );
 }
 
+async function submitRevision({ paperId, title, abstract, authors, keywords, filePath, fileText, changeNote }) {
+  const paper = await findById(paperId);
+  if (!paper) throw new Error('Paper not found');
+  const newVersion = (paper.current_version || 1) + 1;
+  await run(
+    'INSERT INTO paper_versions (paper_id, version_number, title, abstract, authors, keywords, file_path, file_text, change_note) VALUES (?,?,?,?,?,?,?,?,?)',
+    [paperId, newVersion, title, abstract, authors, keywords || null, filePath || null, fileText || null, changeNote || null]
+  );
+  await run(
+    'UPDATE papers SET title=?, abstract=?, authors=?, keywords=?, file_path=COALESCE(?,file_path), file_text=COALESCE(?,file_text), current_version=?, review_status=\'pending\', revision_note=? WHERE id=?',
+    [title, abstract, authors, keywords || null, filePath || null, fileText || null, newVersion, changeNote || null, paperId]
+  );
+  return findById(paperId);
+}
+
+function versionsForPaper(paperId) {
+  return all('SELECT * FROM paper_versions WHERE paper_id = ? ORDER BY version_number DESC', [paperId]);
+}
+
+function listAccepted({ limit = 50, offset = 0, q = null } = {}) {
+  const params = [];
+  let extra = '';
+  if (q) { extra = 'AND (p.title LIKE ? OR p.abstract LIKE ? OR p.keywords LIKE ?)'; params.push(`%${q}%`, `%${q}%`, `%${q}%`); }
+  return all(
+    `SELECT p.id, p.title, p.abstract, p.keywords, p.submission_date FROM papers p WHERE p.review_status='accepted' ${extra} ORDER BY p.submission_date DESC LIMIT ? OFFSET ?`,
+    [...params, limit, offset]
+  );
+}
+
 module.exports = {
-  create, findById, listByAuthor, listAll, countAll, listForReviewer,
+  create, findById, listByAuthor, listAll, countAll, listForReviewer, listAccepted,
   updateAiMetadata, updateStatus, updateTags, recordDecision, decisionsForPaper, authorStats,
+  submitRevision, versionsForPaper,
 };

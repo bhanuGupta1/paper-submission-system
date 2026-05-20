@@ -1,7 +1,6 @@
 'use strict';
 
 const express = require('express');
-const path = require('path');
 const fs = require('fs');
 const multer = require('multer');
 const { requireRole } = require('../middleware/auth');
@@ -24,7 +23,7 @@ const upload = multer({
   limits: { fileSize: config.uploads.maxBytes },
   fileFilter(req, file, cb) {
     if (config.uploads.allowedMime.includes(file.mimetype)) return cb(null, true);
-    cb(new Error(`File type not allowed: ${file.mimetype}`));
+    cb(new Error(`File type not allowed. Please upload PDF, DOCX, or TXT.`));
   },
 });
 
@@ -33,18 +32,10 @@ router.get('/', ctl.dashboard);
 router.get('/submit', ctl.showSubmit);
 router.post('/submit', upload.single('paperFile'), ctl.submit);
 router.get('/papers/:id', ctl.paperDetail);
+router.get('/papers/:id/revise', ctl.showRevise);
+router.post('/papers/:id/revise', upload.single('paperFile'), ctl.submitRevision);
+router.get('/papers/:id/download', ctl.downloadPaper);
 router.get('/profile', ctl.profile);
 router.post('/profile', ctl.updateProfile);
-
-router.get('/papers/:id/download', async (req, res, next) => {
-  try {
-    const Paper = require('../models/Paper');
-    const paper = await Paper.findById(req.params.id);
-    if (!paper || paper.author_id !== req.user.id || !paper.file_path) {
-      return res.status(404).render('error', { title: 'Not Found', message: 'File not found.' });
-    }
-    res.download(paper.file_path, path.basename(paper.file_path));
-  } catch (err) { next(err); }
-});
 
 module.exports = router;

@@ -4,11 +4,22 @@ const path = require('path');
 const Paper = require('../models/Paper');
 const Review = require('../models/Review');
 const User = require('../models/User');
+const Discussion = require('../models/Discussion');
+const DecisionLetter = require('../models/DecisionLetter');
 const reviewerMatcher = require('../services/reviewerMatcher');
 const coi = require('../services/conflictOfInterest');
 const analytics = require('../services/operationsAnalytics');
 const N = require('../services/notifications');
+const emailService = require('../services/email');
 const { all } = require('../db/connection');
+const logger = require('../utils/logger');
+
+// Strip author identity for double-blind — editors see it, reviewers don't
+function blindPaper(paper, { showAuthor = true } = {}) {
+  if (showAuthor) return paper;
+  const { author_id, author_username, authors, ...rest } = paper;
+  return { ...rest, author_username: '[Anonymous]', authors: '[Blinded for review]' };
+}
 
 async function dashboard(req, res, next) {
   try {
@@ -20,16 +31,14 @@ async function dashboard(req, res, next) {
     const total = await Paper.countAll({ status, q });
     const papers = await Paper.listAll({ limit: pageSize, offset, status, q });
     const reviewers = await User.listReviewers();
-    const ops = {
-      statusBreakdown: await analytics.getStatusBreakdown(),
-      reviewFunnel: await analytics.getReviewFunnel(),
-    };
+    const ops = { statusBreakdown: await analytics.getStatusBreakdown(), reviewFunnel: await analytics.getReviewFunnel() };
 
     const enriched = await Promise.all(papers.map(async (p) => {
       const ranked = await reviewerMatcher.rankReviewers(p, { excludeUserId: p.author_id, topK: 3 });
       const annotatedAll = await coi.annotate(p, reviewers);
       const assigned = await Review.listByPaper(p.id);
-      return { ...p, suggestions: ranked, annotatedReviewers: annotatedAll, assigned };
+      const coiDeclarations = await Review.coiForPaper(p.id);
+      return { ...p, suggestions: ranked, annotatedReviewers: annotatedAll, assigned, coiDeclarations };
     }));
 
     res.render('editor/dashboard', {
@@ -42,42 +51,63 @@ async function dashboard(req, res, next) {
 
 async function assignReviewer(req, res, next) {
   try {
-    const { paperId, reviewerId } = req.body;
+    const { paperId, reviewerId, deadline } = req.body;
     if (!paperId || !reviewerId) return res.status(400).render('error', { title: 'Bad request', message: 'paperId and reviewerId required.' });
 
-    const paper = await Paper.findById(paperId);
-    const reviewer = await User.findById(reviewerId);
+    const [paper, reviewer] = await Promise.all([Paper.findById(paperId), User.findById(reviewerId)]);
     if (!paper || !reviewer) return res.status(404).render('error', { title: 'Not Found', message: 'Paper or reviewer not found.' });
 
-    // Show conflict warning if editor explicitly overrides COI (we don't block, just note).
     const cohk = await coi.check(paper, reviewer);
-
     const existing = await Review.findByPaperReviewer(paperId, reviewerId);
-    if (!existing) await Review.assign(paperId, reviewerId);
+    if (!existing) await Review.assign(paperId, reviewerId, deadline || null);
+    if (deadline && existing) await Review.setDeadline(existing.id, deadline);
     await Paper.updateStatus(paperId, 'under_review');
 
-    // Notify reviewer.
     await N.notify(reviewer.id, {
       kind: 'assignment',
       title: `New review assignment: ${paper.title}`,
-      body: cohk.hasConflict ? `Editor flagged a potential conflict (${cohk.signals.map((s) => s.label).join('; ')}). Please review and decline if appropriate.` : 'A new manuscript has been assigned to you.',
+      body: cohk.hasConflict
+        ? `Editor flagged a potential conflict (${cohk.signals.map((s) => s.label).join('; ')}). Please review and decline if appropriate.`
+        : `A new manuscript has been assigned to you${deadline ? `. Review due: ${deadline}` : ''}.`,
       link: `/reviewer/papers/${paperId}`,
     });
-    // Notify author the paper is under review.
-    await N.notify(paper.author_id, {
-      kind: 'status',
-      title: `Your paper is under review`,
-      body: `"${paper.title}" was assigned to ${reviewer.username}.`,
-      link: `/author/papers/${paperId}`,
-    });
+    await N.notify(paper.author_id, { kind: 'status', title: 'Your paper is under review', body: `"${paper.title}" was assigned to a reviewer.`, link: `/author/papers/${paperId}` });
 
     res.redirect('/editor');
   } catch (err) { next(err); }
 }
 
+async function bulkAssign(req, res, next) {
+  try {
+    let paperIds = req.body.paperIds;
+    const { reviewerId, deadline } = req.body;
+    if (!paperIds || !reviewerId) return res.status(400).json({ error: 'paperIds and reviewerId required' });
+    if (!Array.isArray(paperIds)) paperIds = [paperIds];
+
+    const reviewer = await User.findById(reviewerId);
+    if (!reviewer) return res.status(404).json({ error: 'Reviewer not found' });
+
+    const results = [];
+    for (const paperId of paperIds) {
+      const paper = await Paper.findById(paperId);
+      if (!paper) { results.push({ paperId, status: 'not_found' }); continue; }
+      const existing = await Review.findByPaperReviewer(paperId, reviewerId);
+      if (!existing) {
+        await Review.assign(paperId, reviewerId, deadline || null);
+        await Paper.updateStatus(paperId, 'under_review');
+        await N.notify(reviewer.id, { kind: 'assignment', title: `New review assignment: ${paper.title}`, body: 'A new manuscript has been assigned to you.', link: `/reviewer/papers/${paperId}` });
+        results.push({ paperId, status: 'assigned' });
+      } else {
+        results.push({ paperId, status: 'already_assigned' });
+      }
+    }
+    res.json({ ok: true, results });
+  } catch (err) { next(err); }
+}
+
 async function decide(req, res, next) {
   try {
-    const { paperId, decision, note } = req.body;
+    const { paperId, decision, note, generateLetter } = req.body;
     const allowed = ['accepted', 'rejected', 'revisions'];
     if (!allowed.includes(decision)) return res.status(400).render('error', { title: 'Bad request', message: 'Invalid decision.' });
 
@@ -85,15 +115,60 @@ async function decide(req, res, next) {
     if (!paper) return res.status(404).render('error', { title: 'Not Found', message: 'Paper not found.' });
 
     await Paper.updateStatus(paperId, decision);
-    await Paper.recordDecision({ paperId, editorId: req.user.id, fromStatus: paper.review_status, toStatus: decision, note });
+    const decisionRow = await Paper.recordDecision({ paperId, editorId: req.user.id, fromStatus: paper.review_status, toStatus: decision, note });
 
-    await N.notify(paper.author_id, {
-      kind: 'decision',
-      title: `Decision on "${paper.title}": ${decision.toUpperCase()}`,
-      body: note || 'See your dashboard for details.',
-      link: `/author/papers/${paperId}`,
-    });
+    // Generate decision letter if requested
+    if (generateLetter) {
+      const reviews = await Review.listByPaper(paperId);
+      const letterBody = buildDecisionLetter({ paper, decision, note, reviews, editorUsername: req.user.username });
+      await DecisionLetter.create({ paperId, decisionId: decisionRow.lastID, editorId: req.user.id, subject: `Decision on "${paper.title}"`, body: letterBody });
+    }
+
+    const author = await User.findById(paper.author_id);
+    await N.notify(paper.author_id, { kind: 'decision', title: `Decision on "${paper.title}": ${decision.toUpperCase()}`, body: note || 'See your dashboard for details.', link: `/author/papers/${paperId}` });
+
+    if (author && author.email && emailService) {
+      const { subject, html, text } = emailService.submissionStatusEmail(author.username, paper.title, decision, `/author/papers/${paperId}`);
+      emailService.send({ to: author.email, subject, html, text }).catch((e) => logger.warn({ e }, 'Decision email failed'));
+    }
+
     res.redirect('/editor');
+  } catch (err) { next(err); }
+}
+
+function buildDecisionLetter({ paper, decision, note, reviews, editorUsername }) {
+  const scores = reviews.filter((r) => r.review_date).map((r) => ({
+    novelty: r.novelty_score, clarity: r.clarity_score, significance: r.significance_score,
+  }));
+  const avg = (arr) => arr.length ? (arr.reduce((a, b) => a + b, 0) / arr.length).toFixed(1) : 'N/A';
+  const decisionText = { accepted: 'ACCEPTED', rejected: 'REJECTED', revisions: 'REVISIONS REQUIRED' }[decision] || decision;
+
+  return `Dear Author,
+
+We have completed the review of your manuscript "${paper.title}".
+
+Decision: ${decisionText}
+
+${note ? `Editor's note:\n${note}\n` : ''}
+${reviews.length > 0 ? `Review summary (${reviews.length} reviewer${reviews.length > 1 ? 's' : ''}):
+- Average novelty score: ${avg(scores.map((s) => s.novelty).filter(Boolean))}
+- Average clarity score: ${avg(scores.map((s) => s.clarity).filter(Boolean))}
+- Average significance score: ${avg(scores.map((s) => s.significance).filter(Boolean))}
+` : ''}
+${decision === 'revisions' ? 'Please address the reviewers\' comments in a revised submission. Log in to your author dashboard to upload your revision.\n' : ''}
+${decision === 'accepted' ? 'Congratulations! Your paper has been accepted for publication.\n' : ''}
+
+Sincerely,
+${editorUsername}
+Editorial Team`;
+}
+
+async function viewDecisionLetter(req, res, next) {
+  try {
+    const paper = await Paper.findById(req.params.id);
+    if (!paper) return res.status(404).render('error', { title: 'Not Found', message: 'Paper not found.' });
+    const letters = await DecisionLetter.findByPaper(paper.id);
+    res.render('editor/decision-letter', { title: `Decision letters | ${paper.title}`, paper, letters });
   } catch (err) { next(err); }
 }
 
@@ -116,18 +191,49 @@ async function auditTrail(req, res, next) {
   try {
     const paper = await Paper.findById(req.params.id);
     if (!paper) return res.status(404).render('error', { title: 'Not Found', message: 'Paper not found.' });
-
-    const reviews = await Review.listByPaper(paper.id);
-    const decisions = await Paper.decisionsForPaper(paper.id);
-    const aiCalls = await all(
-      `SELECT ai_audit.*, users.username FROM ai_audit
-       LEFT JOIN users ON users.id = ai_audit.user_id
-       WHERE ai_audit.paper_id = ? OR (ai_audit.paper_id IS NULL AND ai_audit.user_id = ?)
-       ORDER BY ai_audit.created_at DESC LIMIT 100`,
-      [paper.id, paper.author_id]
-    );
-    res.render('editor/audit', { title: `Audit | ${paper.title}`, paper, reviews, decisions, aiCalls });
+    const [reviews, decisions, aiCalls, versions, coiDeclarations] = await Promise.all([
+      Review.listByPaper(paper.id),
+      Paper.decisionsForPaper(paper.id),
+      all('SELECT ai_audit.*, users.username FROM ai_audit LEFT JOIN users ON users.id = ai_audit.user_id WHERE ai_audit.paper_id = ? OR (ai_audit.paper_id IS NULL AND ai_audit.user_id = ?) ORDER BY ai_audit.created_at DESC LIMIT 100', [paper.id, paper.author_id]),
+      Paper.versionsForPaper(paper.id),
+      Review.coiForPaper(paper.id),
+    ]);
+    res.render('editor/audit', { title: `Audit | ${paper.title}`, paper, reviews, decisions, aiCalls, versions, coiDeclarations });
   } catch (err) { next(err); }
 }
 
-module.exports = { dashboard, assignReviewer, decide, updateTags, downloadManuscript, auditTrail };
+// ── Discussion threads ────────────────────────────────────────────────────────
+
+async function getDiscussion(req, res, next) {
+  try {
+    const paper = await Paper.findById(req.params.id);
+    if (!paper) return res.status(404).json({ error: 'Not found' });
+    const messages = await Discussion.listByPaper(paper.id);
+    res.json({ messages });
+  } catch (err) { next(err); }
+}
+
+async function postDiscussion(req, res, next) {
+  try {
+    const paper = await Paper.findById(req.params.id);
+    if (!paper) return res.status(404).json({ error: 'Not found' });
+    const message = (req.body.message || '').trim();
+    if (!message) return res.status(400).json({ error: 'Message cannot be empty' });
+    if (message.length > 2000) return res.status(400).json({ error: 'Message too long (max 2000 characters)' });
+    await Discussion.post({ paperId: paper.id, authorId: req.user.id, message, parentId: req.body.parentId || null });
+    // Notify other editors/reviewers assigned to this paper
+    const assigned = await Review.listByPaper(paper.id);
+    for (const r of assigned) {
+      if (r.reviewer_id !== req.user.id) {
+        await N.notify(r.reviewer_id, { kind: 'assignment', title: `New discussion on "${paper.title}"`, body: message.slice(0, 100), link: `/reviewer/papers/${paper.id}` });
+      }
+    }
+    res.json({ ok: true });
+  } catch (err) { next(err); }
+}
+
+module.exports = {
+  dashboard, assignReviewer, bulkAssign, decide, viewDecisionLetter,
+  updateTags, downloadManuscript, auditTrail,
+  getDiscussion, postDiscussion,
+};

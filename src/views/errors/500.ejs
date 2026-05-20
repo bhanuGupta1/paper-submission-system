@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html lang="en">
+<head><%- include('../partials/head') %></head>
+<body class="min-h-screen bg-slate-50 text-slate-900 flex flex-col">
+  <%- include('../partials/nav') %>
+  <main class="flex-1 flex items-center justify-center px-6">
+    <div class="text-center max-w-lg">
+      <p class="text-8xl font-display font-bold text-red-200">500</p>
+      <h1 class="text-2xl font-bold text-slate-800 mt-4">Something went wrong</h1>
+      <p class="text-slate-500 mt-2">An unexpected error occurred on our end. Please try again or contact support.</p>
+      <% if (message && process && process.env && process.env.NODE_ENV === 'development') { %>
+        <pre class="mt-4 bg-red-50 border border-red-200 rounded-lg p-4 text-xs text-red-800 text-left overflow-x-auto"><%= message %></pre>
+      <% } %>
+      <div class="mt-8 flex gap-3 justify-center">
+        <a href="/" class="bg-indigo-600 hover:bg-indigo-700 text-white px-5 py-2.5 rounded-md font-medium transition">Go home</a>
+        <button onclick="location.reload()" class="px-5 py-2.5 border border-slate-300 rounded-md text-slate-700 hover:bg-slate-100 font-medium transition">Try again</button>
+      </div>
+    </div>
+  </main>
+  <%- include('../partials/footer') %>
+</body>
+</html>
