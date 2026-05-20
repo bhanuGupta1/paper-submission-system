@@ -5,36 +5,58 @@
   <%- include('../partials/nav') %>
   <main class="flex-1">
     <div class="max-w-7xl mx-auto px-6 py-8">
-      <a href="/author" class="text-sm text-indigo-600 hover:text-indigo-500 link-line">Back to all submissions</a>
+      <a href="/author" class="text-sm text-indigo-600 hover:text-indigo-500 link-line">← All submissions</a>
       <div class="dashboard-hero mt-4 mb-6">
-        <div>
-          <p class="eyebrow text-indigo-200">Submission record</p>
+        <div class="flex-1">
+          <p class="eyebrow text-indigo-200">Submission record · v<%= paper.current_version || 1 %></p>
           <h1 class="font-display text-4xl font-bold text-white mt-2 leading-tight"><%= paper.title %></h1>
           <p class="text-sm text-slate-300 mt-2">Submitted <%= new Date(paper.submission_date).toLocaleString() %></p>
         </div>
-        <%- include('../partials/status', { status: paper.review_status }) %>
+        <div class="flex flex-col gap-3 items-end">
+          <%- include('../partials/status', { status: paper.review_status }) %>
+          <% if (canRevise) { %>
+            <a href="/author/papers/<%= paper.id %>/revise"
+               class="bg-amber-500 hover:bg-amber-600 text-white text-sm px-4 py-2 rounded-md font-semibold transition inline-flex items-center gap-1.5">
+              <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
+              Submit Revision
+            </a>
+          <% } %>
+        </div>
       </div>
 
-      <div class="grid md:grid-cols-3 gap-3 mb-6">
+      <% if (paper.review_status === 'revisions' && paper.revision_note) { %>
+        <div class="mb-6 bg-amber-50 border border-amber-200 rounded-lg p-4">
+          <h3 class="font-semibold text-amber-800">Revision Required</h3>
+          <p class="text-sm text-amber-700 mt-1"><%= paper.revision_note %></p>
+        </div>
+      <% } %>
+
+      <div class="grid md:grid-cols-4 gap-3 mb-6">
         <div class="metric-card">
-          <div class="metric-label">Similarity to corpus</div>
-          <div class="stat-num text-3xl mt-1"><%= (paper.similarity_score * 100).toFixed(1) %>%</div>
-          <div class="text-xs text-slate-500 mt-1">Higher means closer to existing submissions.</div>
+          <div class="metric-label">Similarity</div>
+          <div class="stat-num text-3xl mt-1 <%= paper.similarity_score > 0.7 ? 'text-red-600' : paper.similarity_score > 0.4 ? 'text-amber-600' : 'text-emerald-600' %>"><%= (paper.similarity_score * 100).toFixed(0) %>%</div>
+          <div class="text-xs text-slate-500 mt-1">Corpus overlap</div>
         </div>
         <div class="metric-card">
           <div class="metric-label">AI-text likelihood</div>
-          <div class="stat-num text-3xl mt-1"><%= (paper.ai_text_likelihood * 100).toFixed(0) %>%</div>
-          <div class="text-xs text-slate-500 mt-1">A heuristic signal, never a verdict.</div>
+          <div class="stat-num text-3xl mt-1 <%= paper.ai_text_likelihood > 0.7 ? 'text-amber-600' : 'text-slate-700' %>"><%= (paper.ai_text_likelihood * 100).toFixed(0) %>%</div>
+          <div class="text-xs text-slate-500 mt-1">Heuristic signal</div>
         </div>
         <div class="metric-card">
           <div class="metric-label">Reviews</div>
           <div class="stat-num text-3xl mt-1"><%= reviews.length %></div>
-          <div class="text-xs text-slate-500 mt-1">Assigned or submitted reviews.</div>
+          <div class="text-xs text-slate-500 mt-1">Submitted</div>
+        </div>
+        <div class="metric-card">
+          <div class="metric-label">Version</div>
+          <div class="stat-num text-3xl mt-1 text-indigo-600"><%= paper.current_version || 1 %></div>
+          <div class="text-xs text-slate-500 mt-1"><%= versions.length %> revision<%= versions.length !== 1 ? 's' : '' %> total</div>
         </div>
       </div>
 
       <div class="grid lg:grid-cols-[0.62fr_0.38fr] gap-6">
         <section class="space-y-5">
+          <!-- Abstract & paper info -->
           <div class="card p-6">
             <h2 class="font-display text-2xl font-semibold">Abstract</h2>
             <p class="text-slate-700 mt-3 leading-relaxed whitespace-pre-line"><%= paper.abstract %></p>
@@ -46,57 +68,96 @@
               </div>
             <% } %>
             <% if (paper.ai_keywords) { %>
-              <div class="mt-4 rounded-md border border-slate-200 bg-slate-50 p-3 text-xs text-slate-600"><strong class="text-slate-800">AI keywords:</strong> <%= paper.ai_keywords %></div>
+              <div class="mt-4 rounded-md border border-slate-200 bg-slate-50 p-3 text-xs text-slate-600">
+                <strong class="text-slate-800">AI keywords:</strong> <%= paper.ai_keywords %>
+              </div>
             <% } %>
             <% if (paper.file_path) { %>
-              <a class="inline-block mt-5 bg-slate-950 hover:bg-slate-800 text-white text-sm px-3 py-2 rounded-md font-semibold transition" href="/author/papers/<%= paper.id %>/download">Download manuscript</a>
+              <a class="inline-block mt-5 bg-slate-950 hover:bg-slate-800 text-white text-sm px-3 py-2 rounded-md font-semibold transition" href="/author/papers/<%= paper.id %>/download">
+                Download manuscript
+              </a>
             <% } %>
           </div>
 
+          <!-- Reviews (double-blind — no reviewer names) -->
           <div>
-            <h2 class="font-display text-2xl font-semibold mb-3">Reviews (<%= reviews.length %>)</h2>
+            <h2 class="font-display text-2xl font-semibold mb-3">Reviewer feedback (<%= reviews.length %>)</h2>
+            <p class="text-xs text-slate-500 mb-3">This system uses double-blind review. Reviewer identities are not disclosed.</p>
             <% if (reviews.length === 0) { %>
-              <div class="card p-6 text-slate-500 text-sm">No reviews have been submitted yet.</div>
+              <div class="card p-8 text-center">
+                <div class="skeleton w-full mb-3" style="height:12px; width:60%; margin:0 auto"></div>
+                <div class="skeleton w-full mb-3" style="height:12px; width:80%; margin:0 auto"></div>
+                <p class="text-slate-500 text-sm mt-4">No reviews submitted yet.</p>
+              </div>
             <% } %>
-            <% reviews.forEach(r => { %>
+            <% reviews.forEach((r, i) => { %>
               <div class="card p-5 mb-3">
-                <div class="flex items-center justify-between gap-3 text-sm">
-                  <span class="font-semibold"><%= r.reviewer_username %></span>
-                  <span class="text-slate-500"><%= r.review_date ? new Date(r.review_date).toLocaleDateString() : 'pending' %></span>
+                <div class="flex items-center justify-between gap-3 text-sm mb-3">
+                  <span class="font-semibold text-slate-600"><%= r.reviewer_username %></span>
+                  <span class="text-slate-500 text-xs"><%= r.review_date ? new Date(r.review_date).toLocaleDateString() : 'Pending' %></span>
                 </div>
                 <% if (r.recommendation) { %>
-                  <div class="mt-3 flex flex-wrap items-center gap-2 text-sm">
-                    <span class="score-chip">Recommendation <strong><%= r.recommendation.replace('_',' ') %></strong></span>
-                    <% if (r.ai_assisted) { %><span class="score-chip">AI-assisted draft</span><% } %>
+                  <div class="flex flex-wrap gap-2 mb-3">
+                    <span class="score-chip text-xs">
+                      <span class="<%= r.recommendation === 'accept' ? 'text-emerald-700' : r.recommendation === 'reject' ? 'text-red-700' : 'text-amber-700' %>">
+                        ● <%= r.recommendation.replace(/_/g, ' ') %>
+                      </span>
+                    </span>
+                    <% if (r.novelty_score) { %><span class="score-chip text-xs">Novelty: <%= r.novelty_score %>/5</span><% } %>
+                    <% if (r.clarity_score) { %><span class="score-chip text-xs">Clarity: <%= r.clarity_score %>/5</span><% } %>
+                    <% if (r.significance_score) { %><span class="score-chip text-xs">Significance: <%= r.significance_score %>/5</span><% } %>
+                    <% if (r.ai_assisted) { %><span class="score-chip text-xs text-indigo-600">AI-assisted</span><% } %>
                   </div>
+                  <% if (r.summary) { %><div class="text-sm mb-2"><strong>Summary</strong><p class="text-slate-600 mt-1"><%= r.summary %></p></div><% } %>
+                  <% if (r.strengths) { %><div class="text-sm mb-2"><strong>Strengths</strong><p class="text-slate-600 mt-1 whitespace-pre-line"><%= r.strengths %></p></div><% } %>
+                  <% if (r.weaknesses) { %><div class="text-sm"><strong>Weaknesses</strong><p class="text-slate-600 mt-1 whitespace-pre-line"><%= r.weaknesses %></p></div><% } %>
+                <% } else { %>
+                  <p class="text-sm text-slate-500 italic">Review in progress…</p>
                 <% } %>
-                <% if (r.summary) { %><div class="mt-4 text-sm"><strong>Summary.</strong> <%= r.summary %></div><% } %>
-                <% if (r.strengths) { %><div class="mt-3 text-sm"><strong>Strengths.</strong><br><%= r.strengths %></div><% } %>
-                <% if (r.weaknesses) { %><div class="mt-3 text-sm"><strong>Weaknesses.</strong><br><%= r.weaknesses %></div><% } %>
               </div>
             <% }) %>
           </div>
         </section>
 
         <aside class="space-y-5">
+          <!-- Status timeline -->
           <div class="card p-5">
-            <p class="eyebrow text-indigo-700">Status timeline</p>
-            <div class="space-y-4 mt-4">
-              <div class="process-step"><h3 class="font-semibold">Submitted</h3><p class="text-sm text-slate-600 mt-1"><%= new Date(paper.submission_date).toLocaleDateString() %></p></div>
-              <div class="process-step"><h3 class="font-semibold">Screened</h3><p class="text-sm text-slate-600 mt-1">Integrity and keyword metadata generated.</p></div>
-              <div class="process-step"><h3 class="font-semibold">Current status</h3><p class="text-sm text-slate-600 mt-1"><%= paper.review_status.replace('_', ' ') %></p></div>
+            <p class="eyebrow text-indigo-700 mb-3">Status timeline</p>
+            <div class="space-y-3">
+              <div class="process-step"><h3 class="font-semibold text-sm">Submitted</h3><p class="text-xs text-slate-500 mt-0.5"><%= new Date(paper.submission_date).toLocaleDateString() %></p></div>
+              <div class="process-step"><h3 class="font-semibold text-sm">AI screening</h3><p class="text-xs text-slate-500 mt-0.5">Plagiarism + keyword analysis complete.</p></div>
+              <div class="process-step"><h3 class="font-semibold text-sm">Current status</h3><p class="text-xs text-slate-500 mt-0.5 capitalize"><%= paper.review_status.replace('_', ' ') %></p></div>
             </div>
           </div>
 
+          <!-- Decision history -->
           <% if (decisions && decisions.length > 0) { %>
             <div class="card p-5">
-              <h2 class="font-display text-xl font-semibold mb-3">Decision history</h2>
+              <h2 class="font-display text-xl font-semibold mb-3">Decisions</h2>
               <div class="space-y-3">
                 <% decisions.forEach(d => { %>
                   <div class="rounded-md border border-slate-200 bg-slate-50 p-3">
-                    <div class="text-sm"><strong><%= d.editor_username %></strong> set status to <strong class="capitalize"><%= d.to_status %></strong></div>
+                    <div class="text-sm font-medium capitalize"><%= d.to_status.replace('_',' ') %></div>
                     <% if (d.note) { %><div class="text-sm text-slate-600 mt-1"><%= d.note %></div><% } %>
-                    <div class="text-xs text-slate-500 mt-1"><%= new Date(d.created_at).toLocaleString() %></div>
+                    <div class="text-xs text-slate-400 mt-1"><%= new Date(d.created_at).toLocaleString() %></div>
+                  </div>
+                <% }) %>
+              </div>
+            </div>
+          <% } %>
+
+          <!-- Revision history -->
+          <% if (versions && versions.length > 1) { %>
+            <div class="card p-5">
+              <h2 class="font-display text-xl font-semibold mb-3">Revision history</h2>
+              <div class="space-y-3">
+                <% versions.forEach(v => { %>
+                  <div class="rounded-md border border-slate-200 p-3 text-sm">
+                    <div class="flex items-center justify-between">
+                      <span class="font-semibold text-slate-700">Version <%= v.version_number %></span>
+                      <span class="text-xs text-slate-400"><%= new Date(v.submitted_at).toLocaleDateString() %></span>
+                    </div>
+                    <% if (v.change_note) { %><p class="text-slate-600 text-xs mt-1 line-clamp-2"><%= v.change_note %></p><% } %>
                   </div>
                 <% }) %>
               </div>

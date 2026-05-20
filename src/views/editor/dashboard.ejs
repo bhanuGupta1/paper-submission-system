@@ -5,17 +5,41 @@
   <%- include('../partials/nav') %>
   <main class="flex-1">
     <div class="max-w-7xl mx-auto px-6 py-8">
+
       <div class="dashboard-hero mb-6">
         <div>
           <p class="eyebrow text-indigo-200">Editorial workspace</p>
           <h1 class="font-display text-4xl font-bold text-white mt-2">Editor dashboard</h1>
           <p class="text-sm text-slate-300 mt-2 max-w-2xl">AI-ranked reviewer suggestions, conflict checks, review completion signals, and final decision controls.</p>
         </div>
-        <% if (currentUser && currentUser.role === 'admin') { %>
-          <a href="/admin/export.xlsx" class="inline-flex items-center justify-center bg-white text-slate-950 hover:bg-indigo-50 px-4 py-2 rounded-md text-sm font-semibold transition">Export XLSX</a>
-        <% } %>
+        <div class="flex items-center gap-3">
+          <% if (currentUser && currentUser.role === 'admin') { %>
+            <a href="/admin/export.xlsx" class="inline-flex items-center gap-1.5 bg-white text-slate-950 hover:bg-indigo-50 px-4 py-2 rounded-md text-sm font-semibold transition">
+              <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
+              Export XLSX
+            </a>
+          <% } %>
+          <button id="btn-smart-search-toggle" class="inline-flex items-center gap-1.5 bg-indigo-600 hover:bg-indigo-500 text-white px-4 py-2 rounded-md text-sm font-semibold transition">
+            <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+            Smart search
+          </button>
+        </div>
       </div>
 
+      <!-- Smart search panel -->
+      <div id="smart-search-panel" class="hidden card p-5 mb-6">
+        <h3 class="font-semibold text-slate-800 mb-3">Semantic smart search</h3>
+        <div class="flex gap-3">
+          <input id="smart-search-input" type="text" placeholder="Search by topic, concept, method…" class="flex-1 rounded-md border border-slate-300 px-3 py-2 text-sm focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 focus:outline-none" aria-label="Smart search query">
+          <button id="btn-smart-search-run" class="bg-indigo-600 hover:bg-indigo-500 text-white px-4 py-2 rounded-md text-sm font-semibold transition">Search</button>
+        </div>
+        <div id="smart-search-results" class="mt-4 hidden">
+          <p class="text-xs text-slate-500 mb-2" id="smart-search-meta"></p>
+          <div id="smart-search-list" class="space-y-2"></div>
+        </div>
+      </div>
+
+      <!-- Metrics row -->
       <div class="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-6">
         <div class="metric-card">
           <div class="stat-num text-3xl"><%= filter.total %></div>
@@ -35,45 +59,79 @@
         </div>
       </div>
 
-      <form method="get" action="/editor" class="card p-4 mb-6 flex flex-wrap gap-3 items-center">
+      <!-- Filter bar -->
+      <form method="get" action="/editor" class="card p-4 mb-5 flex flex-wrap gap-3 items-center">
         <div class="flex-1 min-w-[200px]">
-          <input name="q" value="<%= filter.q || '' %>" placeholder="Search title, abstract, tags..." class="block w-full rounded-md border border-slate-300 px-3 py-2 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 focus:outline-none">
+          <input name="q" value="<%= filter.q || '' %>" placeholder="Search title, abstract, tags…" aria-label="Filter by keyword" class="block w-full rounded-md border border-slate-300 px-3 py-2 text-sm focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 focus:outline-none">
         </div>
-        <select name="status" class="rounded-md border border-slate-300 px-3 py-2 bg-white focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 focus:outline-none">
+        <select name="status" aria-label="Filter by status" class="rounded-md border border-slate-300 px-3 py-2 text-sm bg-white focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 focus:outline-none">
           <option value="">All statuses</option>
           <% ['pending','under_review','accepted','rejected','revisions'].forEach(s => { %>
             <option value="<%= s %>" <%= filter.status === s ? 'selected' : '' %>><%= s.replace('_', ' ') %></option>
           <% }) %>
         </select>
         <button class="bg-slate-900 hover:bg-slate-800 text-white px-4 py-2 rounded-md text-sm font-medium transition">Filter</button>
-        <div class="text-xs text-slate-500 ml-auto"><%= filter.total %> matching - page <%= filter.page %> of <%= filter.pageCount %></div>
+        <div class="text-xs text-slate-500 ml-auto"><%= filter.total %> matching — page <%= filter.page %> of <%= filter.pageCount %></div>
       </form>
+
+      <!-- Bulk-assign toolbar (shown when any paper is checked) -->
+      <div id="bulk-toolbar" class="hidden sticky top-14 z-30 bg-indigo-700 text-white rounded-lg px-4 py-3 mb-4 flex items-center gap-3 shadow-lg" role="alert" aria-live="polite">
+        <span class="text-sm font-semibold" id="bulk-count-label">0 selected</span>
+        <select id="bulk-reviewer-select" class="text-sm border border-indigo-400 rounded-md px-2 py-1.5 bg-indigo-800 text-white flex-1 max-w-xs focus:outline-none focus:ring-2 focus:ring-white" aria-label="Select reviewer for bulk assignment">
+          <option value="">Select reviewer…</option>
+          <% reviewers.forEach(r => { %>
+            <option value="<%= r.id %>"><%= r.username %><% if (r.expertise) { %> – <%= r.expertise.slice(0, 30) %><% } %></option>
+          <% }) %>
+        </select>
+        <input type="date" id="bulk-deadline-input" class="text-sm border border-indigo-400 rounded-md px-2 py-1.5 bg-indigo-800 text-white focus:outline-none focus:ring-2 focus:ring-white" aria-label="Bulk assignment deadline" placeholder="Deadline (optional)">
+        <button id="btn-bulk-assign" class="bg-white text-indigo-700 hover:bg-indigo-50 text-sm px-4 py-1.5 rounded font-semibold transition">Assign all</button>
+        <button id="btn-bulk-cancel" class="text-indigo-200 hover:text-white text-sm" aria-label="Cancel bulk selection">Cancel</button>
+      </div>
 
       <% if (papers.length === 0) { %>
         <div class="card p-12 text-center">
+          <svg class="w-12 h-12 text-slate-300 mx-auto mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
           <p class="text-slate-600">No submissions match your filters.</p>
         </div>
       <% } %>
 
       <% papers.forEach(p => { %>
-        <div class="card p-5 mb-4">
-          <div class="flex items-start justify-between gap-4">
+        <div class="card p-5 mb-4" data-paper-id="<%= p.id %>">
+
+          <!-- Paper header -->
+          <div class="flex items-start gap-3">
+            <input type="checkbox" class="bulk-checkbox mt-1 h-4 w-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500 cursor-pointer" value="<%= p.id %>" aria-label="Select <%= p.title %>">
             <div class="flex-1">
               <div class="flex items-center gap-2 mb-1 flex-wrap">
                 <h2 class="font-display text-lg font-semibold"><%= p.title %></h2>
                 <%- include('../partials/status', { status: p.review_status }) %>
               </div>
-              <div class="text-xs text-slate-500">
-                by <strong><%= p.author_username %></strong> - submitted <%= new Date(p.submission_date).toLocaleDateString() %>
-                - similarity <strong class="<%= p.similarity_score > 0.5 ? 'text-rose-600' : '' %>"><%= (p.similarity_score * 100).toFixed(0) %>%</strong>
-                - ai-text <strong class="<%= p.ai_text_likelihood > 0.5 ? 'text-amber-600' : '' %>"><%= (p.ai_text_likelihood * 100).toFixed(0) %>%</strong>
+              <div class="text-xs text-slate-500 flex flex-wrap items-center gap-x-3 gap-y-1">
+                <span>by <strong><%= p.author_username %></strong></span>
+                <span>submitted <%= new Date(p.submission_date).toLocaleDateString() %></span>
+                <span>similarity <strong class="<%= p.similarity_score > 0.5 ? 'text-rose-600' : '' %>"><%= (p.similarity_score * 100).toFixed(0) %>%</strong></span>
+                <span>AI-text <strong class="<%= p.ai_text_likelihood > 0.5 ? 'text-amber-600' : '' %>"><%= (p.ai_text_likelihood * 100).toFixed(0) %>%</strong></span>
+                <% if (p.coiDeclarations && p.coiDeclarations.length > 0) { %>
+                  <span class="inline-block text-[10px] bg-rose-50 text-rose-700 border border-rose-200 px-1.5 py-0.5 rounded font-semibold"><%= p.coiDeclarations.length %> COI declaration<%= p.coiDeclarations.length > 1 ? 's' : '' %></span>
+                <% } %>
               </div>
               <p class="text-sm text-slate-700 mt-2 line-clamp-2 leading-relaxed"><%= p.abstract %></p>
-              <div class="flex items-center gap-2 mt-3 flex-wrap text-xs">
+
+              <!-- AI acceptance probability badge -->
+              <div class="flex items-center gap-2 mt-3 flex-wrap">
                 <% if (p.tags) { p.tags.split(',').forEach(t => { %>
-                  <span class="inline-block bg-slate-100 text-slate-700 px-2 py-0.5 rounded-full"><%= t.trim() %></span>
+                  <span class="inline-block text-xs bg-slate-100 text-slate-700 px-2 py-0.5 rounded-full"><%= t.trim() %></span>
                 <% }) } %>
+              </div>
+              <div class="flex items-center gap-3 mt-2 text-xs flex-wrap">
+                <button class="btn-predict text-indigo-600 hover:text-indigo-800 font-medium inline-flex items-center gap-1 transition" data-paper-id="<%= p.id %>" aria-label="Predict acceptance probability for this paper">
+                  <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>
+                  Predict acceptance
+                </button>
+                <span class="predict-result-<%= p.id %> hidden text-slate-600"></span>
                 <a href="/editor/papers/<%= p.id %>/audit" class="text-indigo-600 hover:text-indigo-500 link-line">Audit trail</a>
+                <a href="/editor/papers/<%= p.id %>/letters" class="text-indigo-600 hover:text-indigo-500 link-line">Letters</a>
+                <button class="btn-discussion text-indigo-600 hover:text-indigo-500 font-medium link-line" data-paper-id="<%= p.id %>" aria-label="View discussion thread for this paper">Discussion</button>
                 <% if (p.file_path) { %>
                   <a href="/editor/papers/<%= p.id %>/download" class="text-indigo-600 hover:text-indigo-500 link-line">Download</a>
                 <% } %>
@@ -81,94 +139,410 @@
             </div>
           </div>
 
-          <div class="grid md:grid-cols-2 gap-4 mt-4">
-            <div class="rounded-lg border border-slate-200 bg-slate-50 p-4">
-              <div class="text-xs uppercase tracking-wider font-semibold text-slate-500 mb-3">AI-suggested reviewers</div>
-              <% if (p.suggestions.length === 0) { %>
-                <div class="text-xs text-slate-500">No suggestions (no reviewers with expertise tags found).</div>
-              <% } %>
-              <% p.suggestions.forEach(s => { %>
-                <div class="flex items-center justify-between text-sm py-1.5 border-t border-slate-200 first:border-t-0">
-                  <div>
-                    <span class="font-medium"><%= s.username %></span>
-                    <span class="text-xs text-slate-500 ml-1">match <strong><%= (s.score * 100).toFixed(0) %>%</strong></span>
-                    <% if (s.conflict && s.conflict.hasConflict) { %>
-                      <span class="ml-2 inline-block text-[10px] bg-rose-50 text-rose-700 border border-rose-200 px-1.5 py-0.5 rounded">COI</span>
-                    <% } %>
-                  </div>
-                  <form action="/editor/assign-reviewer" method="post" class="inline">
-                    <input type="hidden" name="paperId" value="<%= p.id %>">
-                    <input type="hidden" name="reviewerId" value="<%= s.id %>">
-                    <button class="text-xs bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 px-2 py-0.5 rounded font-medium transition">Assign</button>
-                  </form>
-                </div>
-                <% if (s.expertise) { %>
-                  <div class="text-xs text-slate-500 truncate ml-1 mb-1"><%= s.expertise %></div>
-                <% } %>
-              <% }) %>
+          <!-- Discussion panel (hidden by default, loaded on demand) -->
+          <div id="discussion-panel-<%= p.id %>" class="hidden mt-4 border-t border-slate-200 pt-4">
+            <div class="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">Editor-Reviewer Discussion</div>
+            <div id="discussion-messages-<%= p.id %>" class="space-y-2 mb-3 max-h-48 overflow-y-auto pr-1">
+              <p class="text-xs text-slate-400 italic">Loading…</p>
             </div>
-
-            <div class="rounded-lg border border-slate-200 bg-slate-50 p-4">
-              <div class="text-xs uppercase tracking-wider font-semibold text-slate-500 mb-3">Manual override</div>
-              <form action="/editor/assign-reviewer" method="post" class="flex items-center gap-2 mb-4">
-                <input type="hidden" name="paperId" value="<%= p.id %>">
-                <select name="reviewerId" required class="text-sm border border-slate-300 rounded-md px-2 py-1.5 bg-white flex-1 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 focus:outline-none">
-                  <option value="">Pick a reviewer</option>
-                  <% (p.annotatedReviewers || []).forEach(r => { %>
-                    <option value="<%= r.id %>">
-                      <%= r.username %><%= r.expertise ? ' - ' + r.expertise.slice(0, 30) : '' %><%= r.conflict && r.conflict.hasConflict ? ' - COI' : '' %>
-                    </option>
-                  <% }) %>
-                </select>
-                <button class="text-xs bg-slate-700 hover:bg-slate-600 text-white px-3 py-1.5 rounded font-medium transition">Assign</button>
-              </form>
-
-              <div class="text-xs uppercase tracking-wider font-semibold text-slate-500 mb-2">Final decision</div>
-              <form action="/editor/decide" method="post" class="space-y-2">
-                <input type="hidden" name="paperId" value="<%= p.id %>">
-                <div class="flex items-center gap-2">
-                  <select name="decision" required class="text-sm border border-slate-300 rounded-md px-2 py-1.5 bg-white flex-1 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 focus:outline-none">
-                    <option value="">Decide</option>
-                    <option value="accepted">Accept</option>
-                    <option value="revisions">Revisions</option>
-                    <option value="rejected">Reject</option>
-                  </select>
-                  <button class="text-xs bg-emerald-600 hover:bg-emerald-500 text-white px-3 py-1.5 rounded font-medium transition">Apply</button>
-                </div>
-                <input name="note" placeholder="Optional decision note for the author..." class="text-xs w-full border border-slate-300 rounded-md px-2 py-1.5 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 focus:outline-none">
-              </form>
-
-              <form action="/editor/papers/<%= p.id %>/tags" method="post" class="mt-3 flex items-center gap-2">
-                <input name="tags" value="<%= p.tags || '' %>" placeholder="tags, comma-separated" class="text-xs flex-1 border border-slate-300 rounded-md px-2 py-1.5 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 focus:outline-none">
-                <button class="text-xs bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-300 px-3 py-1.5 rounded font-medium transition">Save tags</button>
-              </form>
+            <div class="flex gap-2">
+              <input id="discussion-input-<%= p.id %>" type="text" placeholder="Write a message…" maxlength="2000" aria-label="Discussion message" class="flex-1 text-sm border border-slate-300 rounded-md px-2 py-1.5 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 focus:outline-none">
+              <button class="btn-discussion-send text-xs bg-indigo-600 hover:bg-indigo-500 text-white px-3 py-1.5 rounded font-medium transition" data-paper-id="<%= p.id %>">Send</button>
             </div>
           </div>
 
-          <% if (p.assigned.length > 0) { %>
-            <div class="mt-4 pt-3 border-t border-slate-200 text-xs text-slate-600">
-              <strong>Assigned:</strong>
-              <% p.assigned.forEach((a, i) => { %>
-                <span class="ml-1"><%= a.reviewer_username %><%= a.recommendation ? ' (' + a.recommendation.replace('_', ' ') + ')' : ' - pending' %><%= i < p.assigned.length - 1 ? ',' : '' %></span>
+          <!-- Two-column action grid -->
+          <div class="grid md:grid-cols-2 gap-4 mt-4">
+
+            <!-- AI-suggested reviewers -->
+            <div class="rounded-lg border border-slate-200 bg-slate-50 p-4">
+              <div class="text-xs uppercase tracking-wider font-semibold text-slate-500 mb-3">AI-suggested reviewers</div>
+              <% if (p.suggestions.length === 0) { %>
+                <div class="text-xs text-slate-500 italic">No suggestions — no reviewers with matching expertise tags found.</div>
+              <% } %>
+              <% p.suggestions.forEach(s => { %>
+                <div class="py-1.5 border-t border-slate-200 first:border-t-0">
+                  <div class="flex items-center justify-between text-sm">
+                    <div class="flex items-center gap-1.5">
+                      <span class="font-medium"><%= s.username %></span>
+                      <span class="text-xs text-slate-500">match <strong><%= (s.score * 100).toFixed(0) %>%</strong></span>
+                      <% if (s.conflict && s.conflict.hasConflict) { %>
+                        <span class="inline-block text-[10px] bg-rose-50 text-rose-700 border border-rose-200 px-1.5 py-0.5 rounded font-semibold">COI</span>
+                      <% } %>
+                    </div>
+                    <form action="/editor/assign-reviewer" method="post" class="inline flex items-center gap-1">
+                      <input type="hidden" name="paperId" value="<%= p.id %>">
+                      <input type="hidden" name="reviewerId" value="<%= s.id %>">
+                      <input type="date" name="deadline" class="text-xs border border-slate-300 rounded px-1.5 py-1 focus:border-indigo-500 focus:outline-none" aria-label="Review deadline for <%= s.username %>">
+                      <button class="text-xs bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 px-2 py-1 rounded font-medium transition">Assign</button>
+                    </form>
+                  </div>
+                  <% if (s.expertise) { %>
+                    <div class="text-xs text-slate-500 truncate mt-0.5"><%= s.expertise %></div>
+                  <% } %>
+                </div>
               <% }) %>
+            </div>
+
+            <!-- Manual override + decision -->
+            <div class="rounded-lg border border-slate-200 bg-slate-50 p-4 space-y-4">
+
+              <!-- Manual assign -->
+              <div>
+                <div class="text-xs uppercase tracking-wider font-semibold text-slate-500 mb-2">Manual assignment</div>
+                <form action="/editor/assign-reviewer" method="post" class="space-y-2">
+                  <input type="hidden" name="paperId" value="<%= p.id %>">
+                  <div class="flex items-center gap-2">
+                    <select name="reviewerId" required aria-label="Select reviewer" class="text-sm border border-slate-300 rounded-md px-2 py-1.5 bg-white flex-1 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 focus:outline-none">
+                      <option value="">Pick a reviewer…</option>
+                      <% (p.annotatedReviewers || []).forEach(r => { %>
+                        <option value="<%= r.id %>"><%= r.username %><%= r.expertise ? ' – ' + r.expertise.slice(0, 28) : '' %><%= r.conflict && r.conflict.hasConflict ? ' ⚠ COI' : '' %></option>
+                      <% }) %>
+                    </select>
+                    <button class="text-xs bg-slate-700 hover:bg-slate-600 text-white px-3 py-1.5 rounded font-medium transition shrink-0">Assign</button>
+                  </div>
+                  <input type="date" name="deadline" aria-label="Review deadline" class="text-xs w-full border border-slate-300 rounded-md px-2 py-1.5 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 focus:outline-none">
+                </form>
+              </div>
+
+              <!-- Final decision + AI draft -->
+              <div>
+                <div class="text-xs uppercase tracking-wider font-semibold text-slate-500 mb-2">Final decision</div>
+                <div class="mb-2">
+                  <button class="btn-ai-draft text-xs inline-flex items-center gap-1 text-purple-600 hover:text-purple-700 font-medium transition" data-paper-id="<%= p.id %>" aria-label="Generate AI decision draft for this paper">
+                    <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+                    AI decision draft
+                  </button>
+                  <div id="ai-draft-<%= p.id %>" class="hidden mt-2 rounded-md bg-purple-50 border border-purple-200 p-3 text-xs text-purple-900 space-y-1"></div>
+                </div>
+                <form action="/editor/decide" method="post" class="space-y-2">
+                  <input type="hidden" name="paperId" value="<%= p.id %>">
+                  <div class="flex items-center gap-2">
+                    <select name="decision" required id="decision-select-<%= p.id %>" aria-label="Final decision" class="text-sm border border-slate-300 rounded-md px-2 py-1.5 bg-white flex-1 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 focus:outline-none">
+                      <option value="">Decide…</option>
+                      <option value="accepted">Accept</option>
+                      <option value="revisions">Revisions</option>
+                      <option value="rejected">Reject</option>
+                    </select>
+                    <button class="btn-decide-submit text-xs bg-emerald-600 hover:bg-emerald-500 text-white px-3 py-1.5 rounded font-medium transition shrink-0" data-title="<%= p.title %>">Apply</button>
+                  </div>
+                  <input name="note" placeholder="Optional decision note for the author…" aria-label="Decision note" class="text-xs w-full border border-slate-300 rounded-md px-2 py-1.5 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 focus:outline-none">
+                  <label class="flex items-center gap-2 text-xs text-slate-600 cursor-pointer select-none">
+                    <input type="checkbox" name="generateLetter" value="1" class="rounded border-slate-300 text-indigo-600 focus:ring-indigo-500">
+                    Generate decision letter
+                  </label>
+                </form>
+              </div>
+
+              <!-- Tags -->
+              <div>
+                <form action="/editor/papers/<%= p.id %>/tags" method="post" class="flex items-center gap-2">
+                  <input name="tags" value="<%= p.tags || '' %>" placeholder="tags, comma-separated" aria-label="Paper tags" class="text-xs flex-1 border border-slate-300 rounded-md px-2 py-1.5 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 focus:outline-none">
+                  <button class="text-xs bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-300 px-3 py-1.5 rounded font-medium transition shrink-0">Save tags</button>
+                </form>
+              </div>
+            </div>
+          </div>
+
+          <!-- Assigned reviewers -->
+          <% if (p.assigned.length > 0) { %>
+            <div class="mt-4 pt-3 border-t border-slate-200">
+              <div class="text-xs font-semibold text-slate-500 mb-1">Assigned reviewers</div>
+              <div class="flex flex-wrap gap-2">
+                <% p.assigned.forEach(a => { %>
+                  <span class="inline-flex items-center gap-1 text-xs bg-white border border-slate-200 rounded-full px-2.5 py-1">
+                    <span class="font-medium"><%= a.reviewer_username %></span>
+                    <% if (a.recommendation) { %>
+                      <span class="text-slate-500"><%= a.recommendation.replace('_', ' ') %></span>
+                    <% } else if (a.deadline) { %>
+                      <span class="text-slate-400">due <%= new Date(a.deadline).toLocaleDateString() %></span>
+                    <% } else { %>
+                      <span class="text-slate-400">pending</span>
+                    <% } %>
+                    <% if (a.declined_at) { %><span class="text-rose-500">declined</span><% } %>
+                  </span>
+                <% }) %>
+              </div>
             </div>
           <% } %>
         </div>
       <% }) %>
 
+      <!-- Pagination -->
       <% if (filter.pageCount > 1) { %>
-        <div class="flex items-center justify-center gap-2 mt-6">
+        <nav class="flex items-center justify-center gap-2 mt-6" aria-label="Pagination">
           <% if (filter.page > 1) { %>
-            <a href="?page=<%= filter.page - 1 %><%= filter.status ? '&status=' + filter.status : '' %><%= filter.q ? '&q=' + filter.q : '' %>" class="px-3 py-1.5 rounded-md border border-slate-300 text-sm hover:bg-slate-100 transition">Previous</a>
+            <a href="?page=<%= filter.page - 1 %><%= filter.status ? '&status=' + filter.status : '' %><%= filter.q ? '&q=' + encodeURIComponent(filter.q) : '' %>" class="px-3 py-1.5 rounded-md border border-slate-300 text-sm hover:bg-slate-100 transition">Previous</a>
           <% } %>
           <span class="text-sm text-slate-500">Page <%= filter.page %> of <%= filter.pageCount %></span>
           <% if (filter.page < filter.pageCount) { %>
-            <a href="?page=<%= filter.page + 1 %><%= filter.status ? '&status=' + filter.status : '' %><%= filter.q ? '&q=' + filter.q : '' %>" class="px-3 py-1.5 rounded-md border border-slate-300 text-sm hover:bg-slate-100 transition">Next</a>
+            <a href="?page=<%= filter.page + 1 %><%= filter.status ? '&status=' + filter.status : '' %><%= filter.q ? '&q=' + encodeURIComponent(filter.q) : '' %>" class="px-3 py-1.5 rounded-md border border-slate-300 text-sm hover:bg-slate-100 transition">Next</a>
           <% } %>
-        </div>
+        </nav>
       <% } %>
     </div>
   </main>
   <%- include('../partials/footer') %>
+
+<script>
+(function () {
+  'use strict';
+
+  function esc(s) { return String(s || '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+
+  // ── Bulk selection ────────────────────────────────────────────────────────────
+  const toolbar = document.getElementById('bulk-toolbar');
+  const countLabel = document.getElementById('bulk-count-label');
+  const reviewerSel = document.getElementById('bulk-reviewer-select');
+  const deadlineInput = document.getElementById('bulk-deadline-input');
+  const checkboxes = document.querySelectorAll('.bulk-checkbox');
+
+  function updateBulkToolbar() {
+    const checked = [...checkboxes].filter(cb => cb.checked);
+    if (checked.length > 0) {
+      toolbar.classList.remove('hidden');
+      countLabel.textContent = checked.length + ' selected';
+    } else {
+      toolbar.classList.add('hidden');
+    }
+  }
+
+  checkboxes.forEach(cb => cb.addEventListener('change', updateBulkToolbar));
+
+  document.getElementById('btn-bulk-cancel').addEventListener('click', function () {
+    checkboxes.forEach(cb => { cb.checked = false; });
+    updateBulkToolbar();
+  });
+
+  document.getElementById('btn-bulk-assign').addEventListener('click', async function () {
+    const selected = [...checkboxes].filter(cb => cb.checked).map(cb => cb.value);
+    const revId = reviewerSel.value;
+    if (!revId) { showToast('Please select a reviewer.', 'error'); return; }
+    if (selected.length === 0) { showToast('No papers selected.', 'error'); return; }
+
+    this.disabled = true;
+    this.textContent = 'Assigning…';
+    try {
+      const body = new URLSearchParams();
+      selected.forEach(id => body.append('paperIds', id));
+      body.set('reviewerId', revId);
+      if (deadlineInput.value) body.set('deadline', deadlineInput.value);
+
+      const resp = await fetch('/editor/bulk-assign', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded', 'X-Requested-With': 'XMLHttpRequest' },
+        body: body.toString(),
+      });
+      const data = await resp.json();
+      if (data.ok) {
+        const assigned = data.results.filter(r => r.status === 'assigned').length;
+        showToast(`${assigned} paper${assigned !== 1 ? 's' : ''} assigned successfully.`, 'success');
+        checkboxes.forEach(cb => { cb.checked = false; });
+        updateBulkToolbar();
+        setTimeout(() => location.reload(), 1200);
+      } else {
+        showToast(data.error || 'Bulk assign failed.', 'error');
+      }
+    } catch (e) {
+      showToast('Network error during bulk assign.', 'error');
+    } finally {
+      this.disabled = false;
+      this.textContent = 'Assign all';
+    }
+  });
+
+  // ── AI acceptance prediction ─────────────────────────────────────────────────
+  document.querySelectorAll('.btn-predict').forEach(btn => {
+    btn.addEventListener('click', async function () {
+      const paperId = this.dataset.paperId;
+      const resultEl = document.querySelector('.predict-result-' + paperId);
+      this.disabled = true;
+      this.textContent = 'Loading…';
+      try {
+        const resp = await fetch('/api/ai/paper/' + paperId + '/predict');
+        if (!resp.ok) { showToast('Prediction unavailable.', 'error'); return; }
+        const data = await resp.json();
+        const pct = Math.round((data.probability || 0) * 100);
+        const color = pct >= 65 ? 'text-emerald-600' : pct >= 40 ? 'text-amber-600' : 'text-rose-600';
+        resultEl.innerHTML = '<span class="font-semibold ' + color + '">' + pct + '% ' + (data.prediction || '') + '</span>'
+          + ' <span class="text-slate-400">(' + (data.confidence || 'low') + ' confidence)</span>';
+        resultEl.classList.remove('hidden');
+        this.style.display = 'none';
+      } catch (e) {
+        showToast('Prediction request failed.', 'error');
+        this.disabled = false;
+        this.textContent = 'Predict acceptance';
+      }
+    });
+  });
+
+  // ── AI decision draft ─────────────────────────────────────────────────────────
+  document.querySelectorAll('.btn-ai-draft').forEach(btn => {
+    btn.addEventListener('click', async function () {
+      const paperId = this.dataset.paperId;
+      const panel = document.getElementById('ai-draft-' + paperId);
+      const decisionSelect = document.getElementById('decision-select-' + paperId);
+      this.disabled = true;
+      this.innerHTML = '<svg class="w-3.5 h-3.5 animate-spin inline" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path></svg> Generating…';
+      try {
+        const resp = await fetch('/api/ai/paper/' + paperId + '/decision-draft');
+        if (!resp.ok) { showToast('AI draft unavailable.', 'error'); return; }
+        const data = await resp.json();
+
+        if (data.suggestion && data.suggestion !== 'no_reviews') {
+          panel.classList.remove('hidden');
+          const confColor = data.confidence === 'high' ? 'text-emerald-700' : data.confidence === 'medium' ? 'text-amber-700' : 'text-slate-600';
+          panel.innerHTML = '<div class="flex items-center gap-2 mb-1">'
+            + '<strong class="capitalize">' + data.suggestion + '</strong>'
+            + '<span class="' + confColor + '">(' + data.confidence + ' confidence)</span>'
+            + '<span class="text-slate-500">· ' + data.reviewCount + ' review' + (data.reviewCount !== 1 ? 's' : '') + '</span>'
+            + '</div>'
+            + (data.explanation || []).map(e => '<p>· ' + esc(e) + '</p>').join('');
+          // Pre-fill the decision dropdown
+          if (decisionSelect) {
+            const optionMap = { accepted: 'accepted', rejected: 'rejected', revisions: 'revisions' };
+            if (optionMap[data.suggestion]) decisionSelect.value = optionMap[data.suggestion];
+          }
+          showToast('AI draft loaded — ' + data.suggestion, 'info');
+        } else {
+          showToast(data.explanation ? data.explanation[0] : 'No reviews available for AI draft.', 'info');
+        }
+      } catch (e) {
+        showToast('AI draft request failed.', 'error');
+      } finally {
+        this.disabled = false;
+        this.innerHTML = '<svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg> AI decision draft';
+      }
+    });
+  });
+
+  // ── Confirm destructive decisions ─────────────────────────────────────────────
+  document.querySelectorAll('.btn-decide-submit').forEach(btn => {
+    btn.addEventListener('click', function (e) {
+      const form = this.closest('form');
+      const select = form.querySelector('select[name="decision"]');
+      if (!select || !select.value) return; // let the form handle required validation
+      const title = this.dataset.title || 'this paper';
+      if (select.value === 'rejected') {
+        if (!confirm('Permanently reject "' + title + '"? This notifies the author.')) e.preventDefault();
+      } else if (select.value === 'accepted') {
+        if (!confirm('Accept "' + title + '"? This notifies the author.')) e.preventDefault();
+      }
+    });
+  });
+
+  // ── Discussion panels ─────────────────────────────────────────────────────────
+  const openDiscussions = new Set();
+
+  document.querySelectorAll('.btn-discussion').forEach(btn => {
+    btn.addEventListener('click', async function () {
+      const paperId = this.dataset.paperId;
+      const panel = document.getElementById('discussion-panel-' + paperId);
+      if (openDiscussions.has(paperId)) {
+        panel.classList.add('hidden');
+        openDiscussions.delete(paperId);
+        return;
+      }
+      panel.classList.remove('hidden');
+      openDiscussions.add(paperId);
+      await loadDiscussion(paperId);
+    });
+  });
+
+  document.querySelectorAll('.btn-discussion-send').forEach(btn => {
+    btn.addEventListener('click', async function () {
+      const paperId = this.dataset.paperId;
+      const input = document.getElementById('discussion-input-' + paperId);
+      const message = (input.value || '').trim();
+      if (!message) return;
+      this.disabled = true;
+      try {
+        const resp = await fetch('/editor/papers/' + paperId + '/discussion', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
+          body: JSON.stringify({ message }),
+        });
+        const data = await resp.json();
+        if (data.ok) {
+          input.value = '';
+          await loadDiscussion(paperId);
+          showToast('Message sent.', 'success');
+        } else {
+          showToast(data.error || 'Could not send message.', 'error');
+        }
+      } catch (e) {
+        showToast('Network error.', 'error');
+      } finally {
+        this.disabled = false;
+      }
+    });
+  });
+
+  async function loadDiscussion(paperId) {
+    const container = document.getElementById('discussion-messages-' + paperId);
+    try {
+      const resp = await fetch('/editor/papers/' + paperId + '/discussion');
+      const data = await resp.json();
+      if (!data.messages || data.messages.length === 0) {
+        container.innerHTML = '<p class="text-xs text-slate-400 italic">No messages yet. Start the thread.</p>';
+        return;
+      }
+      container.innerHTML = data.messages.map(m =>
+        '<div class="text-xs bg-white border border-slate-200 rounded p-2">'
+        + '<div class="flex justify-between mb-0.5"><strong class="text-slate-700">' + esc(m.author_username || 'Unknown') + '</strong>'
+        + '<span class="text-slate-400">' + esc(new Date(m.created_at).toLocaleString()) + '</span></div>'
+        + '<p class="text-slate-600">' + esc(m.message) + '</p>'
+        + '</div>'
+      ).join('');
+      container.scrollTop = container.scrollHeight;
+    } catch (e) {
+      container.innerHTML = '<p class="text-xs text-rose-500">Failed to load messages.</p>';
+    }
+  }
+
+  // ── Smart search ─────────────────────────────────────────────────────────────
+  document.getElementById('btn-smart-search-toggle').addEventListener('click', function () {
+    const panel = document.getElementById('smart-search-panel');
+    panel.classList.toggle('hidden');
+    if (!panel.classList.contains('hidden')) {
+      document.getElementById('smart-search-input').focus();
+    }
+  });
+
+  document.getElementById('btn-smart-search-run').addEventListener('click', runSmartSearch);
+  document.getElementById('smart-search-input').addEventListener('keydown', function (e) {
+    if (e.key === 'Enter') runSmartSearch();
+  });
+
+  async function runSmartSearch() {
+    const q = document.getElementById('smart-search-input').value.trim();
+    if (!q) return;
+    const resultsEl = document.getElementById('smart-search-results');
+    const metaEl = document.getElementById('smart-search-meta');
+    const listEl = document.getElementById('smart-search-list');
+    listEl.innerHTML = '<p class="text-xs text-slate-400 italic">Searching…</p>';
+    resultsEl.classList.remove('hidden');
+    try {
+      const resp = await fetch('/api/ai/search?q=' + encodeURIComponent(q) + '&limit=10');
+      const data = await resp.json();
+      metaEl.textContent = (data.total || 0) + ' result' + (data.total !== 1 ? 's' : '') + ' for "' + (data.query || q) + '"';
+      if (!data.results || data.results.length === 0) {
+        listEl.innerHTML = '<p class="text-xs text-slate-500 italic">No results found.</p>';
+        return;
+      }
+      listEl.innerHTML = data.results.map(r =>
+        '<div class="flex items-start justify-between gap-3 text-xs bg-white border border-slate-200 rounded p-2.5">'
+        + '<div><div class="font-semibold text-slate-800">' + esc(r.title) + '</div>'
+        + '<div class="text-slate-500 mt-0.5">by ' + esc(r.author_username || '?') + ' · ' + esc(r.review_status || '') + ' · score ' + ((r.score || 0) * 100).toFixed(0) + '%</div>'
+        + '</div>'
+        + '</div>'
+      ).join('');
+    } catch (e) {
+      listEl.innerHTML = '<p class="text-xs text-rose-500">Search request failed.</p>';
+    }
+  }
+
+})();
+</script>
 </body>
 </html>

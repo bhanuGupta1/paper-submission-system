@@ -35,6 +35,14 @@ async function submit(req, res, next) {
     if (!authors || !authors.trim()) return res.redirect('/author/submit?error=' + encodeURIComponent('Author list is required'));
     if (!abstract || abstract.trim().length < 50) return res.redirect('/author/submit?error=' + encodeURIComponent('Abstract must be at least 50 characters'));
 
+    if (trackId) {
+      const track = await Track.findById(parseInt(trackId, 10));
+      if (!track) return res.redirect('/author/submit?error=' + encodeURIComponent('Invalid track selected'));
+      if (track.submission_deadline && new Date(track.submission_deadline) < new Date()) {
+        return res.redirect('/author/submit?error=' + encodeURIComponent('Submission deadline for this track has passed'));
+      }
+    }
+
     const filePath = req.file ? req.file.path : null;
     const fileText = filePath ? await textExtract.extract(filePath).catch(() => null) : null;
 
