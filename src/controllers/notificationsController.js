@@ -22,4 +22,11 @@ async function markAllRead(req, res, next) {
   } catch (err) { next(err); }
 }
 
-module.exports = { list, markRead, markAllRead };
+async function unreadCount(req, res, next) {
+  try {
+    const count = await N.unreadCount(req.user.id);
+    res.json({ count });
+  } catch (err) { next(err); }
+}
+
+module.exports = { list, markRead, markAllRead, unreadCount };

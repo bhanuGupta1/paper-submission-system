@@ -90,6 +90,40 @@ function toggleDark() {
   applyDark(saved === 'dark' || (!saved && prefersDark));
 })();
 
+// ── Real-time notification badge polling (every 30s) ─────────────────────────
+<% if (currentUser) { %>
+(function() {
+  const POLL_INTERVAL = 30000;
+  const badge = document.querySelector('[aria-label^="Inbox"]');
+  if (!badge) return;
+  async function pollUnread() {
+    try {
+      const r = await fetch('/notifications/unread-count', { headers: { 'X-Requested-With': 'XMLHttpRequest' } });
+      if (!r.ok) return;
+      const data = await r.json();
+      const count = data.count || 0;
+      let dot = badge.querySelector('.notif-badge');
+      if (count > 0) {
+        if (!dot) {
+          dot = document.createElement('span');
+          dot.className = 'notif-badge absolute -top-1 -right-1 inline-flex items-center justify-center min-w-[18px] h-[18px] px-1 rounded-full bg-rose-500 text-white text-[10px] font-bold';
+          dot.setAttribute('aria-hidden', 'true');
+          badge.style.position = 'relative';
+          badge.appendChild(dot);
+        }
+        dot.textContent = count;
+        badge.setAttribute('aria-label', 'Inbox, ' + count + ' unread');
+      } else if (dot) {
+        dot.remove();
+        badge.setAttribute('aria-label', 'Inbox');
+      }
+    } catch (_) {}
+  }
+  pollUnread();
+  setInterval(pollUnread, POLL_INTERVAL);
+})();
+<% } %>
+
 // ── Session timeout warning (client-side, 8h max age with 5-min warning) ─────
 <% if (currentUser) { %>
 (function() {
