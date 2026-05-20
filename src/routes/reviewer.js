@@ -6,6 +6,7 @@ const ctl = require('../controllers/reviewerController');
 
 const router = express.Router();
 router.use(requireRole('reviewer', 'admin'));
+router.use(express.json({ limit: '32kb' }));
 
 router.get('/', ctl.dashboard);
 router.get('/papers/:paperId', ctl.showReview);

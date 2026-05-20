@@ -35,7 +35,7 @@
         <a class="nav-link relative" href="/notifications" aria-label="Inbox<%= unreadCount > 0 ? `, ${unreadCount} unread` : '' %>">
           Inbox
           <% if (unreadCount > 0) { %>
-            <span class="absolute -top-1 -right-1 inline-flex items-center justify-center min-w-[18px] h-[18px] px-1 rounded-full bg-rose-500 text-white text-[10px] font-bold" aria-hidden="true"><%= unreadCount %></span>
+            <span class="notif-badge absolute -top-1 -right-1 inline-flex items-center justify-center min-w-[18px] h-[18px] px-1 rounded-full bg-rose-500 text-white text-[10px] font-bold" aria-hidden="true"><%= unreadCount %></span>
           <% } %>
         </a>
         <button onclick="toggleDark()" class="nav-link" id="darkToggle" title="Toggle dark mode" aria-label="Toggle dark mode">

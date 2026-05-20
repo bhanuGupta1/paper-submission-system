@@ -489,7 +489,7 @@
       }
       container.innerHTML = data.messages.map(m =>
         '<div class="text-xs bg-white border border-slate-200 rounded p-2">'
-        + '<div class="flex justify-between mb-0.5"><strong class="text-slate-700">' + esc(m.author_username || 'Unknown') + '</strong>'
+        + '<div class="flex justify-between mb-0.5"><strong class="text-slate-700">' + esc(m.username || 'Unknown') + '</strong>'
         + '<span class="text-slate-400">' + esc(new Date(m.created_at).toLocaleString()) + '</span></div>'
         + '<p class="text-slate-600">' + esc(m.message) + '</p>'
         + '</div>'

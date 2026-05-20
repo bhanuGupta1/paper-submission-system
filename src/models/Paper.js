@@ -132,7 +132,7 @@ function listAccepted({ limit = 50, offset = 0, q = null } = {}) {
   let extra = '';
   if (q) { extra = 'AND (p.title LIKE ? OR p.abstract LIKE ? OR p.keywords LIKE ?)'; params.push(`%${q}%`, `%${q}%`, `%${q}%`); }
   return all(
-    `SELECT p.id, p.title, p.abstract, p.keywords, p.submission_date FROM papers p WHERE p.review_status='accepted' ${extra} ORDER BY p.submission_date DESC LIMIT ? OFFSET ?`,
+    `SELECT p.id, p.title, p.authors, p.abstract, p.keywords, p.tags, p.submission_date FROM papers p WHERE p.review_status='accepted' ${extra} ORDER BY p.submission_date DESC LIMIT ? OFFSET ?`,
     [...params, limit, offset]
   );
 }

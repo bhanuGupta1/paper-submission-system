@@ -40,10 +40,10 @@ async function showReview(req, res, next) {
     const paper = await Paper.findById(req.params.paperId);
     const review = await Review.findByPaperReviewer(req.params.paperId, req.user.id);
     if (!paper || !review) {
-      return res.status(404).render('error', { title: 'Not Found', message: 'Review assignment not found.' });
+      return res.status(404).render('errors/404', { title: 'Not Found', path: req.originalUrl });
     }
     if (review.declined_at) {
-      return res.status(403).render('error', { title: 'Assignment Declined', message: 'You have declined this review assignment.' });
+      return res.status(403).render('errors/403', { title: 'Assignment Declined', message: 'You have declined this review assignment.' });
     }
     const blindedPaper = blindPaperForReviewer(paper);
     const discussion = await Discussion.listByPaper(paper.id);
@@ -74,6 +74,16 @@ async function submit(req, res, next) {
     }
     const { summary, strengths, weaknesses, novelty_score, clarity_score, significance_score, recommendation, review_text, ai_assisted } = req.body;
 
+    if (!summary || summary.trim().length < 20) {
+      return res.status(400).render('error', { title: 'Incomplete review', message: 'Summary must be at least 20 characters.' });
+    }
+    if (!strengths || strengths.trim().length < 10) {
+      return res.status(400).render('error', { title: 'Incomplete review', message: 'Strengths section must be at least 10 characters.' });
+    }
+    if (!weaknesses || weaknesses.trim().length < 10) {
+      return res.status(400).render('error', { title: 'Incomplete review', message: 'Weaknesses section must be at least 10 characters.' });
+    }
+
     // Validate scores
     const scores = [novelty_score, clarity_score, significance_score].map((s) => parseInt(s, 10));
     if (scores.some((s) => isNaN(s) || s < 1 || s > 5)) {
@@ -100,8 +110,25 @@ async function submit(req, res, next) {
       if (recs.every((r) => r === 'accept')) status = 'accepted';
       else if (recs.every((r) => r === 'reject')) status = 'rejected';
       await Paper.updateStatus(review.paper_id, status);
-      // Notify editor
       logger.info({ paperId: review.paper_id, status }, 'All reviews submitted — paper status auto-updated');
+      // Notify editors/admins to make the official decision — do NOT send author a decision notification here
+      const paper = await Paper.findById(review.paper_id);
+      if (paper) {
+        try {
+          const { all: dbAll } = require('../db/connection');
+          const editors = await dbAll("SELECT id FROM users WHERE role IN ('editor','admin') AND is_active = 1");
+          for (const ed of editors) {
+            await N.notify(ed.id, {
+              kind: 'review',
+              title: `All reviews in for "${paper.title}"`,
+              body: `All assigned reviewers have submitted their assessments. Please review and make the editorial decision.`,
+              link: `/editor`,
+            });
+          }
+        } catch (notifErr) {
+          logger.warn({ err: notifErr, paperId: review.paper_id }, 'Failed to notify editors of review completion');
+        }
+      }
     }
 
     res.redirect('/reviewer');
@@ -115,15 +142,30 @@ async function declineAssignment(req, res, next) {
       return res.status(403).json({ error: 'Cannot decline this assignment' });
     }
     if (review.review_date) return res.status(400).json({ error: 'Cannot decline a completed review' });
+    if (review.declined_at) return res.status(400).json({ error: 'Assignment already declined' });
     const reason = (req.body.reason || '').trim();
     if (!reason) return res.status(400).json({ error: 'Please provide a reason for declining' });
 
     await Review.decline(review.id, reason);
+    logger.info({ reviewId: review.id, paperId: review.paper_id, reviewerId: req.user.id, reason }, 'Reviewer declined assignment');
 
-    // Notify editors via system log (no dedicated editor notification target)
-    const paper = await Paper.findById(review.paper_id);
-    if (paper) {
-      logger.info({ reviewId: review.id, paperId: review.paper_id, reviewerId: req.user.id, reason }, 'Reviewer declined assignment');
+    // Notify editors — fire-and-forget so notification failure does not un-decline the assignment
+    try {
+      const paper = await Paper.findById(review.paper_id);
+      if (paper) {
+        const { all: dbAll } = require('../db/connection');
+        const editors = await dbAll("SELECT id FROM users WHERE role IN ('editor','admin') AND is_active = 1");
+        for (const ed of editors) {
+          await N.notify(ed.id, {
+            kind: 'assignment',
+            title: `Reviewer declined: "${paper.title}"`,
+            body: `${req.user.username} declined their review assignment. Reason: ${reason.slice(0, 100)}`,
+            link: `/editor`,
+          });
+        }
+      }
+    } catch (notifErr) {
+      logger.warn({ err: notifErr, reviewId: review.id }, 'Failed to notify editors of reviewer decline');
     }
 
     res.json({ ok: true });

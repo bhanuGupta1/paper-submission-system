@@ -30,10 +30,33 @@ const upload = multer({
 router.use(requireRole('author', 'admin'));
 router.get('/', ctl.dashboard);
 router.get('/submit', ctl.showSubmit);
-router.post('/submit', upload.single('paperFile'), ctl.submit);
+
+function handleUpload(redirectPath) {
+  return function (req, res, next) {
+    upload.single('paperFile')(req, res, function (err) {
+      if (!err) return next();
+      const multer = require('multer');
+      const msg = err instanceof multer.MulterError && err.code === 'LIMIT_FILE_SIZE'
+        ? 'File is too large. Maximum size is 10 MB.'
+        : err.message || 'File upload failed.';
+      return res.redirect(`${redirectPath}?error=${encodeURIComponent(msg)}`);
+    });
+  };
+}
+
+router.post('/submit', handleUpload('/author/submit'), ctl.submit);
 router.get('/papers/:id', ctl.paperDetail);
 router.get('/papers/:id/revise', ctl.showRevise);
-router.post('/papers/:id/revise', upload.single('paperFile'), ctl.submitRevision);
+router.post('/papers/:id/revise', function (req, res, next) {
+  upload.single('paperFile')(req, res, function (err) {
+    if (!err) return next();
+    const multer = require('multer');
+    const msg = err instanceof multer.MulterError && err.code === 'LIMIT_FILE_SIZE'
+      ? 'File is too large. Maximum size is 10 MB.'
+      : err.message || 'File upload failed.';
+    return res.redirect(`/author/papers/${req.params.id}/revise?error=${encodeURIComponent(msg)}`);
+  });
+}, ctl.submitRevision);
 router.get('/papers/:id/download', ctl.downloadPaper);
 router.get('/profile', ctl.profile);
 router.post('/profile', ctl.updateProfile);

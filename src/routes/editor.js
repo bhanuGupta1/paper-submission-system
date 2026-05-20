@@ -6,6 +6,7 @@ const ctl = require('../controllers/editorController');
 
 const router = express.Router();
 router.use(requireRole('editor', 'admin'));
+router.use(express.json({ limit: '32kb' }));
 
 router.get('/', ctl.dashboard);
 router.post('/assign-reviewer', ctl.assignReviewer);
