@@ -43,8 +43,8 @@
                 </div>
               </div>
               <div class="flex gap-2 shrink-0">
-                <button onclick="openEditModal(<%= JSON.stringify(track) %>)"
-                  class="text-xs text-indigo-600 hover:text-indigo-700 font-medium px-3 py-1.5 border border-indigo-200 rounded-md">Edit</button>
+                <button data-track="<%= JSON.stringify(track) %>"
+                  class="edit-track-btn text-xs text-indigo-600 hover:text-indigo-700 font-medium px-3 py-1.5 border border-indigo-200 rounded-md">Edit</button>
                 <form method="post" action="/admin/tracks/<%= track.id %>/delete" onsubmit="return confirm('Delete this track? Papers assigned to it will be untracked.')">
                   <button type="submit" class="text-xs text-red-600 hover:text-red-700 font-medium px-3 py-1.5 border border-red-200 rounded-md">Delete</button>
                 </form>
@@ -136,6 +136,10 @@
       document.getElementById('editActive').checked = !!track.is_active;
       document.getElementById('editTrackModal').classList.remove('hidden');
     }
+
+    document.querySelectorAll('.edit-track-btn').forEach(btn => {
+      btn.addEventListener('click', () => openEditModal(JSON.parse(btn.dataset.track)));
+    });
   </script>
 </body>
 </html>

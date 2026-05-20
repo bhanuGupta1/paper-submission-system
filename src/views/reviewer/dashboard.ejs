@@ -81,8 +81,9 @@
                 </a>
                 <% if (!p.recommendation) { %>
                   <button
-                    onclick="declareCoi(<%= p.paper_id %>, '<%= (p.paper_title || '').replace(/'/g, '\\\'') %>')"
-                    class="text-xs text-amber-600 hover:text-amber-700 font-medium px-2 py-1.5 border border-amber-200 rounded-md">
+                    data-paper-id="<%= p.paper_id %>"
+                    data-title="<%= p.paper_title || '' %>"
+                    class="coi-btn text-xs text-amber-600 hover:text-amber-700 font-medium px-2 py-1.5 border border-amber-200 rounded-md">
                     Declare COI
                   </button>
                 <% } %>
@@ -117,6 +118,10 @@
       document.getElementById('coiReason').value = '';
       document.getElementById('coiModal').classList.remove('hidden');
     }
+
+    document.querySelectorAll('.coi-btn').forEach(btn => {
+      btn.addEventListener('click', () => declareCoi(btn.dataset.paperId, btn.dataset.title));
+    });
     async function submitCoi() {
       const reason = document.getElementById('coiReason').value.trim();
       if (!reason) { showToast('Please describe the conflict', 'warning'); return; }

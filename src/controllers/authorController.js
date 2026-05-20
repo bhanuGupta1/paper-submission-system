@@ -167,7 +167,7 @@ async function profile(req, res, next) {
     const user = await User.findById(req.user.id);
     const stats = await Paper.authorStats(req.user.id);
     const aiUsage = await all('SELECT action, COUNT(*) AS n FROM ai_audit WHERE user_id = ? GROUP BY action ORDER BY n DESC', [req.user.id]);
-    res.render('author/profile', { title: 'Profile', user, stats, aiUsage });
+    res.render('author/profile', { title: 'Profile', user, stats, aiUsage, error: req.query.error || null, success: req.query.success || null });
   } catch (err) { next(err); }
 }
 

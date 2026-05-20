@@ -34,12 +34,12 @@
       <div class="grid md:grid-cols-4 gap-3 mb-6">
         <div class="metric-card">
           <div class="metric-label">Similarity</div>
-          <div class="stat-num text-3xl mt-1 <%= paper.similarity_score > 0.7 ? 'text-red-600' : paper.similarity_score > 0.4 ? 'text-amber-600' : 'text-emerald-600' %>"><%= (paper.similarity_score * 100).toFixed(0) %>%</div>
+          <div class="stat-num text-3xl mt-1 <%= paper.similarity_score != null && paper.similarity_score > 0.7 ? 'text-red-600' : paper.similarity_score != null && paper.similarity_score > 0.4 ? 'text-amber-600' : paper.similarity_score != null ? 'text-emerald-600' : 'text-slate-400' %>"><%= paper.similarity_score != null ? (paper.similarity_score * 100).toFixed(0) + '%' : '—' %></div>
           <div class="text-xs text-slate-500 mt-1">Corpus overlap</div>
         </div>
         <div class="metric-card">
           <div class="metric-label">AI-text likelihood</div>
-          <div class="stat-num text-3xl mt-1 <%= paper.ai_text_likelihood > 0.7 ? 'text-amber-600' : 'text-slate-700' %>"><%= (paper.ai_text_likelihood * 100).toFixed(0) %>%</div>
+          <div class="stat-num text-3xl mt-1 <%= paper.ai_text_likelihood != null && paper.ai_text_likelihood > 0.7 ? 'text-amber-600' : paper.ai_text_likelihood != null ? 'text-slate-700' : 'text-slate-400' %>"><%= paper.ai_text_likelihood != null ? (paper.ai_text_likelihood * 100).toFixed(0) + '%' : '—' %></div>
           <div class="text-xs text-slate-500 mt-1">Heuristic signal</div>
         </div>
         <div class="metric-card">

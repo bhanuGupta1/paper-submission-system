@@ -60,8 +60,8 @@
                   </div>
                   <div class="mt-4 flex flex-wrap gap-2 text-xs text-slate-600">
                     <span class="score-chip"><strong><%= p.review_count %></strong> reviews</span>
-                    <span class="score-chip">Similarity <strong><%= (p.similarity_score * 100).toFixed(0) %>%</strong></span>
-                    <span class="score-chip">AI signal <strong><%= (p.ai_text_likelihood * 100).toFixed(0) %>%</strong></span>
+                    <span class="score-chip">Similarity <strong><%= p.similarity_score != null ? (p.similarity_score * 100).toFixed(0) + '%' : '—' %></strong></span>
+                    <span class="score-chip">AI signal <strong><%= p.ai_text_likelihood != null ? (p.ai_text_likelihood * 100).toFixed(0) + '%' : '—' %></strong></span>
                   </div>
                 </div>
                 <div class="flex items-center">

@@ -6,6 +6,7 @@ const ctl = require('../controllers/adminController');
 
 const router = express.Router();
 router.use(requireRole('admin'));
+router.use(express.json({ limit: '32kb' }));
 
 router.get('/', ctl.dashboard);
 router.get('/users', ctl.listUsers);

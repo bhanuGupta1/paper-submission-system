@@ -7,6 +7,12 @@
     <div class="max-w-4xl mx-auto px-6 py-8">
       <h1 class="font-display text-3xl font-bold">Profile</h1>
       <p class="text-sm text-slate-600 mt-1">Public profile info and your AI usage on this account.</p>
+      <% if (error) { %>
+        <div class="mt-4 bg-red-50 border border-red-200 text-red-800 text-sm p-3 rounded-md" role="alert"><%= error %></div>
+      <% } %>
+      <% if (success) { %>
+        <div class="mt-4 bg-emerald-50 border border-emerald-200 text-emerald-800 text-sm p-3 rounded-md" role="alert"><%= success %></div>
+      <% } %>
 
       <div class="grid md:grid-cols-2 gap-6 mt-6">
         <div class="card p-6">
@@ -15,7 +21,7 @@
             <div><label class="block text-sm font-medium text-slate-700">Username</label>
               <input value="<%= user.username %>" disabled class="mt-1 block w-full rounded-md border border-slate-300 bg-slate-50 px-3 py-2 text-slate-500"></div>
             <div><label class="block text-sm font-medium text-slate-700">Email</label>
-              <input name="email" value="<%= user.email || '' %>" class="mt-1 block w-full rounded-md border border-slate-300 px-3 py-2 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 focus:outline-none"></div>
+              <input type="email" name="email" value="<%= user.email || '' %>" class="mt-1 block w-full rounded-md border border-slate-300 px-3 py-2 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 focus:outline-none"></div>
             <div><label class="block text-sm font-medium text-slate-700">Affiliation</label>
               <input name="affiliation" value="<%= user.affiliation || '' %>" class="mt-1 block w-full rounded-md border border-slate-300 px-3 py-2 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 focus:outline-none">
               <p class="text-xs text-slate-500 mt-1">Used for conflict-of-interest detection.</p></div>
