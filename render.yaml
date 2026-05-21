@@ -42,6 +42,12 @@ services:
       # - key: GOOGLE_CLIENT_SECRET
       #   sync: false
 
+      # Optional — GitHub OAuth (set in Render dashboard)
+      # - key: GITHUB_CLIENT_ID
+      #   sync: false
+      # - key: GITHUB_CLIENT_SECRET
+      #   sync: false
+
       # Optional — enable to use Claude AI features
       # - key: ANTHROPIC_API_KEY
       #   sync: false

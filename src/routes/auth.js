@@ -5,7 +5,7 @@ const rateLimit = require('express-rate-limit');
 const passport = require('passport');
 const ctl = require('../controllers/authController');
 const { requireJwt } = require('../middleware/auth');
-const { GOOGLE_ENABLED } = require('../services/oauth');
+const { GOOGLE_ENABLED, GITHUB_ENABLED } = require('../services/oauth');
 
 const router = express.Router();
 
@@ -53,6 +53,32 @@ if (GOOGLE_ENABLED) {
   );
   router.get('/auth/google/callback',
     passport.authenticate('google', { failureRedirect: '/login?error=OAuth+failed' }),
+    (req, res) => {
+      const user = req.user;
+      req.session.regenerate((err) => {
+        if (err) return res.redirect('/login?error=Session+error');
+        req.session.userId = user.id;
+        req.session.role = user.role;
+        req.session.username = user.username;
+        req.session.save(() => {
+          if (user.role === 'admin') return res.redirect('/admin');
+          if (user.role === 'editor') return res.redirect('/editor');
+          if (user.role === 'reviewer') return res.redirect('/reviewer');
+          if (user.role === 'reader') return res.redirect('/reader');
+          return res.redirect('/author');
+        });
+      });
+    }
+  );
+}
+
+// GitHub OAuth (only registered if credentials are set)
+if (GITHUB_ENABLED) {
+  router.get('/auth/github',
+    passport.authenticate('github', { scope: ['user:email'] })
+  );
+  router.get('/auth/github/callback',
+    passport.authenticate('github', { failureRedirect: '/login?error=GitHub+OAuth+failed' }),
     (req, res) => {
       const user = req.user;
       req.session.regenerate((err) => {
