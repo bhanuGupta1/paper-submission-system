@@ -74,7 +74,7 @@ const config = {
     },
     openrouter: {
       apiKey: process.env.OPENROUTER_API_KEY || '',
-      model: process.env.OPENROUTER_MODEL || 'meta-llama/llama-3.3-70b-instruct:free',
+      model: process.env.OPENROUTER_MODEL || 'meta-llama/llama-3.3-70b-instruct:free', // fallback chain in openrouter.js if this is rate-limited
     },
   },
   email: {

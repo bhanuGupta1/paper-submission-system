@@ -12,24 +12,27 @@ const heuristic = require('./heuristic');
 const API_URL = 'https://openrouter.ai/api/v1/chat/completions';
 const API_KEY = config.llm.openrouter.apiKey;
 
-// Task-specific free models
+// Task-specific free models — verified live as of 2026-05-22
 const MODELS = {
   analysis:      'meta-llama/llama-3.3-70b-instruct:free',
-  summarization: 'meta-llama/llama-3.1-8b-instruct:free',
-  similarity:    'mistralai/mistral-7b-instruct:free',
+  summarization: 'meta-llama/llama-3.2-3b-instruct:free',
+  similarity:    'google/gemma-4-31b-it:free',
   matching:      'meta-llama/llama-3.3-70b-instruct:free',
   quality:       'meta-llama/llama-3.3-70b-instruct:free',
   citation:      'meta-llama/llama-3.3-70b-instruct:free',
-  tone:          'mistralai/mistral-7b-instruct:free',
+  tone:          'google/gemma-4-31b-it:free',
   decision:      'meta-llama/llama-3.3-70b-instruct:free',
   default:       config.llm.openrouter.model || 'meta-llama/llama-3.3-70b-instruct:free',
 };
 
+// Ordered by capability; all verified live 2026-05-22
 const FALLBACK_MODELS = [
   'meta-llama/llama-3.3-70b-instruct:free',
+  'nousresearch/hermes-3-llama-3.1-405b:free',
+  'nvidia/nemotron-3-super-120b-a12b:free',
+  'qwen/qwen3-next-80b-a3b-instruct:free',
   'google/gemma-4-31b-it:free',
-  'meta-llama/llama-3.1-8b-instruct:free',
-  'mistralai/mistral-7b-instruct:free',
+  'meta-llama/llama-3.2-3b-instruct:free',
 ];
 
 // Strip control characters and obvious prompt-injection attempts from user text
