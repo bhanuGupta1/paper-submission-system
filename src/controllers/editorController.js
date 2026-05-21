@@ -11,6 +11,7 @@ const coi = require('../services/conflictOfInterest');
 const analytics = require('../services/operationsAnalytics');
 const N = require('../services/notifications');
 const emailService = require('../services/email');
+const slack = require('../services/slack');
 const { all } = require('../db/connection');
 const logger = require('../utils/logger');
 
@@ -131,6 +132,9 @@ async function decide(req, res, next) {
       const { subject, html, text } = emailService.submissionStatusEmail(author.username, paper.title, decision, `/author/papers/${paperId}`);
       emailService.send({ to: author.email, subject, html, text }).catch((e) => logger.warn({ e }, 'Decision email failed'));
     }
+
+    // Slack notification (non-blocking)
+    slack.notifyDecision({ paperId, title: paper.title, decision, editorUsername: req.user.username }).catch(() => {});
 
     res.redirect('/editor');
   } catch (err) { next(err); }
