@@ -49,13 +49,13 @@ services:
       #   sync: false
 
       # OpenRouter AI (free-tier LLM — llama-3.3-70b by default)
-      # Set OPENROUTER_API_KEY in the Render dashboard (Environment → Secret Files)
+      # Value for OPENROUTER_API_KEY must be set in the Render dashboard; it is not committed here.
       - key: LLM_PROVIDER
         value: openrouter
       - key: OPENROUTER_MODEL
         value: meta-llama/llama-3.3-70b-instruct:free
-      # - key: OPENROUTER_API_KEY
-      #   sync: false
+      - key: OPENROUTER_API_KEY
+        sync: false
 
       # Optional — enable to use Claude AI features instead
       # - key: ANTHROPIC_API_KEY

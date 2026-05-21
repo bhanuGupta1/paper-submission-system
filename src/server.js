@@ -32,6 +32,15 @@ async function start() {
 
 start().catch((err) => { logger.error({ err }, 'Startup failed'); process.exit(1); });
 
+// Log AI provider status on startup (never log the key value)
+const llmStatus = (() => {
+  const p = config.llm.provider;
+  if (p === 'openrouter') return config.llm.openrouter.apiKey ? 'OpenRouter: configured' : 'OpenRouter: OPENROUTER_API_KEY missing — heuristic fallback active';
+  if (p === 'claude') return config.llm.anthropic.apiKey ? 'Claude: configured' : 'Claude: ANTHROPIC_API_KEY missing — heuristic fallback active';
+  return 'heuristic (offline, zero-cost)';
+})();
+logger.info({ llmProvider: config.llm.provider }, `AI provider: ${llmStatus}`);
+
 const server = app.listen(config.port, () => {
   logger.info(`Server listening on http://localhost:${config.port}`);
 });
