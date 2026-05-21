@@ -242,4 +242,225 @@ async function reviewSummary(req, res, next) {
   } catch (err) { next(err); }
 }
 
-module.exports = { polish, titles, keywords, writingFeedback, checkReviewQuality, predictAcceptance, search, decisionDraft, reviewSummary };
+// ── Pre-submission desk rejection check ───────────────────────────────────────
+
+async function preSubmissionCheck(req, res, next) {
+  try {
+    const { title, abstract, wordCount, sections, referenceCount, keywords: kw } = req.body;
+    if (!abstract && !title) return res.status(400).json({ error: 'title or abstract required' });
+    const llm = require('../services/llm');
+    const result = await llm.deskRejectionCheck(title, abstract, wordCount, sections, referenceCount, !!kw);
+    await run('INSERT INTO ai_audit (user_id, action, provider) VALUES (?,?,?)', [req.user.id, 'desk_rejection_check', llm.providerName]);
+    if (!result) return res.json({ pass_fail: 'WARN', overall_score: 50, issues: [], ready_to_submit: true, confidence: 0, summary: 'AI check unavailable — manual review required.', provider: 'heuristic' });
+    res.json({ ...result, provider: llm.providerName });
+  } catch (err) { next(err); }
+}
+
+// ── Ethics & compliance checker ───────────────────────────────────────────────
+
+async function ethicsCheck(req, res, next) {
+  try {
+    const { title, abstract, fullText } = req.body;
+    if (!abstract) return res.status(400).json({ error: 'abstract required' });
+    const llm = require('../services/llm');
+    const result = await llm.ethicsCheck(title, abstract, fullText);
+    await run('INSERT INTO ai_audit (user_id, action, provider) VALUES (?,?,?)', [req.user.id, 'ethics_check', llm.providerName]);
+    if (!result) return res.json({ compliance_score: 0, overall_risk: 'UNKNOWN', issues: [], confidence: 0, message: 'Ethics check unavailable.', provider: 'heuristic' });
+    res.json({ ...result, provider: llm.providerName });
+  } catch (err) { next(err); }
+}
+
+// ── Citation hallucination detector ───────────────────────────────────────────
+
+async function citationCheck(req, res, next) {
+  try {
+    const { references } = req.body;
+    if (!references || !references.trim()) return res.status(400).json({ error: 'references required' });
+    const llm = require('../services/llm');
+    const result = await llm.citationHallucinationCheck(references);
+    await run('INSERT INTO ai_audit (user_id, action, provider) VALUES (?,?,?)', [req.user.id, 'citation_check', llm.providerName]);
+    if (!result) return res.json({ suspicious_citations: [], overall_risk: 'UNKNOWN', flagged_count: 0, confidence: 0, summary: 'Citation check unavailable.', provider: 'heuristic' });
+    res.json({ ...result, provider: llm.providerName });
+  } catch (err) { next(err); }
+}
+
+// ── Academic tone improver ────────────────────────────────────────────────────
+
+async function toneImprove(req, res, next) {
+  try {
+    const { text } = req.body;
+    if (!text || !text.trim()) return res.status(400).json({ error: 'text required' });
+    if (text.length > 3000) return res.status(400).json({ error: 'Text too long (max 3000 chars)' });
+    const llm = require('../services/llm');
+    const result = await llm.toneImprove(text);
+    await run('INSERT INTO ai_audit (user_id, action, provider) VALUES (?,?,?)', [req.user.id, 'tone_improve', llm.providerName]);
+    if (!result) return res.json({ improved_text: text, changes_made: [], tone_score_before: 50, tone_score_after: 50, confidence: 0, provider: 'heuristic' });
+    res.json({ ...result, provider: llm.providerName });
+  } catch (err) { next(err); }
+}
+
+// ── Tone improve — SSE stream ─────────────────────────────────────────────────
+
+async function toneImproveStream(req, res, next) {
+  try {
+    const { text } = req.query;
+    if (!text || !text.trim()) { res.end(); return; }
+    const llm = require('../services/llm');
+    await run('INSERT INTO ai_audit (user_id, action, provider) VALUES (?,?,?)', [req.user.id, 'tone_improve_stream', llm.providerName]);
+    await llm.streamToneImprove(decodeURIComponent(text), res);
+  } catch (err) { next(err); }
+}
+
+// ── Writing quality scorer ────────────────────────────────────────────────────
+
+async function writingScore(req, res, next) {
+  try {
+    const { text } = req.body;
+    if (!text || !text.trim()) return res.status(400).json({ error: 'text required' });
+    const llm = require('../services/llm');
+    const result = await llm.writingScore(text);
+    await run('INSERT INTO ai_audit (user_id, action, provider) VALUES (?,?,?)', [req.user.id, 'writing_score', llm.providerName]);
+    if (!result) return res.json({ clarity: 50, coherence: 50, academic_vocabulary: 50, structure: 50, overall_grade: 'C', suggestions: [], strengths: [], confidence: 0, provider: 'heuristic' });
+    res.json({ ...result, provider: llm.providerName });
+  } catch (err) { next(err); }
+}
+
+// ── Section-by-section feedback ───────────────────────────────────────────────
+
+async function sectionFeedback(req, res, next) {
+  try {
+    const { sectionText, sectionType } = req.body;
+    if (!sectionText || !sectionType) return res.status(400).json({ error: 'sectionText and sectionType required' });
+    const allowed = ['introduction', 'methods', 'results', 'discussion', 'abstract', 'conclusion'];
+    if (!allowed.includes(sectionType.toLowerCase())) return res.status(400).json({ error: 'Invalid sectionType' });
+    const llm = require('../services/llm');
+    const result = await llm.sectionFeedback(sectionText, sectionType);
+    await run('INSERT INTO ai_audit (user_id, action, provider) VALUES (?,?,?)', [req.user.id, 'section_feedback', llm.providerName]);
+    if (!result) return res.json({ score: 50, feedback: [], strengths: [], improvements: [], pass_fail: 'WARN', confidence: 0, provider: 'heuristic' });
+    res.json({ ...result, provider: llm.providerName });
+  } catch (err) { next(err); }
+}
+
+// ── Review draft assistant ────────────────────────────────────────────────────
+
+async function reviewAssist(req, res, next) {
+  try {
+    const { roughNotes, paperId } = req.body;
+    if (!roughNotes || !roughNotes.trim()) return res.status(400).json({ error: 'roughNotes required' });
+    const paper = paperId ? await Paper.findById(paperId) : null;
+    const llm = require('../services/llm');
+    const result = await llm.reviewAssist(roughNotes, paper?.title || '', paper?.abstract || '');
+    await run('INSERT INTO ai_audit (user_id, paper_id, action, provider) VALUES (?,?,?,?)', [req.user.id, paperId || null, 'review_assist', llm.providerName]);
+    if (!result) return res.json({ formatted_review: roughNotes, tone_score: 50, completeness_score: 50, flagged_phrases: [], missing_sections: [], confidence: 0, provider: 'heuristic' });
+    res.json({ ...result, provider: llm.providerName });
+  } catch (err) { next(err); }
+}
+
+// ── LLM review quality check ──────────────────────────────────────────────────
+
+async function reviewQualityLlm(req, res, next) {
+  try {
+    const { reviewId } = req.params;
+    const review = await Review.findById(reviewId);
+    if (!review) return res.status(404).json({ error: 'Review not found' });
+    const user = req.user || req.apiUser;
+    if (!['admin', 'editor'].includes(user.role) && review.reviewer_id !== user.id) return res.status(403).json({ error: 'Forbidden' });
+    const paper = await Paper.findById(review.paper_id);
+    const heuristicResult = reviewQuality.assessReview(review, paper);
+    const llm = require('../services/llm');
+    const llmResult = await llm.reviewQualityLlm(review, paper?.title || '');
+    await run('INSERT INTO ai_audit (user_id, paper_id, action, provider) VALUES (?,?,?,?)', [user.id, review.paper_id, 'review_quality_llm', llm.providerName]);
+    res.json({ heuristic: heuristicResult, llm: llmResult, provider: llm.providerName });
+  } catch (err) { next(err); }
+}
+
+// ── Author revision summarizer ────────────────────────────────────────────────
+
+async function revisionSummary(req, res, next) {
+  try {
+    const { paperId } = req.params;
+    const paper = await Paper.findById(paperId);
+    if (!paper) return res.status(404).json({ error: 'Paper not found' });
+    if (req.user.role !== 'author' && !['editor','admin'].includes(req.user.role)) return res.status(403).json({ error: 'Forbidden' });
+    if (req.user.role === 'author' && paper.author_id !== req.user.id) return res.status(403).json({ error: 'Forbidden' });
+    const reviews = await Review.listByPaper(paperId);
+    const submitted = reviews.filter(r => r.review_date && !r.declined_at);
+    if (!submitted.length) return res.json({ summary: null, message: 'No completed reviews yet.' });
+    const reviewsText = submitted.map((r, i) => 'Reviewer ' + (i+1) + ':\n' + [r.summary, r.strengths, r.weaknesses].filter(Boolean).join('\n')).join('\n\n---\n\n');
+    const llm = require('../services/llm');
+    const result = await llm.revisionSummarizer(paper.title, reviewsText);
+    await run('INSERT INTO ai_audit (user_id, paper_id, action, provider) VALUES (?,?,?,?)', [req.user.id, paperId, 'revision_summary', llm.providerName]);
+    if (!result) return res.json({ summary: 'Please review the feedback manually.', themes: [], revision_checklist: [], overall_revision_effort: 'MODERATE', provider: 'heuristic' });
+    res.json({ ...result, provider: llm.providerName });
+  } catch (err) { next(err); }
+}
+
+// ── Response-to-reviewers assistant ──────────────────────────────────────────
+
+async function responseToReviewers(req, res, next) {
+  try {
+    const { paperId } = req.params;
+    const { comment } = req.body;
+    if (!comment) return res.status(400).json({ error: 'comment required' });
+    const paper = await Paper.findById(paperId);
+    if (!paper) return res.status(404).json({ error: 'Paper not found' });
+    if (req.user.role === 'author' && paper.author_id !== req.user.id) return res.status(403).json({ error: 'Forbidden' });
+    const llm = require('../services/llm');
+    const result = await llm.responseToReviewers(paper.title, comment);
+    await run('INSERT INTO ai_audit (user_id, paper_id, action, provider) VALUES (?,?,?,?)', [req.user.id, paperId, 'response_to_reviewer', llm.providerName]);
+    if (!result) return res.json({ draft_response: '', action_required: 'REVISED', confidence: 0, provider: 'heuristic' });
+    res.json({ ...result, provider: llm.providerName });
+  } catch (err) { next(err); }
+}
+
+// ── Analytics insights ────────────────────────────────────────────────────────
+
+async function analyticsInsights(req, res, next) {
+  try {
+    const user = req.user;
+    if (!['admin', 'editor'].includes(user.role)) return res.status(403).json({ error: 'Editors and admins only' });
+    const ops = await require('../services/operationsAnalytics').getAdminAnalytics();
+    const stats = {
+      totalPapers: ops.statusBreakdown.reduce((a, b) => a + b.count, 0),
+      statusBreakdown: ops.statusBreakdown,
+      reviewCompletionRate: ops.reviewFunnel.completionRate,
+      pendingReviews: ops.reviewFunnel.pending,
+      averageScores: ops.reviewFunnel.averageScores,
+      atRiskPapers: ops.atRiskPapers.length,
+      integritySnapshot: ops.integritySnapshot,
+    };
+    const llm = require('../services/llm');
+    const result = await llm.analyticsInsights(stats);
+    await run('INSERT INTO ai_audit (user_id, action, provider) VALUES (?,?,?)', [user.id, 'analytics_insights', llm.providerName]);
+    if (!result) return res.json({ insights: [], key_findings: [], action_items: [], trend_summary: 'AI insights unavailable.', provider: 'heuristic' });
+    res.json({ ...result, provider: llm.providerName });
+  } catch (err) { next(err); }
+}
+
+// ── Structured rubric generator ───────────────────────────────────────────────
+
+async function generateRubric(req, res, next) {
+  try {
+    const { paperId } = req.params;
+    const paper = await Paper.findById(paperId);
+    if (!paper) return res.status(404).json({ error: 'Paper not found' });
+    const paperType = req.query.type || 'empirical';
+    const domain = paper.keywords || paper.tags || '';
+    const llm = require('../services/llm');
+    const result = await llm.generateRubric(paperType, domain, paper.abstract || '');
+    await run('INSERT INTO ai_audit (user_id, paper_id, action, provider) VALUES (?,?,?,?)', [req.user.id, paperId, 'generate_rubric', llm.providerName]);
+    if (!result) return res.json({ rubric_title: 'Standard Review Rubric', sections: [], overall_guidance: '', estimated_review_time_hours: 3, confidence: 0, provider: 'heuristic' });
+    res.json({ ...result, provider: llm.providerName });
+  } catch (err) { next(err); }
+}
+
+module.exports = {
+  polish, titles, keywords, writingFeedback,
+  checkReviewQuality, predictAcceptance, search,
+  decisionDraft, reviewSummary,
+  preSubmissionCheck, ethicsCheck, citationCheck,
+  toneImprove, toneImproveStream, writingScore, sectionFeedback,
+  reviewAssist, reviewQualityLlm,
+  revisionSummary, responseToReviewers,
+  analyticsInsights, generateRubric,
+};
