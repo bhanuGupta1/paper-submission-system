@@ -5,13 +5,17 @@ const express = require('express');
 const session = require('express-session');
 const SQLiteStore = require('connect-sqlite3')(session);
 const helmet = require('helmet');
+const passport = require('passport');
 const config = require('./config');
 const logger = require('./utils/logger');
 const routes = require('./routes');
 const { notFound, errorHandler } = require('./middleware/errorHandler');
 const N = require('./services/notifications');
+const { setupPassport } = require('./services/oauth');
 
 function createApp() {
+  setupPassport();
+
   const app = express();
   app.set('view engine', 'ejs');
   app.set('views', path.join(__dirname, 'views'));
@@ -43,7 +47,9 @@ function createApp() {
   }));
 
   // Make user info + unread-notifications count available to every view.
+  const { GOOGLE_ENABLED } = require('./services/oauth');
   app.use(async (req, res, next) => {
+    res.locals.googleOAuthEnabled = GOOGLE_ENABLED;
     if (req.session.userId) {
       res.locals.currentUser = { id: req.session.userId, role: req.session.role, username: req.session.username };
       try { res.locals.unreadCount = await N.unreadCount(req.session.userId); }
@@ -53,6 +59,21 @@ function createApp() {
       res.locals.unreadCount = 0;
     }
     next();
+  });
+
+  // Passport must be initialized after session middleware.
+  app.use(passport.initialize());
+  app.use(passport.session());
+  // Passport session serialization — not used for primary auth but needed by OAuth callback.
+  passport.serializeUser((user, done) => done(null, user.id));
+  passport.deserializeUser(async (id, done) => {
+    try {
+      const User = require('./models/User');
+      const user = await User.findById(id);
+      done(null, user || false);
+    } catch (err) {
+      done(err);
+    }
   });
 
   app.use(routes);

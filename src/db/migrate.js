@@ -25,8 +25,16 @@ async function migrate() {
       created_at TEXT NOT NULL DEFAULT (datetime('now'))
     )
   `);
-  // Make affiliation column work even on older DBs (best-effort ALTER).
+  // Best-effort ALTER TABLE for columns added in later migrations.
   await run(`ALTER TABLE users ADD COLUMN affiliation TEXT`).catch(() => {});
+  await run(`ALTER TABLE users ADD COLUMN email_verified INTEGER NOT NULL DEFAULT 0`).catch(() => {});
+  await run(`ALTER TABLE users ADD COLUMN is_active INTEGER NOT NULL DEFAULT 1`).catch(() => {});
+  await run(`ALTER TABLE users ADD COLUMN last_login TEXT`).catch(() => {});
+  await run(`ALTER TABLE users ADD COLUMN oauth_provider TEXT`).catch(() => {});
+  await run(`ALTER TABLE users ADD COLUMN oauth_id TEXT`).catch(() => {});
+  // Allow OAuth users to have an empty password_hash (they sign in via provider only).
+  // The CHECK(password_hash NOT NULL) is on the original CREATE TABLE, so new rows are fine
+  // with '' as a hash; existing tables won't break.
 
   await run(`
     CREATE TABLE IF NOT EXISTS papers (

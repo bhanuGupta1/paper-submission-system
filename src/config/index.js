@@ -79,6 +79,12 @@ const config = {
   logging: {
     level: process.env.LOG_LEVEL || 'info',
   },
+  oauth: {
+    google: {
+      clientId: process.env.GOOGLE_CLIENT_ID || '',
+      clientSecret: process.env.GOOGLE_CLIENT_SECRET || '',
+    },
+  },
   paths: { root },
 };
 
