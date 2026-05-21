@@ -38,14 +38,14 @@
             <span class="notif-badge absolute -top-1 -right-1 inline-flex items-center justify-center min-w-[18px] h-[18px] px-1 rounded-full bg-rose-500 text-white text-[10px] font-bold" aria-hidden="true"><%= unreadCount %></span>
           <% } %>
         </a>
-        <button onclick="toggleDark()" class="nav-link" id="darkToggle" title="Toggle dark mode" aria-label="Toggle dark mode">
-          <span id="darkIcon">☾</span>
+        <button onclick="toggleDark()" id="darkToggle" class="dark-toggle" title="Toggle dark mode" aria-label="Toggle dark mode" role="switch" aria-checked="false">
+          <span class="dark-toggle-thumb" id="darkIcon">☽</span>
         </button>
         <span class="ml-2 text-xs text-slate-400 hidden sm:inline" aria-label="Logged in as <%= currentUser.username %>">@<%= currentUser.username %></span>
         <a class="nav-link text-rose-200 hover:text-rose-100 hover:bg-rose-500/10" href="/logout">Sign out</a>
       <% } else { %>
-        <button onclick="toggleDark()" class="nav-link" id="darkToggle" title="Toggle dark mode" aria-label="Toggle dark mode">
-          <span id="darkIcon">☾</span>
+        <button onclick="toggleDark()" id="darkToggle" class="dark-toggle" title="Toggle dark mode" aria-label="Toggle dark mode" role="switch" aria-checked="false">
+          <span class="dark-toggle-thumb" id="darkIcon">☽</span>
         </button>
         <a class="nav-link" href="/login">Sign in</a>
         <a class="nav-cta ml-1 font-semibold hover:opacity-95" href="/register">Create account</a>
@@ -76,18 +76,23 @@ window.showToast = function(message, type = 'info', duration = 4000) {
 // ── Dark mode ─────────────────────────────────────────────────────────────────
 function applyDark(dark) {
   document.documentElement.classList.toggle('dark', dark);
+  const toggle = document.getElementById('darkToggle');
+  if (toggle) toggle.setAttribute('aria-checked', dark ? 'true' : 'false');
   const icon = document.getElementById('darkIcon');
-  if (icon) icon.textContent = dark ? '☀' : '☾';
+  if (icon) icon.textContent = dark ? '☀' : '☽';
 }
 function toggleDark() {
   const dark = !document.documentElement.classList.contains('dark');
   localStorage.setItem('theme', dark ? 'dark' : 'light');
   applyDark(dark);
 }
+// Sync toggle state with whatever the <head> IIFE already applied (FOUC prevention)
 (function() {
-  const saved = localStorage.getItem('theme');
-  const prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
-  applyDark(saved === 'dark' || (!saved && prefersDark));
+  const isDark = document.documentElement.classList.contains('dark');
+  const toggle = document.getElementById('darkToggle');
+  if (toggle) toggle.setAttribute('aria-checked', isDark ? 'true' : 'false');
+  const icon = document.getElementById('darkIcon');
+  if (icon) icon.textContent = isDark ? '☀' : '☽';
 })();
 
 // ── Real-time notification badge polling (every 30s) ─────────────────────────

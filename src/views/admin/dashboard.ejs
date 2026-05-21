@@ -24,32 +24,32 @@
 
       <!-- KPI row -->
       <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-        <div class="metric-card">
-          <div class="stat-num text-3xl" style="color:var(--brand-600)"><%= papers.length %></div>
+        <article class="stat-glass-card glass-card p-5">
+          <div class="stat-num text-3xl gradient-text"><%= papers.length %></div>
           <div class="metric-label">Total papers</div>
-          <div class="mt-2 text-xs" style="color:var(--text-tertiary)">All statuses</div>
-        </div>
-        <div class="metric-card">
-          <div class="stat-num text-3xl" style="color:#7c3aed"><%= ops.reviewFunnel.assignments %></div>
+          <div class="sparkline mt-3" aria-hidden="true"><span style="height:40%"></span><span style="height:60%"></span><span style="height:50%"></span><span style="height:80%"></span><span style="height:70%"></span><span style="height:90%"></span></div>
+        </article>
+        <article class="stat-glass-card glass-card p-5">
+          <div class="stat-num text-3xl gradient-text"><%= ops.reviewFunnel.assignments %></div>
           <div class="metric-label">Assignments</div>
-          <div class="mt-2 text-xs" style="color:var(--text-tertiary)"><%= ops.reviewFunnel.pending %> pending</div>
-        </div>
-        <div class="metric-card">
-          <div class="stat-num text-3xl" style="color:var(--success-600)"><%= ops.reviewFunnel.completionRate %>%</div>
+          <div class="sparkline violet mt-3" aria-hidden="true"><span style="height:50%"></span><span style="height:65%"></span><span style="height:55%"></span><span style="height:75%"></span><span style="height:68%"></span><span style="height:80%"></span></div>
+        </article>
+        <article class="stat-glass-card glass-card p-5">
+          <div class="stat-num text-3xl gradient-text"><%= ops.reviewFunnel.completionRate %>%</div>
           <div class="metric-label">Review completion</div>
-          <div class="mt-2 text-xs" style="color:var(--text-tertiary)">Across all reviewers</div>
-        </div>
-        <div class="metric-card">
-          <div class="stat-num text-3xl" style="color:var(--warning-600)"><%= aiUsage.reduce((a, r) => a + r.n, 0) %></div>
+          <div class="sparkline green mt-3" aria-hidden="true"><span style="height:30%"></span><span style="height:45%"></span><span style="height:60%"></span><span style="height:75%"></span><span style="height:85%"></span><span style="height:95%"></span></div>
+        </article>
+        <article class="stat-glass-card glass-card p-5">
+          <div class="stat-num text-3xl gradient-text"><%= aiUsage.reduce((a, r) => a + r.n, 0) %></div>
           <div class="metric-label">AI assists</div>
-          <div class="mt-2 text-xs" style="color:var(--text-tertiary)">Fully audited</div>
-        </div>
+          <div class="sparkline amber mt-3" aria-hidden="true"><span style="height:55%"></span><span style="height:70%"></span><span style="height:62%"></span><span style="height:85%"></span><span style="height:75%"></span><span style="height:90%"></span></div>
+        </article>
       </div>
 
       <!-- Pipeline + Integrity row -->
       <div class="grid lg:grid-cols-[1.3fr_0.7fr] gap-5 mb-6">
         <!-- Submission pipeline -->
-        <section class="card p-6">
+        <section class="glass-card p-6">
           <div class="flex items-center justify-between mb-5">
             <div>
               <h2 class="font-display text-lg font-bold" style="color:var(--text-primary)">Submission pipeline</h2>
@@ -101,7 +101,7 @@
         </section>
 
         <!-- Integrity snapshot -->
-        <section class="card p-6">
+        <section class="glass-card p-6">
           <h2 class="font-display text-lg font-bold mb-1" style="color:var(--text-primary)">Integrity snapshot</h2>
           <p class="text-xs mb-5" style="color:var(--text-tertiary)">Triage signals — never automated decisions</p>
 
@@ -135,7 +135,7 @@
       <!-- At-risk queue + submission table -->
       <div class="grid lg:grid-cols-[0.38fr_0.62fr] gap-5 mb-6">
         <!-- At-risk queue -->
-        <section class="card p-5">
+        <section class="glass-card p-5">
           <div class="flex items-center justify-between mb-4">
             <div>
               <h2 class="font-display text-lg font-bold" style="color:var(--text-primary)">At-risk queue</h2>

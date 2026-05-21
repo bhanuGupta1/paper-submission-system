@@ -21,7 +21,7 @@
       <% } %>
 
       <div class="grid lg:grid-cols-[0.68fr_0.32fr] gap-6">
-        <form action="/author/submit" method="post" enctype="multipart/form-data" class="card p-6 space-y-5">
+        <form action="/author/submit" method="post" enctype="multipart/form-data" class="glass-card gradient-border-card p-6 sm:p-8 space-y-5">
 
           <div class="grid md:grid-cols-2 gap-4">
             <div class="md:col-span-2">
@@ -120,12 +120,15 @@
           </div>
 
           <div class="flex items-center justify-end pt-1">
-            <button class="btn btn-primary">Submit for review</button>
+            <button class="btn-gradient shimmer-btn">
+              Submit for review
+              <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6"/></svg>
+            </button>
           </div>
         </form>
 
         <aside class="space-y-4">
-          <div class="card p-5">
+          <div class="glass-card p-5">
             <p class="eyebrow mb-4" style="color:var(--brand-600)">Review pipeline</p>
             <div class="space-y-4">
               <div class="process-step"><h3 class="font-semibold text-sm" style="color:var(--text-primary)">1. Metadata</h3><p class="text-sm mt-1" style="color:var(--text-secondary)">Title, authors, abstract, keywords, and optional tags.</p></div>
@@ -134,7 +137,7 @@
               <div class="process-step"><h3 class="font-semibold text-sm" style="color:var(--text-primary)">4. Decision</h3><p class="text-sm mt-1" style="color:var(--text-secondary)">Editors make the final call with a full audit trail.</p></div>
             </div>
           </div>
-          <div class="card p-5">
+          <div class="glass-card p-5">
             <h2 class="font-display text-lg font-semibold" style="color:var(--text-primary)">AI transparency</h2>
             <p class="text-sm mt-2 leading-relaxed" style="color:var(--text-secondary)">Assists are optional, logged, and support human authorship — not replace editorial judgement.</p>
           </div>

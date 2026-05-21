@@ -19,7 +19,7 @@
         <div class="grid gap-3 mb-8">
           <% active.forEach(p => { %>
             <% const s = p.reviewStats; %>
-            <div class="card p-5">
+            <div class="glass-card p-5">
               <div class="flex items-start justify-between gap-4">
                 <div class="flex-1 min-w-0">
                   <div class="flex items-center gap-3 flex-wrap">
@@ -83,7 +83,7 @@
           <% }) %>
         </div>
       <% } else { %>
-        <div class="card p-10 text-center mb-8">
+        <div class="glass-card p-10 text-center mb-8">
           <p class="text-sm" style="color:var(--text-tertiary)">No active papers in review.</p>
         </div>
       <% } %>

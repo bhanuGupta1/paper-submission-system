@@ -7,42 +7,42 @@
     <div class="max-w-3xl mx-auto px-6 py-10">
 
       <!-- Header -->
-      <div class="flex items-center justify-between mb-8">
+      <div class="glass-card gradient-border-card p-6 sm:p-8 mb-8 flex items-center justify-between gap-4">
         <div>
-          <p class="eyebrow" style="color:var(--brand-600)">Notifications</p>
-          <h1 class="font-display text-3xl font-bold mt-1" style="color:var(--text-primary)">Inbox</h1>
-          <p class="text-sm mt-1" style="color:var(--text-secondary)">
+          <p class="eyebrow" style="color:var(--accent-500)">Notifications</p>
+          <h1 class="font-display mt-2 text-4xl font-extrabold gradient-text">Inbox</h1>
+          <p class="text-sm mt-2" style="color:var(--text-secondary)">
             <% const unread = items.filter(i => !i.read_at).length; %>
-            <%= unread > 0 ? unread + ' unread · ' : '' %><%= items.length %> total
+            <%= unread > 0 ? unread + ' unread · ' : 'All caught up · ' %><%= items.length %> total
           </p>
         </div>
         <% if (items.some(i => !i.read_at)) { %>
           <form method="post" action="/notifications/mark-all-read">
-            <button class="btn btn-secondary btn-sm">Mark all read</button>
+            <button class="btn-gradient shimmer-btn text-sm">Mark all read</button>
           </form>
         <% } %>
       </div>
 
       <% if (items.length === 0) { %>
         <!-- Empty state -->
-        <div class="card p-16 text-center">
-          <div class="inline-flex h-16 w-16 items-center justify-center rounded-2xl mb-5" style="background:linear-gradient(135deg,var(--brand-100),var(--accent-100))">
-            <svg class="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor" style="color:var(--brand-600)">
+        <div class="glass-card p-16 text-center">
+          <div class="inline-flex h-16 w-16 items-center justify-center rounded-2xl mb-5" style="background:linear-gradient(135deg,rgba(99,102,241,0.15),rgba(6,182,212,0.10));border:1px solid rgba(99,102,241,0.2)">
+            <svg class="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor" style="color:var(--brand-500)">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
             </svg>
           </div>
-          <h2 class="font-display text-xl font-bold" style="color:var(--text-primary)">You're all caught up</h2>
-          <p class="text-sm mt-2" style="color:var(--text-secondary)">New review assignments, decisions, and submission updates will appear here.</p>
+          <h2 class="font-display text-2xl font-extrabold" style="color:var(--text-primary)">You're all caught up</h2>
+          <p class="text-sm mt-2 max-w-sm mx-auto" style="color:var(--text-secondary)">New review assignments, decisions, and submission updates will appear here.</p>
         </div>
       <% } else { %>
-        <div class="space-y-2">
+        <div class="space-y-3">
           <% items.forEach(n => { %>
             <%
               const kindMeta = {
-                decision:   { icon: 'M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z', bg: 'var(--success-50)', border: 'var(--success-100)', iconColor: 'var(--success-700)', label: 'Decision' },
-                assignment: { icon: 'M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2', bg: 'var(--info-50)', border: 'var(--info-100)', iconColor: 'var(--info-700)', label: 'Assignment' },
-                submission: { icon: 'M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12', bg: 'var(--brand-50)', border: 'var(--brand-100)', iconColor: 'var(--brand-600)', label: 'Submission' },
-                status:     { icon: 'M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z', bg: 'var(--warning-50)', border: 'var(--warning-100)', iconColor: 'var(--warning-700)', label: 'Status' },
+                decision:   { icon: 'M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z', bg: 'rgba(5,150,105,0.1)', border: 'rgba(5,150,105,0.2)', iconColor: 'var(--success-700)', label: 'Decision' },
+                assignment: { icon: 'M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2', bg: 'rgba(6,182,212,0.08)', border: 'rgba(6,182,212,0.2)', iconColor: 'var(--accent-600)', label: 'Assignment' },
+                submission: { icon: 'M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12', bg: 'rgba(99,102,241,0.08)', border: 'rgba(99,102,241,0.2)', iconColor: 'var(--brand-500)', label: 'Submission' },
+                status:     { icon: 'M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z', bg: 'rgba(217,119,6,0.08)', border: 'rgba(217,119,6,0.2)', iconColor: 'var(--warning-700)', label: 'Status' },
               };
               const meta = kindMeta[n.kind] || kindMeta.status;
               const ago = (() => {
@@ -55,8 +55,8 @@
                 return Math.floor(h / 24) + 'd ago';
               })();
             %>
-            <div class="card flex items-start gap-4 p-4 transition-all <%= n.read_at ? '' : 'shadow-sm' %>"
-                 style="<%= !n.read_at ? 'border-left:3px solid var(--brand-500);' : 'opacity:0.75;' %>">
+            <div class="glass-card flex items-start gap-4 p-4 sm:p-5 transition-all duration-200"
+                 style="<%= !n.read_at ? 'border-left:3px solid var(--brand-500);' : 'opacity:0.7;' %>">
               <!-- Kind icon -->
               <div class="shrink-0 h-10 w-10 rounded-xl flex items-center justify-center"
                    style="background:<%= meta.bg %>;border:1px solid <%= meta.border %>">
@@ -70,7 +70,7 @@
                   <div class="min-w-0">
                     <!-- Kind pill + unread dot -->
                     <div class="flex items-center gap-2 mb-1">
-                      <span class="text-xs font-semibold uppercase tracking-wider" style="color:var(--text-tertiary)"><%= meta.label %></span>
+                      <span class="text-xs font-bold uppercase tracking-wider" style="color:var(--text-tertiary)"><%= meta.label %></span>
                       <% if (!n.read_at) { %><span class="inline-block h-1.5 w-1.5 rounded-full" style="background:var(--brand-500)"></span><% } %>
                     </div>
                     <div class="font-semibold leading-snug" style="color:var(--text-primary)"><%= n.title %></div>
@@ -83,7 +83,7 @@
                   <!-- Actions -->
                   <div class="flex flex-col items-end gap-2 shrink-0">
                     <% if (n.link) { %>
-                      <a href="<%= n.link %>" class="btn btn-sm btn-primary text-xs">Open</a>
+                      <a href="<%= n.link %>" class="btn-gradient shimmer-btn text-xs px-3 py-1.5">Open</a>
                     <% } %>
                     <% if (!n.read_at) { %>
                       <form method="post" action="/notifications/<%= n.id %>/read" class="inline">

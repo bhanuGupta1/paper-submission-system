@@ -24,7 +24,7 @@
 
       <div class="grid lg:grid-cols-[0.38fr_0.62fr] gap-6">
         <aside class="space-y-4">
-          <div class="card p-6">
+          <div class="glass-card p-6">
             <p class="eyebrow mb-2" style="color:var(--brand-600)">Double-blind manuscript</p>
             <h1 class="font-display text-2xl font-bold leading-tight" style="color:var(--text-primary)"><%= paper.title %></h1>
             <p class="text-xs mt-1 italic" style="color:var(--text-tertiary)"><%= paper.authors %></p>
@@ -34,7 +34,7 @@
             </div>
           </div>
 
-          <div class="card p-6">
+          <div class="glass-card p-6">
             <h2 class="font-semibold text-sm mb-2" style="color:var(--text-primary)">Abstract</h2>
             <p class="text-sm leading-relaxed whitespace-pre-line" style="color:var(--text-secondary)"><%= paper.abstract %></p>
             <% if (paper.file_path && paper.file_path.toLowerCase().endsWith('.pdf')) { %>
@@ -50,7 +50,7 @@
             <% } %>
           </div>
 
-          <div class="card p-4" style="background:var(--info-50);border-color:var(--info-100)">
+          <div class="glass-card p-4" style="background:var(--info-50);border-color:var(--info-100)">
             <p class="text-xs font-semibold mb-1.5" style="color:var(--info-700)">Review standards</p>
             <ul class="text-xs space-y-1" style="color:var(--info-700)">
               <li>• Be constructive, specific, and evidence-based</li>
@@ -61,7 +61,7 @@
           </div>
 
           <!-- Discussion thread -->
-          <div class="card p-5">
+          <div class="glass-card p-5">
             <h2 class="font-semibold text-sm mb-3" style="color:var(--text-primary)">Editor discussion</h2>
             <div id="discussionList" class="space-y-2 max-h-64 overflow-y-auto mb-3">
               <% if (!discussion || discussion.length === 0) { %>
@@ -99,7 +99,7 @@
               aria-label="Generate AI draft review">Generate AI draft</button>
           </div>
 
-          <form action="/reviewer/reviews/<%= review.id %>" method="post" class="card p-6 space-y-5" id="reviewForm">
+          <form action="/reviewer/reviews/<%= review.id %>" method="post" class="glass-card p-6 space-y-5" id="reviewForm">
             <input type="hidden" name="ai_assisted" id="ai_assisted" value="<%= review.ai_assisted ? '1' : '0' %>">
 
             <div>

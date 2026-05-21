@@ -31,7 +31,7 @@
       </div>
 
       <!-- Smart search panel -->
-      <div id="smart-search-panel" class="hidden card p-5 mb-6">
+      <div id="smart-search-panel" class="hidden glass-card p-5 mb-6">
         <h3 class="font-semibold mb-3" style="color:var(--text-primary)">Semantic smart search</h3>
         <div class="flex gap-3">
           <input id="smart-search-input" type="text" placeholder="Search by topic, concept, method…"
@@ -47,27 +47,31 @@
       </div>
 
       <!-- Metrics row -->
-      <div class="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-6">
-        <div class="metric-card">
-          <div class="stat-num text-3xl"><%= filter.total %></div>
+      <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+        <article class="stat-glass-card glass-card p-5">
+          <div class="stat-num text-3xl gradient-text"><%= filter.total %></div>
           <div class="metric-label">Filtered papers</div>
-        </div>
-        <div class="metric-card">
-          <div class="stat-num text-3xl text-indigo-600"><%= ops.reviewFunnel.pending %></div>
+          <div class="sparkline mt-3" aria-hidden="true"><span style="height:40%"></span><span style="height:65%"></span><span style="height:50%"></span><span style="height:80%"></span><span style="height:70%"></span><span style="height:90%"></span></div>
+        </article>
+        <article class="stat-glass-card glass-card p-5">
+          <div class="stat-num text-3xl gradient-text"><%= ops.reviewFunnel.pending %></div>
           <div class="metric-label">Pending reviews</div>
-        </div>
-        <div class="metric-card">
-          <div class="stat-num text-3xl text-emerald-600"><%= ops.reviewFunnel.completionRate %>%</div>
+          <div class="sparkline amber mt-3" aria-hidden="true"><span style="height:55%"></span><span style="height:75%"></span><span style="height:60%"></span><span style="height:85%"></span><span style="height:70%"></span><span style="height:50%"></span></div>
+        </article>
+        <article class="stat-glass-card glass-card p-5">
+          <div class="stat-num text-3xl gradient-text"><%= ops.reviewFunnel.completionRate %>%</div>
           <div class="metric-label">Review completion</div>
-        </div>
-        <div class="metric-card">
-          <div class="stat-num text-3xl text-amber-600"><%= reviewers.length %></div>
+          <div class="sparkline green mt-3" aria-hidden="true"><span style="height:30%"></span><span style="height:45%"></span><span style="height:60%"></span><span style="height:75%"></span><span style="height:85%"></span><span style="height:95%"></span></div>
+        </article>
+        <article class="stat-glass-card glass-card p-5">
+          <div class="stat-num text-3xl gradient-text"><%= reviewers.length %></div>
           <div class="metric-label">Reviewer pool</div>
-        </div>
+          <div class="sparkline violet mt-3" aria-hidden="true"><span style="height:50%"></span><span style="height:60%"></span><span style="height:55%"></span><span style="height:70%"></span><span style="height:65%"></span><span style="height:80%"></span></div>
+        </article>
       </div>
 
       <!-- Filter bar -->
-      <form method="get" action="/editor" class="card p-4 mb-5 flex flex-wrap gap-3 items-center">
+      <form method="get" action="/editor" class="glass-card p-4 mb-5 flex flex-wrap gap-3 items-center">
         <div class="flex-1 min-w-[200px]">
           <input name="q" value="<%= filter.q || '' %>" placeholder="Search title, abstract, tags…" aria-label="Filter by keyword"
             class="block w-full rounded-lg border px-3 py-2 text-sm"
@@ -100,14 +104,16 @@
       </div>
 
       <% if (papers.length === 0) { %>
-        <div class="card p-12 text-center">
-          <svg class="w-12 h-12 text-slate-300 mx-auto mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
-          <p class="text-slate-600">No submissions match your filters.</p>
+        <div class="glass-card p-12 text-center">
+          <div class="inline-flex h-14 w-14 items-center justify-center rounded-2xl mb-4" style="background:rgba(99,102,241,0.1);border:1px solid rgba(99,102,241,0.2)">
+            <svg class="w-7 h-7" fill="none" viewBox="0 0 24 24" stroke="currentColor" style="color:var(--brand-500)"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+          </div>
+          <p style="color:var(--text-secondary)">No submissions match your filters.</p>
         </div>
       <% } %>
 
       <% papers.forEach(p => { %>
-        <div class="card p-5 mb-4" data-paper-id="<%= p.id %>">
+        <div class="glass-card p-5 mb-4" data-paper-id="<%= p.id %>">
 
           <!-- Paper header -->
           <div class="flex items-start gap-3">
@@ -117,21 +123,21 @@
                 <h2 class="font-display text-lg font-semibold"><%= p.title %></h2>
                 <%- include('../partials/status', { status: p.review_status }) %>
               </div>
-              <div class="text-xs text-slate-500 flex flex-wrap items-center gap-x-3 gap-y-1">
-                <span>by <strong><%= p.author_username %></strong></span>
+              <div class="text-xs flex flex-wrap items-center gap-x-3 gap-y-1" style="color:var(--text-tertiary)">
+                <span>by <strong style="color:var(--text-primary)"><%= p.author_username %></strong></span>
                 <span>submitted <%= new Date(p.submission_date).toLocaleDateString() %></span>
-                <span>similarity <strong class="<%= p.similarity_score > 0.5 ? 'text-rose-600' : '' %>"><%= (p.similarity_score * 100).toFixed(0) %>%</strong></span>
-                <span>AI-text <strong class="<%= p.ai_text_likelihood > 0.5 ? 'text-amber-600' : '' %>"><%= (p.ai_text_likelihood * 100).toFixed(0) %>%</strong></span>
+                <span>similarity <strong class="<%= p.similarity_score > 0.5 ? 'text-rose-500' : '' %>"><%= (p.similarity_score * 100).toFixed(0) %>%</strong></span>
+                <span>AI-text <strong class="<%= p.ai_text_likelihood > 0.5 ? 'text-amber-500' : '' %>"><%= (p.ai_text_likelihood * 100).toFixed(0) %>%</strong></span>
                 <% if (p.coiDeclarations && p.coiDeclarations.length > 0) { %>
                   <span class="inline-block text-[10px] bg-rose-50 text-rose-700 border border-rose-200 px-1.5 py-0.5 rounded font-semibold"><%= p.coiDeclarations.length %> COI declaration<%= p.coiDeclarations.length > 1 ? 's' : '' %></span>
                 <% } %>
               </div>
-              <p class="text-sm text-slate-700 mt-2 line-clamp-2 leading-relaxed"><%= p.abstract %></p>
+              <p class="text-sm mt-2 line-clamp-2 leading-relaxed" style="color:var(--text-secondary)"><%= p.abstract %></p>
 
               <!-- AI acceptance probability badge -->
               <div class="flex items-center gap-2 mt-3 flex-wrap">
                 <% if (p.tags) { p.tags.split(',').forEach(t => { %>
-                  <span class="inline-block text-xs bg-slate-100 text-slate-700 px-2 py-0.5 rounded-full"><%= t.trim() %></span>
+                  <span class="score-chip text-xs"><%= t.trim() %></span>
                 <% }) } %>
               </div>
               <div class="flex items-center gap-3 mt-2 text-xs flex-wrap">
@@ -519,10 +525,10 @@
         return;
       }
       container.innerHTML = data.messages.map(m =>
-        '<div class="text-xs bg-white border border-slate-200 rounded p-2">'
-        + '<div class="flex justify-between mb-0.5"><strong class="text-slate-700">' + esc(m.username || 'Unknown') + '</strong>'
-        + '<span class="text-slate-400">' + esc(new Date(m.created_at).toLocaleString()) + '</span></div>'
-        + '<p class="text-slate-600">' + esc(m.message) + '</p>'
+        '<div class="text-xs rounded p-2" style="background:var(--surface-1);border:1px solid var(--border-default)">'
+        + '<div class="flex justify-between mb-0.5"><strong style="color:var(--text-primary)">' + esc(m.username || 'Unknown') + '</strong>'
+        + '<span style="color:var(--text-tertiary)">' + esc(new Date(m.created_at).toLocaleString()) + '</span></div>'
+        + '<p style="color:var(--text-secondary)">' + esc(m.message) + '</p>'
         + '</div>'
       ).join('');
       container.scrollTop = container.scrollHeight;
@@ -558,13 +564,13 @@
       const data = await resp.json();
       metaEl.textContent = (data.total || 0) + ' result' + (data.total !== 1 ? 's' : '') + ' for "' + (data.query || q) + '"';
       if (!data.results || data.results.length === 0) {
-        listEl.innerHTML = '<p class="text-xs text-slate-500 italic">No results found.</p>';
+        listEl.innerHTML = '<p class="text-xs italic" style="color:var(--text-tertiary)">No results found.</p>';
         return;
       }
       listEl.innerHTML = data.results.map(r =>
-        '<div class="flex items-start justify-between gap-3 text-xs bg-white border border-slate-200 rounded p-2.5">'
-        + '<div><div class="font-semibold text-slate-800">' + esc(r.title) + '</div>'
-        + '<div class="text-slate-500 mt-0.5">by ' + esc(r.author_username || '?') + ' · ' + esc(r.review_status || '') + ' · score ' + ((r.score || 0) * 100).toFixed(0) + '%</div>'
+        '<div class="flex items-start justify-between gap-3 text-xs rounded p-2.5" style="background:var(--surface-1);border:1px solid var(--border-default)">'
+        + '<div><div class="font-semibold" style="color:var(--text-primary)">' + esc(r.title) + '</div>'
+        + '<div class="mt-0.5" style="color:var(--text-tertiary)">by ' + esc(r.author_username || '?') + ' · ' + esc(r.review_status || '') + ' · score ' + ((r.score || 0) * 100).toFixed(0) + '%</div>'
         + '</div>'
         + '</div>'
       ).join('');

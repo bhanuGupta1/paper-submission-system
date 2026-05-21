@@ -12,14 +12,14 @@
       </div>
 
       <% if (letters.length === 0) { %>
-        <div class="card p-12 text-center text-slate-500">
+        <div class="glass-card p-12 text-center text-slate-500">
           <p>No decision letters generated yet.</p>
           <p class="text-sm mt-1">Decision letters are created when you make a decision with "Generate letter" checked.</p>
         </div>
       <% } else { %>
         <div class="space-y-6">
           <% letters.forEach(letter => { %>
-          <div class="card p-6">
+          <div class="glass-card p-6">
             <div class="flex items-start justify-between gap-4 mb-4">
               <div>
                 <h3 class="font-semibold text-slate-800"><%= letter.subject %></h3>

@@ -57,7 +57,7 @@
       <div class="grid lg:grid-cols-[0.62fr_0.38fr] gap-6">
         <section class="space-y-5">
           <!-- Abstract & paper info -->
-          <div class="card p-6">
+          <div class="glass-card p-6">
             <h2 class="font-display text-2xl font-semibold">Abstract</h2>
             <p class="mt-3 leading-relaxed whitespace-pre-line" style="color:var(--text-secondary)"><%= paper.abstract %></p>
             <% if (paper.tags) { %>
@@ -98,14 +98,14 @@
             <h2 class="font-display text-2xl font-semibold mb-3">Reviewer feedback (<%= reviews.length %>)</h2>
             <p class="text-xs mb-3" style="color:var(--text-tertiary)">This system uses double-blind review. Reviewer identities are not disclosed.</p>
             <% if (reviews.length === 0) { %>
-              <div class="card p-8 text-center">
+              <div class="glass-card p-8 text-center">
                 <div class="skeleton w-full mb-3" style="height:12px; width:60%; margin:0 auto"></div>
                 <div class="skeleton w-full mb-3" style="height:12px; width:80%; margin:0 auto"></div>
                 <p class="text-slate-500 text-sm mt-4">No reviews submitted yet.</p>
               </div>
             <% } %>
             <% reviews.forEach((r, i) => { %>
-              <div class="card p-5 mb-3">
+              <div class="glass-card p-5 mb-3">
                 <div class="flex items-center justify-between gap-3 text-sm mb-3">
                   <span class="font-semibold" style="color:var(--text-secondary)"><%= r.reviewer_username %></span>
                   <span class="text-xs" style="color:var(--text-tertiary)"><%= r.review_date ? new Date(r.review_date).toLocaleDateString() : 'Pending' %></span>
@@ -135,7 +135,7 @@
 
         <aside class="space-y-5">
           <!-- Status timeline -->
-          <div class="card p-5">
+          <div class="glass-card p-5">
             <p class="eyebrow mb-3" style="color:var(--brand-600)">Status timeline</p>
             <div class="space-y-3">
               <div class="process-step"><h3 class="font-semibold text-sm" style="color:var(--text-primary)">Submitted</h3><p class="text-xs mt-0.5" style="color:var(--text-tertiary)"><%= new Date(paper.submission_date).toLocaleDateString() %></p></div>
@@ -146,7 +146,7 @@
 
           <!-- Decision history -->
           <% if (decisions && decisions.length > 0) { %>
-            <div class="card p-5">
+            <div class="glass-card p-5">
               <h2 class="font-display text-xl font-semibold mb-3">Decisions</h2>
               <div class="space-y-3">
                 <% decisions.forEach(d => { %>
@@ -162,7 +162,7 @@
 
           <!-- Revision history -->
           <% if (versions && versions.length > 1) { %>
-            <div class="card p-5">
+            <div class="glass-card p-5">
               <h2 class="font-display text-xl font-semibold mb-3">Revision history</h2>
               <div class="space-y-3">
                 <% versions.forEach(v => { %>

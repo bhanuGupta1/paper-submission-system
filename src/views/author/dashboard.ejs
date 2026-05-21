@@ -3,95 +3,149 @@
 <head><%- include('../partials/head') %></head>
 <body class="min-h-screen flex flex-col" style="background:var(--surface-0);color:var(--text-primary)">
   <%- include('../partials/nav') %>
-  <main class="flex-1">
-    <div class="max-w-7xl mx-auto px-6 py-8">
-      <div class="dashboard-hero mb-6">
-        <div>
-          <p class="eyebrow text-indigo-200">Author workspace</p>
-          <h1 class="font-display text-4xl font-bold text-white mt-2">My submissions</h1>
-          <p class="text-sm text-slate-300 mt-2 max-w-2xl">Track every manuscript, review signal, and editorial status from one polished workspace.</p>
-        </div>
-        <a href="/author/submit" class="btn btn-sm" style="background:white;color:#0f172a">Submit a paper</a>
-      </div>
 
-      <div class="grid grid-cols-2 lg:grid-cols-5 gap-3 mb-8">
-        <div class="metric-card">
-          <div class="stat-num text-3xl"><%= (stats && stats.total) || 0 %></div>
-          <div class="metric-label">Total</div>
-        </div>
-        <div class="metric-card">
-          <div class="stat-num text-3xl text-amber-600"><%= (stats && stats.in_review) || 0 %></div>
-          <div class="metric-label">In review</div>
-        </div>
-        <div class="metric-card">
-          <div class="stat-num text-3xl text-emerald-600"><%= (stats && stats.accepted) || 0 %></div>
-          <div class="metric-label">Accepted</div>
-        </div>
-        <div class="metric-card">
-          <div class="stat-num text-3xl text-indigo-600"><%= (stats && stats.revisions) || 0 %></div>
-          <div class="metric-label">Revisions</div>
-        </div>
-        <div class="metric-card">
-          <div class="stat-num text-3xl text-rose-600"><%= (stats && stats.rejected) || 0 %></div>
-          <div class="metric-label">Rejected</div>
-        </div>
-      </div>
-
-      <% if (papers.length === 0) { %>
-        <div class="card p-12 text-center">
-          <p class="eyebrow text-indigo-700">Ready when you are</p>
-          <h2 class="font-display text-3xl font-bold mt-2">Start your first manuscript journey.</h2>
-          <p class="text-slate-600 mt-3">Submit a paper, get AI keyword help, and let the system route it into editorial review.</p>
-          <a href="/author/submit" class="btn btn-primary mt-5">Submit your first paper</a>
-        </div>
-      <% } else { %>
-        <div class="grid lg:grid-cols-[0.72fr_0.28fr] gap-5">
-          <section class="space-y-3">
-            <% papers.forEach(p => { %>
-              <article class="submission-row p-4 flex gap-4">
-                <div class="status-rail shrink-0"></div>
-                <div class="flex-1 min-w-0">
-                  <div class="flex flex-wrap items-start justify-between gap-3">
-                    <div>
-                      <h2 class="font-display text-xl font-bold leading-snug"><%= p.title %></h2>
-                      <p class="text-xs text-slate-500 mt-1">Submitted <%= new Date(p.submission_date).toLocaleDateString() %></p>
-                    </div>
-                    <%- include('../partials/status', { status: p.review_status }) %>
-                  </div>
-                  <div class="mt-4 flex flex-wrap gap-2 text-xs text-slate-600">
-                    <span class="score-chip"><strong><%= p.review_count %></strong> reviews</span>
-                    <span class="score-chip">Similarity <strong><%= p.similarity_score != null ? (p.similarity_score * 100).toFixed(0) + '%' : '—' %></strong></span>
-                    <span class="score-chip">AI signal <strong><%= p.ai_text_likelihood != null ? (p.ai_text_likelihood * 100).toFixed(0) + '%' : '—' %></strong></span>
-                  </div>
-                </div>
-                <div class="flex items-center">
-                  <a href="/author/papers/<%= p.id %>" class="btn btn-sm btn-primary">View</a>
-                </div>
-              </article>
-            <% }) %>
-          </section>
-
-          <aside class="card p-5 h-fit">
-            <p class="eyebrow text-indigo-700">Next best actions</p>
-            <div class="space-y-4 mt-4">
-              <div>
-                <h3 class="font-semibold">Keep metadata sharp</h3>
-                <p class="text-sm text-slate-600 mt-1">Update your profile with affiliation and expertise so COI and matching stay explainable.</p>
-              </div>
-              <div>
-                <h3 class="font-semibold">Watch review signals</h3>
-                <p class="text-sm text-slate-600 mt-1">Similarity and AI-text scores are triage indicators for editorial transparency.</p>
-              </div>
-              <div>
-                <h3 class="font-semibold">Download records</h3>
-                <p class="text-sm text-slate-600 mt-1">Each paper detail page keeps reviews, decisions, and manuscript access together.</p>
-              </div>
+  <main class="author-shell flex-1">
+    <div class="max-w-[1500px] mx-auto px-4 sm:px-6 py-6 lg:py-8">
+      <div class="grid lg:grid-cols-[280px_1fr] gap-6">
+        <aside class="author-sidebar glass-card p-4 lg:min-h-[calc(100vh-130px)]">
+          <div class="flex items-center gap-3 p-3">
+            <div class="avatar-orb"><%= (currentUser && currentUser.username ? currentUser.username.charAt(0) : 'A').toUpperCase() %></div>
+            <div class="min-w-0">
+              <div class="font-display font-extrabold truncate" style="color:var(--text-primary)"><%= currentUser && currentUser.username ? currentUser.username : 'Author' %></div>
+              <div class="text-xs" style="color:var(--text-tertiary)">Author workspace</div>
             </div>
-          </aside>
-        </div>
-      <% } %>
+          </div>
+
+          <nav class="mt-5 flex lg:block gap-2 overflow-x-auto pb-1 lg:pb-0">
+            <a href="/author" class="side-nav-item active">
+              <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h7"/></svg>
+              <span>Submissions</span>
+            </a>
+            <a href="/author/submit" class="side-nav-item">
+              <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+              <span>New paper</span>
+            </a>
+            <a href="/author/profile" class="side-nav-item">
+              <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5.121 17.804A9 9 0 1118.879 6.196M15 11a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+              <span>Profile</span>
+            </a>
+            <a href="/notifications" class="side-nav-item">
+              <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6 6 0 10-12 0v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0a3 3 0 01-6 0"/></svg>
+              <span>Inbox</span>
+            </a>
+          </nav>
+
+          <div class="hidden lg:block mt-8 rounded-2xl p-4" style="background:linear-gradient(135deg,rgba(99,102,241,0.14),rgba(6,182,212,0.10));border:1px solid rgba(99,102,241,0.18)">
+            <div class="text-xs font-bold uppercase tracking-[0.12em]" style="color:var(--text-tertiary)">Integrity layer</div>
+            <p class="mt-2 text-sm leading-6" style="color:var(--text-secondary)">Similarity and AI-text signals stay attached to every submission for transparent editorial review.</p>
+          </div>
+        </aside>
+
+        <section class="min-w-0">
+          <div class="dashboard-top glass-card p-6 sm:p-8 mb-6">
+            <div>
+              <p class="eyebrow" style="color:var(--accent-500)">Author dashboard</p>
+              <h1 class="font-display mt-3 text-4xl sm:text-5xl font-extrabold gradient-text">My submissions</h1>
+              <p class="mt-3 max-w-2xl" style="color:var(--text-secondary)">Track every manuscript, reviewer signal, and editorial decision from a focused command center.</p>
+            </div>
+            <a href="/author/submit" class="btn-gradient shimmer-btn mt-6 sm:mt-0">Submit a paper</a>
+          </div>
+
+          <div class="grid sm:grid-cols-2 xl:grid-cols-4 gap-4 mb-6">
+            <article class="stat-glass-card glass-card p-5">
+              <div class="flex items-start justify-between gap-4">
+                <div>
+                  <div class="stat-num text-4xl gradient-text"><%= (stats && stats.total) || 0 %></div>
+                  <div class="metric-label">Total papers</div>
+                </div>
+                <div class="sparkline" aria-hidden="true"><span style="height:35%"></span><span style="height:55%"></span><span style="height:42%"></span><span style="height:70%"></span><span style="height:60%"></span><span style="height:84%"></span></div>
+              </div>
+            </article>
+            <article class="stat-glass-card glass-card p-5">
+              <div class="flex items-start justify-between gap-4">
+                <div>
+                  <div class="stat-num text-4xl gradient-text"><%= (stats && stats.in_review) || 0 %></div>
+                  <div class="metric-label">In review</div>
+                </div>
+                <div class="sparkline amber" aria-hidden="true"><span style="height:45%"></span><span style="height:75%"></span><span style="height:52%"></span><span style="height:62%"></span><span style="height:88%"></span><span style="height:68%"></span></div>
+              </div>
+            </article>
+            <article class="stat-glass-card glass-card p-5">
+              <div class="flex items-start justify-between gap-4">
+                <div>
+                  <div class="stat-num text-4xl gradient-text"><%= (stats && stats.accepted) || 0 %></div>
+                  <div class="metric-label">Accepted</div>
+                </div>
+                <div class="sparkline green" aria-hidden="true"><span style="height:25%"></span><span style="height:40%"></span><span style="height:54%"></span><span style="height:60%"></span><span style="height:82%"></span><span style="height:92%"></span></div>
+              </div>
+            </article>
+            <article class="stat-glass-card glass-card p-5">
+              <div class="flex items-start justify-between gap-4">
+                <div>
+                  <div class="stat-num text-4xl gradient-text"><%= (stats && stats.revisions) || 0 %></div>
+                  <div class="metric-label">Revisions</div>
+                </div>
+                <div class="sparkline violet" aria-hidden="true"><span style="height:62%"></span><span style="height:40%"></span><span style="height:74%"></span><span style="height:48%"></span><span style="height:68%"></span><span style="height:56%"></span></div>
+              </div>
+            </article>
+          </div>
+
+          <% if (papers.length === 0) { %>
+            <div class="empty-state glass-card p-10 sm:p-14 text-center">
+              <div class="empty-art" aria-hidden="true"><span></span><i></i><b></b></div>
+              <h2 class="font-display text-3xl font-extrabold mt-7" style="color:var(--text-primary)">No papers yet</h2>
+              <p class="mt-3 max-w-md mx-auto" style="color:var(--text-secondary)">Submit your first manuscript and PaperSub.AI will guide it into the review pipeline.</p>
+              <a href="/author/submit" class="btn-gradient shimmer-btn mt-7">Submit your first paper</a>
+            </div>
+          <% } else { %>
+            <div class="space-y-4">
+              <% papers.forEach(p => {
+                const status = p.review_status || 'pending';
+                const submitted = p.submission_date ? new Date(p.submission_date).toLocaleDateString() : 'Not dated';
+              %>
+                <article class="paper-card glass-card status-<%= status %>">
+                  <div class="paper-status-bar"></div>
+                  <div class="p-5 sm:p-6 flex flex-col xl:flex-row xl:items-center gap-5">
+                    <div class="min-w-0 flex-1">
+                      <div class="flex flex-wrap items-start justify-between gap-3">
+                        <div class="min-w-0">
+                          <h2 class="font-display text-xl sm:text-2xl font-extrabold leading-snug" style="color:var(--text-primary)"><%= p.title %></h2>
+                          <p class="mt-2 text-sm" style="color:var(--text-secondary)">
+                            <%= p.authors || 'Author record pending' %>
+                            <span class="mx-2" style="color:var(--border-strong)">/</span>
+                            Submitted <%= submitted %>
+                          </p>
+                        </div>
+                        <span class="status-pill status-pill-<%= status %>"><%= status.replace(/_/g, ' ') %></span>
+                      </div>
+
+                      <div class="mt-4 flex flex-wrap gap-2">
+                        <span class="score-chip"><strong><%= p.review_count || 0 %></strong> reviews</span>
+                        <span class="score-chip">Similarity <strong><%= p.similarity_score != null ? (p.similarity_score * 100).toFixed(0) + '%' : 'n/a' %></strong></span>
+                        <span class="score-chip">AI signal <strong><%= p.ai_text_likelihood != null ? (p.ai_text_likelihood * 100).toFixed(0) + '%' : 'n/a' %></strong></span>
+                        <% if (p.keywords) { %><span class="score-chip"><%= p.keywords %></span><% } %>
+                      </div>
+                    </div>
+
+                    <div class="flex flex-wrap xl:justify-end gap-2 shrink-0">
+                      <a href="/author/papers/<%= p.id %>" class="btn btn-secondary">Details</a>
+                      <% if (p.file_path) { %>
+                        <a href="/author/papers/<%= p.id %>/view" class="btn btn-secondary">Preview</a>
+                      <% } %>
+                      <% if (status === 'revisions') { %>
+                        <a href="/author/papers/<%= p.id %>/revise" class="btn-gradient shimmer-btn">Revise</a>
+                      <% } %>
+                    </div>
+                  </div>
+                </article>
+              <% }) %>
+            </div>
+          <% } %>
+        </section>
+      </div>
     </div>
   </main>
+
   <%- include('../partials/footer') %>
 </body>
 </html>

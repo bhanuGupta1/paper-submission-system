@@ -1,129 +1,127 @@
 <!DOCTYPE html>
 <html lang="en">
 <head><%- include('partials/head') %></head>
-<body class="min-h-screen flex flex-col" style="background:var(--surface-0);color:var(--text-primary)">
+<body class="min-h-screen flex flex-col overflow-x-hidden" style="background:var(--surface-0);color:var(--text-primary)">
   <%- include('partials/nav') %>
-  <main class="flex-1 flex items-center">
-    <div class="w-full max-w-6xl mx-auto px-6 py-12 grid lg:grid-cols-2 gap-12 items-center">
 
-      <!-- Left: brand story -->
-      <section class="hidden lg:block">
-        <p class="eyebrow" style="color:var(--brand-600)">Secure workspace</p>
-        <h1 class="font-display text-5xl font-extrabold mt-3 leading-tight" style="color:var(--text-primary)">
-          Welcome back to<br>
-          <span style="background:linear-gradient(135deg,var(--brand-600),var(--accent-500));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text">PaperSub.AI</span>
+  <main class="auth-canvas flex-1 relative overflow-hidden">
+    <div class="mesh-bg" aria-hidden="true">
+      <span class="mesh-blob mesh-blob-one"></span>
+      <span class="mesh-blob mesh-blob-two"></span>
+      <span class="mesh-blob mesh-blob-three"></span>
+      <span class="mesh-blob mesh-blob-four"></span>
+    </div>
+
+    <div class="relative z-10 min-h-[calc(100vh-65px)] w-full max-w-7xl mx-auto px-6 py-12 grid lg:grid-cols-[1.05fr_0.95fr] gap-12 items-center">
+      <section class="hidden lg:block relative pr-8">
+        <div class="absolute -top-10 right-20 abstract-orb abstract-orb-lg"></div>
+        <div class="absolute top-48 right-2 abstract-ring abstract-ring-md"></div>
+        <div class="absolute bottom-4 left-12 abstract-orb abstract-orb-sm"></div>
+
+        <p class="eyebrow" style="color:var(--accent-500)">Secure research operations</p>
+        <h1 class="font-display mt-5 text-6xl xl:text-7xl font-extrabold leading-[0.95]">
+          Welcome back to
+          <span class="brand-underline gradient-text inline-block mt-2">PaperSub.AI</span>
         </h1>
-        <p class="mt-4 text-lg leading-relaxed max-w-sm" style="color:var(--text-secondary)">
-          Pick up where you left off — submissions, reviews, editorial decisions, and platform analytics from your role-aware dashboard.
+        <p class="mt-7 max-w-xl text-lg leading-8" style="color:var(--text-secondary)">
+          Pick up submissions, reviews, editorial decisions, and audit-ready AI signals from one precise workspace.
         </p>
 
-        <!-- Testimonial-style features -->
-        <div class="mt-8 space-y-4">
-          <div class="flex items-start gap-3">
-            <div class="w-8 h-8 rounded-lg shrink-0 flex items-center justify-center" style="background:var(--brand-50);border:1px solid var(--brand-200)">
-              <svg class="w-4 h-4" style="color:var(--brand-600)" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/></svg>
-            </div>
-            <div>
-              <div class="font-semibold text-sm" style="color:var(--text-primary)">Double-blind peer review</div>
-              <div class="text-sm" style="color:var(--text-secondary)">Author and reviewer identities protected throughout the process.</div>
-            </div>
+        <div class="mt-10 grid grid-cols-3 gap-3 max-w-xl">
+          <div class="glass-card p-4">
+            <div class="font-display text-3xl font-extrabold gradient-text">5x</div>
+            <div class="mt-1 text-xs font-semibold uppercase tracking-[0.12em]" style="color:var(--text-tertiary)">Faster triage</div>
           </div>
-          <div class="flex items-start gap-3">
-            <div class="w-8 h-8 rounded-lg shrink-0 flex items-center justify-center" style="background:rgba(6,182,212,0.1);border:1px solid rgba(6,182,212,0.2)">
-              <svg class="w-4 h-4 text-cyan-600" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
-            </div>
-            <div>
-              <div class="font-semibold text-sm" style="color:var(--text-primary)">AI-augmented workflow</div>
-              <div class="text-sm" style="color:var(--text-secondary)">Every AI suggestion is logged, attributed, and human-overridable.</div>
-            </div>
+          <div class="glass-card p-4">
+            <div class="font-display text-3xl font-extrabold gradient-text">COI</div>
+            <div class="mt-1 text-xs font-semibold uppercase tracking-[0.12em]" style="color:var(--text-tertiary)">Conflict aware</div>
           </div>
-          <div class="flex items-start gap-3">
-            <div class="w-8 h-8 rounded-lg shrink-0 flex items-center justify-center" style="background:rgba(16,185,129,0.1);border:1px solid rgba(16,185,129,0.2)">
-              <svg class="w-4 h-4 text-emerald-600" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>
-            </div>
-            <div>
-              <div class="font-semibold text-sm" style="color:var(--text-primary)">Real-time dashboard analytics</div>
-              <div class="text-sm" style="color:var(--text-secondary)">Submission pipeline, review metrics, and integrity signals at a glance.</div>
-            </div>
+          <div class="glass-card p-4">
+            <div class="font-display text-3xl font-extrabold gradient-text">AI</div>
+            <div class="mt-1 text-xs font-semibold uppercase tracking-[0.12em]" style="color:var(--text-tertiary)">Fully logged</div>
           </div>
         </div>
       </section>
 
-      <!-- Right: login form -->
-      <section class="glass-auth p-8 w-full max-w-md mx-auto">
-        <div class="flex items-center gap-3 mb-6">
-          <span class="brand-mark inline-flex h-9 w-9 items-center justify-center rounded-lg text-sm font-black text-white">P</span>
-          <div>
-            <div class="font-bold text-base" style="color:var(--text-primary)">PaperSub.AI</div>
-            <div class="text-xs" style="color:var(--text-tertiary)">Research operations platform</div>
+      <section class="glass-card gradient-border-card auth-card animate-slide-up-fade w-full max-w-md mx-auto p-8 sm:p-9">
+        <div class="flex items-center justify-between gap-4 mb-8">
+          <div class="flex items-center gap-3">
+            <span class="brand-mark inline-flex h-11 w-11 items-center justify-center rounded-xl text-base font-black text-white">P</span>
+            <div>
+              <div class="font-display font-extrabold text-lg" style="color:var(--text-primary)">PaperSub.AI</div>
+              <div class="text-xs" style="color:var(--text-tertiary)">Encrypted workspace</div>
+            </div>
           </div>
+          <span class="inline-flex h-9 w-9 items-center justify-center rounded-full" style="background:rgba(99,102,241,0.12);color:var(--brand-500)">
+            <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/></svg>
+          </span>
         </div>
 
-        <h2 class="font-display text-2xl font-bold" style="color:var(--text-primary)">Sign in to your account</h2>
-        <p class="text-sm mt-1" style="color:var(--text-secondary)">Use your project credentials.</p>
+        <h2 class="font-display text-3xl font-extrabold" style="color:var(--text-primary)">Sign in</h2>
+        <p class="text-sm mt-2" style="color:var(--text-secondary)">Enter your project credentials to continue.</p>
 
         <% if (error) { %>
-          <div class="alert alert-warning mt-4" role="alert">
-            <svg class="w-4 h-4 shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
+          <div class="alert alert-warning mt-5" role="alert">
+            <svg class="w-4 h-4 shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/></svg>
             <span><%= error %></span>
           </div>
         <% } %>
         <% if (success) { %>
-          <div class="alert alert-success mt-4" role="alert">
+          <div class="alert alert-success mt-5" role="alert">
             <svg class="w-4 h-4 shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
             <span><%= success %></span>
           </div>
         <% } %>
 
-        <form action="/login" method="post" class="mt-6 space-y-4" autocomplete="on">
+        <form action="/login" method="post" class="mt-7 space-y-5" autocomplete="on">
           <div>
-            <label for="username" class="block text-sm font-semibold mb-1.5" style="color:var(--text-secondary)">Username</label>
-            <input id="username" name="username" required autofocus autocomplete="username"
-              class="block w-full rounded-lg border px-3.5 py-2.5 text-sm"
-              style="background:var(--surface-1);border-color:var(--border-default);color:var(--text-primary)">
+            <label for="username" class="block text-sm font-semibold mb-2">Username</label>
+            <input id="username" name="username" required autofocus autocomplete="username" placeholder="jsmith"
+              class="auth-input block w-full rounded-xl border px-4 py-3 text-sm"
+              style="background:rgba(255,255,255,0.55);border-color:var(--border-default);color:var(--text-primary)">
           </div>
           <div>
-            <div class="flex justify-between items-center mb-1.5">
-              <label for="password" class="block text-sm font-semibold" style="color:var(--text-secondary)">Password</label>
-              <a href="/auth/forgot-password" class="text-xs font-medium" style="color:var(--brand-600)">Forgot password?</a>
+            <div class="flex justify-between items-center mb-2">
+              <label for="password" class="block text-sm font-semibold">Password</label>
+              <a href="/auth/forgot-password" class="text-xs font-semibold link-line" style="color:var(--brand-500)">Forgot password?</a>
             </div>
-            <input id="password" type="password" name="password" required autocomplete="current-password"
-              class="block w-full rounded-lg border px-3.5 py-2.5 text-sm"
-              style="background:var(--surface-1);border-color:var(--border-default);color:var(--text-primary)">
+            <input id="password" type="password" name="password" required autocomplete="current-password" placeholder="Enter password"
+              class="auth-input block w-full rounded-xl border px-4 py-3 text-sm"
+              style="background:rgba(255,255,255,0.55);border-color:var(--border-default);color:var(--text-primary)">
           </div>
-          <button type="submit" class="btn btn-primary w-full py-2.5 mt-2">
+          <button type="submit" class="btn-gradient shimmer-btn w-full mt-2">
             Sign in
             <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6"/></svg>
           </button>
         </form>
 
         <% if (googleOAuthEnabled || githubOAuthEnabled) { %>
-          <div class="relative my-5">
+          <div class="relative my-6">
             <div class="absolute inset-0 flex items-center"><div class="w-full border-t" style="border-color:var(--border-default)"></div></div>
-            <div class="relative flex justify-center text-xs"><span class="px-3" style="background:var(--surface-0);color:var(--text-tertiary)">or continue with</span></div>
+            <div class="relative flex justify-center text-xs"><span class="px-3 rounded-full glass-chip" style="color:var(--text-tertiary)">or continue with</span></div>
           </div>
-          <div class="flex flex-col gap-2">
+          <div class="grid gap-2">
             <% if (googleOAuthEnabled) { %>
-              <a href="/auth/google" class="btn btn-secondary w-full py-2.5 text-sm flex items-center justify-center gap-2.5">
-                <svg class="w-4 h-4" viewBox="0 0 24 24"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/></svg>
-                Continue with Google
-              </a>
+              <a href="/auth/google" class="btn btn-secondary w-full py-3 text-sm flex items-center justify-center gap-2.5">Continue with Google</a>
             <% } %>
             <% if (githubOAuthEnabled) { %>
-              <a href="/auth/github" class="btn btn-secondary w-full py-2.5 text-sm flex items-center justify-center gap-2.5">
-                <svg class="w-4 h-4" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.477 2 2 6.477 2 12c0 4.42 2.87 8.17 6.84 9.5.5.08.66-.23.66-.5v-1.69c-2.77.6-3.36-1.34-3.36-1.34-.46-1.16-1.11-1.47-1.11-1.47-.91-.62.07-.6.07-.6 1 .07 1.53 1.03 1.53 1.03.87 1.52 2.34 1.07 2.91.83.09-.65.35-1.09.63-1.34-2.22-.25-4.55-1.11-4.55-4.92 0-1.11.38-2 1.03-2.71-.1-.25-.45-1.29.1-2.64 0 0 .84-.27 2.75 1.02.79-.22 1.65-.33 2.5-.33.85 0 1.71.11 2.5.33 1.91-1.29 2.75-1.02 2.75-1.02.55 1.35.2 2.39.1 2.64.65.71 1.03 1.6 1.03 2.71 0 3.82-2.34 4.66-4.57 4.91.36.31.69.92.69 1.85V21c0 .27.16.59.67.5C19.14 20.16 22 16.42 22 12A10 10 0 0012 2z"/></svg>
-                Continue with GitHub
-              </a>
+              <a href="/auth/github" class="btn btn-secondary w-full py-3 text-sm flex items-center justify-center gap-2.5">Continue with GitHub</a>
             <% } %>
           </div>
         <% } %>
 
-        <div class="relative my-5">
-          <div class="absolute inset-0 flex items-center"><div class="w-full border-t" style="border-color:var(--border-default)"></div></div>
-          <div class="relative flex justify-center text-xs"><span class="px-3" style="background:var(--surface-0);color:var(--text-tertiary)">New to PaperSub.AI?</span></div>
+        <div class="mt-7 flex items-center justify-center gap-3 text-xs font-medium" style="color:var(--text-tertiary)">
+          <span class="inline-flex items-center gap-1.5">
+            <svg class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 11c1.657 0 3 1.343 3 3v2H9v-2c0-1.657 1.343-3 3-3zm6 10H6a2 2 0 01-2-2v-6a2 2 0 012-2h12a2 2 0 012 2v6a2 2 0 01-2 2zM8 11V7a4 4 0 018 0v4"/></svg>
+            256-bit encryption
+          </span>
+          <span class="h-1 w-1 rounded-full" style="background:var(--border-strong)"></span>
+          <span>SOC 2 ready controls</span>
         </div>
 
-        <a href="/register" class="btn btn-secondary w-full py-2.5 text-sm">Create a free account</a>
+        <p class="text-sm mt-6 text-center" style="color:var(--text-secondary)">
+          New to PaperSub.AI? <a href="/register" class="font-semibold link-line" style="color:var(--brand-500)">Create account</a>
+        </p>
       </section>
     </div>
   </main>

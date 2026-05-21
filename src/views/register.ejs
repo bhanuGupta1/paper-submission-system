@@ -1,160 +1,174 @@
 <!DOCTYPE html>
 <html lang="en">
 <head><%- include('partials/head') %></head>
-<body class="min-h-screen flex flex-col" style="background:var(--surface-0);color:var(--text-primary)">
+<body class="min-h-screen flex flex-col overflow-x-hidden" style="background:var(--surface-0);color:var(--text-primary)">
   <%- include('partials/nav') %>
-  <main class="flex-1">
-    <div class="max-w-6xl mx-auto px-6 py-12 grid lg:grid-cols-2 gap-12 items-start">
 
-      <!-- Left: brand context -->
-      <section class="hidden lg:block pt-4">
-        <p class="eyebrow" style="color:var(--brand-600)">Join the workflow</p>
-        <h1 class="font-display text-5xl font-extrabold mt-3 leading-tight" style="color:var(--text-primary)">
-          Your research ops<br>account starts here.
-        </h1>
-        <p class="mt-4 text-lg leading-relaxed max-w-sm" style="color:var(--text-secondary)">
-          Choose your role, add affiliation metadata for conflict checks, and start using the full editorial platform.
-        </p>
+  <main class="auth-canvas flex-1 relative overflow-hidden">
+    <div class="mesh-bg" aria-hidden="true">
+      <span class="mesh-blob mesh-blob-one"></span>
+      <span class="mesh-blob mesh-blob-two"></span>
+      <span class="mesh-blob mesh-blob-three"></span>
+      <span class="mesh-blob mesh-blob-four"></span>
+    </div>
 
-        <!-- Role preview cards -->
-        <div class="mt-8 grid grid-cols-2 gap-3">
-          <div class="card p-4" style="border-left:3px solid var(--brand-500)">
-            <div class="font-bold text-sm" style="color:var(--text-primary)">✍ Author</div>
-            <p class="text-xs mt-1" style="color:var(--text-secondary)">Submit papers, track status, access AI writing tools.</p>
-          </div>
-          <div class="card p-4" style="border-left:3px solid var(--accent-500)">
-            <div class="font-bold text-sm" style="color:var(--text-primary)">🔎 Reviewer</div>
-            <p class="text-xs mt-1" style="color:var(--text-secondary)">Review assignments with AI-drafted scaffolds.</p>
-          </div>
-          <div class="card p-4" style="border-left:3px solid #7c3aed">
-            <div class="font-bold text-sm" style="color:var(--text-primary)">📖 Reader</div>
-            <p class="text-xs mt-1" style="color:var(--text-secondary)">Browse and download published accepted papers.</p>
-          </div>
-          <div class="card p-4" style="border-left:3px solid #059669">
-            <div class="font-bold text-sm" style="color:var(--text-primary)">🔒 COI-ready</div>
-            <p class="text-xs mt-1" style="color:var(--text-secondary)">Affiliation metadata feeds conflict detection.</p>
-          </div>
+    <div class="relative z-10 min-h-[calc(100vh-65px)] flex items-center justify-center px-6 py-12">
+      <section class="glass-card gradient-border-card auth-card animate-slide-up-fade w-full max-w-[520px] p-7 sm:p-9">
+        <div class="flex justify-center gap-2 mb-7" aria-hidden="true">
+          <span class="progress-dot active"></span>
+          <span class="progress-dot"></span>
+          <span class="progress-dot"></span>
         </div>
 
-        <p class="text-xs mt-6" style="color:var(--text-tertiary)">
-          Editor and admin accounts are provisioned by the platform owner. Contact your journal administrator.
-        </p>
-      </section>
-
-      <!-- Right: registration form -->
-      <section class="glass-auth p-8 w-full max-w-lg mx-auto lg:max-w-none">
-        <div class="flex items-center gap-3 mb-6">
-          <span class="brand-mark inline-flex h-9 w-9 items-center justify-center rounded-lg text-sm font-black text-white">P</span>
-          <div>
-            <div class="font-bold text-base" style="color:var(--text-primary)">PaperSub.AI</div>
-            <div class="text-xs" style="color:var(--text-tertiary)">Create your account — takes about a minute</div>
-          </div>
+        <div class="text-center">
+          <span class="brand-mark mx-auto inline-flex h-12 w-12 items-center justify-center rounded-xl text-base font-black text-white">P</span>
+          <p class="eyebrow mt-5" style="color:var(--accent-500)">Start your editorial workspace</p>
+          <h1 class="font-display mt-3 text-3xl sm:text-4xl font-extrabold gradient-text">Create your account</h1>
+          <p class="mt-3 text-sm" style="color:var(--text-secondary)">Set up your identity, role, and matching metadata in under a minute.</p>
         </div>
-
-        <h2 class="font-display text-2xl font-bold" style="color:var(--text-primary)">Create account</h2>
 
         <% if (error) { %>
-          <div class="alert alert-warning mt-4" role="alert">
-            <svg class="w-4 h-4 shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
+          <div class="alert alert-warning mt-6" role="alert">
+            <svg class="w-4 h-4 shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/></svg>
             <span><%= error %></span>
           </div>
         <% } %>
 
-        <form action="/register" method="post" class="mt-5 space-y-4">
-          <div class="grid grid-cols-2 gap-4">
-            <div class="col-span-2">
-              <label class="block text-sm font-semibold mb-1.5" style="color:var(--text-secondary)">Username</label>
-              <input name="username" required minlength="3" placeholder="e.g. jsmith"
-                class="block w-full rounded-lg border px-3.5 py-2.5 text-sm"
-                style="background:var(--surface-1);border-color:var(--border-default);color:var(--text-primary)">
+        <form action="/register" method="post" class="mt-7 space-y-5">
+          <div class="grid grid-cols-2 gap-3">
+            <div>
+              <label for="firstName" class="block text-sm font-semibold mb-2">First name</label>
+              <input id="firstName" name="firstName" autocomplete="given-name" placeholder="Jane"
+                class="auth-input block w-full rounded-xl border px-4 py-3 text-sm"
+                style="background:rgba(255,255,255,0.55);border-color:var(--border-default);color:var(--text-primary)">
+            </div>
+            <div>
+              <label for="lastName" class="block text-sm font-semibold mb-2">Last name</label>
+              <input id="lastName" name="lastName" autocomplete="family-name" placeholder="Smith"
+                class="auth-input block w-full rounded-xl border px-4 py-3 text-sm"
+                style="background:rgba(255,255,255,0.55);border-color:var(--border-default);color:var(--text-primary)">
             </div>
             <div class="col-span-2">
-              <label class="block text-sm font-semibold mb-1.5" style="color:var(--text-secondary)">
-                Email <span class="font-normal text-xs" style="color:var(--text-tertiary)">(optional)</span>
+              <label for="username" class="block text-sm font-semibold mb-2">Username</label>
+              <input id="username" name="username" required minlength="3" autocomplete="username" placeholder="jsmith"
+                class="auth-input block w-full rounded-xl border px-4 py-3 text-sm"
+                style="background:rgba(255,255,255,0.55);border-color:var(--border-default);color:var(--text-primary)">
+            </div>
+            <div class="col-span-2">
+              <label for="email" class="block text-sm font-semibold mb-2">Email <span class="font-normal text-xs" style="color:var(--text-tertiary)">(optional)</span></label>
+              <input id="email" type="email" name="email" autocomplete="email" placeholder="you@university.edu"
+                class="auth-input block w-full rounded-xl border px-4 py-3 text-sm"
+                style="background:rgba(255,255,255,0.55);border-color:var(--border-default);color:var(--text-primary)">
+            </div>
+          </div>
+
+          <fieldset>
+            <legend class="block text-sm font-semibold mb-3">Choose role</legend>
+            <div class="grid sm:grid-cols-3 gap-3">
+              <label class="role-card">
+                <input class="sr-only role-radio" type="radio" name="role" value="author" checked>
+                <span class="role-icon">
+                  <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5M18.5 2.5a2.12 2.12 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+                </span>
+                <span class="role-title">Author</span>
+                <span class="role-copy">Submit and track papers.</span>
+                <span class="role-check">&#10003;</span>
               </label>
-              <input type="email" name="email" placeholder="you@university.edu"
-                class="block w-full rounded-lg border px-3.5 py-2.5 text-sm"
-                style="background:var(--surface-1);border-color:var(--border-default);color:var(--text-primary)">
+              <label class="role-card">
+                <input class="sr-only role-radio" type="radio" name="role" value="reviewer">
+                <span class="role-icon">
+                  <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                </span>
+                <span class="role-title">Reviewer</span>
+                <span class="role-copy">Score manuscripts.</span>
+                <span class="role-check">&#10003;</span>
+              </label>
+              <label class="role-card role-card-disabled" title="Admin accounts are provisioned by platform owners.">
+                <input class="sr-only role-radio" type="radio" name="role" value="admin" disabled>
+                <span class="role-icon">
+                  <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/></svg>
+                </span>
+                <span class="role-title">Admin</span>
+                <span class="role-copy">Provisioned access.</span>
+                <span class="role-check">&#10003;</span>
+              </label>
             </div>
-            <div>
-              <label class="block text-sm font-semibold mb-1.5" style="color:var(--text-secondary)">Password</label>
-              <input type="password" name="password" required minlength="8"
-                class="block w-full rounded-lg border px-3.5 py-2.5 text-sm"
-                style="background:var(--surface-1);border-color:var(--border-default);color:var(--text-primary)">
-            </div>
-            <div>
-              <label class="block text-sm font-semibold mb-1.5" style="color:var(--text-secondary)">Confirm password</label>
-              <input type="password" name="confirmPassword" required minlength="8"
-                class="block w-full rounded-lg border px-3.5 py-2.5 text-sm"
-                style="background:var(--surface-1);border-color:var(--border-default);color:var(--text-primary)">
+          </fieldset>
+
+          <div>
+            <label for="password" class="block text-sm font-semibold mb-2">Password</label>
+            <input id="password" type="password" name="password" required minlength="8" autocomplete="new-password" placeholder="Create a strong password"
+              class="auth-input block w-full rounded-xl border px-4 py-3 text-sm"
+              style="background:rgba(255,255,255,0.55);border-color:var(--border-default);color:var(--text-primary)">
+            <div class="password-strength mt-3" aria-hidden="true">
+              <span></span><span></span><span></span><span></span>
             </div>
           </div>
 
           <div>
-            <label class="block text-sm font-semibold mb-1.5" style="color:var(--text-secondary)">Role</label>
-            <select name="role" required
-              class="block w-full rounded-lg border px-3.5 py-2.5 text-sm"
-              style="background:var(--surface-1);border-color:var(--border-default);color:var(--text-primary)">
-              <option value="author">Author — submit manuscripts</option>
-              <option value="reviewer">Reviewer — peer-review papers</option>
-              <option value="reader">Reader — browse published work</option>
-            </select>
+            <label for="confirmPassword" class="block text-sm font-semibold mb-2">Confirm password</label>
+            <input id="confirmPassword" type="password" name="confirmPassword" required minlength="8" autocomplete="new-password" placeholder="Repeat password"
+              class="auth-input block w-full rounded-xl border px-4 py-3 text-sm"
+              style="background:rgba(255,255,255,0.55);border-color:var(--border-default);color:var(--text-primary)">
           </div>
 
           <div>
-            <label class="block text-sm font-semibold mb-1.5" style="color:var(--text-secondary)">
-              Affiliation
-              <span class="font-normal text-xs ml-1" style="color:var(--text-tertiary)">(feeds COI detection)</span>
-            </label>
-            <input name="affiliation" placeholder="University of Auckland"
-              class="block w-full rounded-lg border px-3.5 py-2.5 text-sm"
-              style="background:var(--surface-1);border-color:var(--border-default);color:var(--text-primary)">
+            <label for="affiliation" class="block text-sm font-semibold mb-2">Affiliation <span class="font-normal text-xs" style="color:var(--text-tertiary)">(for COI detection)</span></label>
+            <input id="affiliation" name="affiliation" placeholder="University of Auckland"
+              class="auth-input block w-full rounded-xl border px-4 py-3 text-sm"
+              style="background:rgba(255,255,255,0.55);border-color:var(--border-default);color:var(--text-primary)">
           </div>
 
           <div>
-            <label class="block text-sm font-semibold mb-1.5" style="color:var(--text-secondary)">
-              Expertise tags
-              <span class="font-normal text-xs ml-1" style="color:var(--text-tertiary)">(reviewers — improves matching)</span>
-            </label>
-            <input name="expertise" placeholder="NLP, transformers, machine learning"
-              class="block w-full rounded-lg border px-3.5 py-2.5 text-sm"
-              style="background:var(--surface-1);border-color:var(--border-default);color:var(--text-primary)">
+            <label for="expertise" class="block text-sm font-semibold mb-2">Expertise tags</label>
+            <input id="expertise" name="expertise" placeholder="NLP, transformers, machine learning"
+              class="auth-input block w-full rounded-xl border px-4 py-3 text-sm"
+              style="background:rgba(255,255,255,0.55);border-color:var(--border-default);color:var(--text-primary)">
           </div>
 
-          <button class="btn btn-primary w-full py-2.5 mt-2">
+          <button class="btn-gradient shimmer-btn w-full mt-2">
             Create account
             <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6"/></svg>
           </button>
         </form>
 
         <% if (googleOAuthEnabled || githubOAuthEnabled) { %>
-          <div class="relative my-5">
+          <div class="relative my-6">
             <div class="absolute inset-0 flex items-center"><div class="w-full border-t" style="border-color:var(--border-default)"></div></div>
-            <div class="relative flex justify-center text-xs"><span class="px-3" style="background:var(--surface-0);color:var(--text-tertiary)">or sign up with</span></div>
+            <div class="relative flex justify-center text-xs"><span class="px-3 rounded-full glass-chip" style="color:var(--text-tertiary)">or sign up with</span></div>
           </div>
-          <div class="flex flex-col gap-2">
-            <% if (googleOAuthEnabled) { %>
-              <a href="/auth/google" class="btn btn-secondary w-full py-2.5 text-sm flex items-center justify-center gap-2.5">
-                <svg class="w-4 h-4" viewBox="0 0 24 24"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/></svg>
-                Continue with Google
-              </a>
-            <% } %>
-            <% if (githubOAuthEnabled) { %>
-              <a href="/auth/github" class="btn btn-secondary w-full py-2.5 text-sm flex items-center justify-center gap-2.5">
-                <svg class="w-4 h-4" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.477 2 2 6.477 2 12c0 4.42 2.87 8.17 6.84 9.5.5.08.66-.23.66-.5v-1.69c-2.77.6-3.36-1.34-3.36-1.34-.46-1.16-1.11-1.47-1.11-1.47-.91-.62.07-.6.07-.6 1 .07 1.53 1.03 1.53 1.03.87 1.52 2.34 1.07 2.91.83.09-.65.35-1.09.63-1.34-2.22-.25-4.55-1.11-4.55-4.92 0-1.11.38-2 1.03-2.71-.1-.25-.45-1.29.1-2.64 0 0 .84-.27 2.75 1.02.79-.22 1.65-.33 2.5-.33.85 0 1.71.11 2.5.33 1.91-1.29 2.75-1.02 2.75-1.02.55 1.35.2 2.39.1 2.64.65.71 1.03 1.6 1.03 2.71 0 3.82-2.34 4.66-4.57 4.91.36.31.69.92.69 1.85V21c0 .27.16.59.67.5C19.14 20.16 22 16.42 22 12A10 10 0 0012 2z"/></svg>
-                Continue with GitHub
-              </a>
-            <% } %>
+          <div class="grid gap-2">
+            <% if (googleOAuthEnabled) { %><a href="/auth/google" class="btn btn-secondary w-full py-3 text-sm">Continue with Google</a><% } %>
+            <% if (githubOAuthEnabled) { %><a href="/auth/github" class="btn btn-secondary w-full py-3 text-sm">Continue with GitHub</a><% } %>
           </div>
-          <p class="text-xs text-center mt-2" style="color:var(--text-tertiary)">OAuth sign-up creates an author account by default.</p>
         <% } %>
 
-        <p class="text-sm mt-5 text-center" style="color:var(--text-secondary)">
-          Already have an account? <a href="/login" class="font-semibold link-line" style="color:var(--brand-600)">Sign in</a>
+        <p class="text-sm mt-6 text-center" style="color:var(--text-secondary)">
+          Already have an account? <a href="/login" class="font-semibold link-line" style="color:var(--brand-500)">Sign in</a>
         </p>
       </section>
     </div>
   </main>
+
+  <script>
+    (function() {
+      const input = document.getElementById('password');
+      const meter = document.querySelector('.password-strength');
+      if (!input || !meter) return;
+      const colors = ['#ef4444', '#f97316', '#eab308', '#22c55e'];
+      const thresholds = [6, 8, 10, 12];
+      const segments = Array.from(meter.children);
+      function updateStrength() {
+        const score = thresholds.filter((length) => input.value.length >= length).length;
+        segments.forEach((segment, index) => {
+          segment.style.background = index < score ? colors[Math.max(0, score - 1)] : 'var(--surface-2)';
+          segment.style.transform = index < score ? 'scaleY(1)' : 'scaleY(0.6)';
+        });
+      }
+      input.addEventListener('input', updateStrength);
+      updateStrength();
+    })();
+  </script>
   <%- include('partials/footer') %>
 </body>
 </html>
