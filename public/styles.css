@@ -158,11 +158,17 @@ code, pre, .font-mono {
 }
 
 /* ── 5. Navigation ───────────────────────────────────────────────────────── */
+/* Light mode nav — clean white glass */
 .nav-shell {
-  background: rgba(3, 7, 18, 0.97);
-  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+  background: rgba(255, 255, 255, 0.90);
+  border-bottom: 1px solid rgba(0, 0, 0, 0.07);
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
+}
+/* Dark mode nav — deep navy glass */
+.dark .nav-shell {
+  background: rgba(3, 7, 18, 0.97);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
 }
 .brand-mark {
   background: linear-gradient(135deg, var(--brand-400), var(--accent-400));
@@ -172,9 +178,18 @@ code, pre, .font-mono {
   font-family: 'Plus Jakarta Sans', sans-serif;
   box-shadow: 0 0 0 1px rgba(255,255,255,0.1) inset;
 }
+/* Light mode: logo text/accent colors */
+.nav-shell .nav-logo-text { color: var(--text-primary); }
+.nav-shell .nav-logo-accent { color: var(--brand-500); }
+.nav-shell .nav-user-label { color: var(--text-tertiary); }
+.nav-shell .nav-signout { color: #be123c !important; }
+.dark .nav-shell .nav-logo-text { color: #f1f5f9; }
+.dark .nav-shell .nav-logo-accent { color: #67e8f9; }
+.dark .nav-shell .nav-user-label { color: #94a3b8; }
+.dark .nav-shell .nav-signout { color: #fecdd3 !important; }
 .nav-link {
   border-radius: var(--radius-sm);
-  color: #94a3b8;
+  color: var(--text-secondary);
   padding: 0.375rem 0.625rem;
   font-size: 0.875rem;
   font-weight: 500;
@@ -182,6 +197,12 @@ code, pre, .font-mono {
   border: 1px solid transparent;
 }
 .nav-link:hover {
+  background: rgba(0, 0, 0, 0.05);
+  border-color: rgba(0, 0, 0, 0.05);
+  color: var(--text-primary);
+}
+.dark .nav-link { color: #94a3b8; }
+.dark .nav-link:hover {
   background: rgba(255, 255, 255, 0.08);
   border-color: rgba(255, 255, 255, 0.07);
   color: #ffffff;
@@ -943,36 +964,34 @@ main { animation: page-in 0.3s var(--ease-out) both; }
     var(--surface-bg);
 }
 
-/* ── Home hero: architectural photo simulation ───────────────────────────── */
+/* ── Home hero: light mode — soft academic gradient ─────────────────────── */
 .home-hero {
   background:
-    /* Window-light bloom — upper right, warm golden-lavender spill */
-    radial-gradient(ellipse 55% 70% at 88% 0%,
-      rgba(255, 220, 140, 0.12) 0%,
-      rgba(200, 180, 255, 0.09) 30%,
-      transparent 68%),
-    /* Secondary ambient glow — left wall bounce */
-    radial-gradient(ellipse 40% 55% at -4% 40%,
-      rgba(79, 70, 229, 0.20) 0%,
-      transparent 65%),
-    /* Deep floor-level indigo pool */
-    radial-gradient(ellipse 60% 40% at 50% 105%,
-      rgba(30, 27, 75, 0.95) 0%,
-      transparent 72%),
-    /* Central vanishing-point atmospheric haze */
-    radial-gradient(ellipse 38% 48% at 50% 52%,
-      rgba(67, 56, 202, 0.13) 0%,
-      transparent 70%),
-    /* Main dark navy/indigo base */
-    linear-gradient(108deg,
-      #0d1129 0%,
-      #111a3a 18%,
-      #0e1535 38%,
-      #080e26 62%,
-      #060b1f 82%,
-      #040819 100%);
+    radial-gradient(ellipse 55% 65% at 85% 5%, rgba(165, 180, 252, 0.35), transparent 60%),
+    radial-gradient(ellipse 45% 50% at 10% 50%, rgba(99, 102, 241, 0.08), transparent 60%),
+    radial-gradient(ellipse 60% 45% at 50% 110%, rgba(199, 210, 254, 0.45), transparent 70%),
+    linear-gradient(150deg, #f8fafc 0%, #eef2ff 40%, #f0f4ff 70%, #f5f3ff 100%);
+  color: var(--text-primary);
+}
+
+/* Dark mode home hero — deep navy architectural look */
+.dark .home-hero {
+  background:
+    radial-gradient(ellipse 55% 70% at 88% 0%, rgba(255, 220, 140, 0.12) 0%, rgba(200, 180, 255, 0.09) 30%, transparent 68%),
+    radial-gradient(ellipse 40% 55% at -4% 40%, rgba(79, 70, 229, 0.20) 0%, transparent 65%),
+    radial-gradient(ellipse 60% 40% at 50% 105%, rgba(30, 27, 75, 0.95) 0%, transparent 72%),
+    radial-gradient(ellipse 38% 48% at 50% 52%, rgba(67, 56, 202, 0.13) 0%, transparent 70%),
+    linear-gradient(108deg, #0d1129 0%, #111a3a 18%, #0e1535 38%, #080e26 62%, #060b1f 82%, #040819 100%);
   color: white;
 }
+/* Light mode: hide dark-specific overlays */
+.home-hero .arch-vignette { opacity: 0; pointer-events: none; }
+.home-hero .arch-rays { opacity: 0; }
+.home-hero .arch-shimmer { opacity: 0; }
+/* Dark mode: restore them */
+.dark .home-hero .arch-vignette { opacity: 1; }
+.dark .home-hero .arch-rays { opacity: 1; }
+.dark .home-hero .arch-shimmer { opacity: 1; }
 
 /* Architectural grid overlay */
 .arch-bg {
@@ -1488,18 +1507,27 @@ main { animation: page-in 0.3s var(--ease-out) both; }
   border-color: rgba(255, 255, 255, 0.14);
 }
 
-/* The home hero is always dark — force dark glass treatment regardless of theme */
+/* Light mode: home hero glass cards — visible on light background */
 .home-hero .glass-card {
+  background: rgba(255, 255, 255, 0.65);
+  border-color: rgba(165, 180, 252, 0.30);
+  box-shadow: 0 8px 32px rgba(67, 56, 202, 0.10);
+}
+.home-hero .glass-card span[style] { color: var(--text-secondary) !important; }
+.home-hero .stats-glass {
+  background: rgba(255, 255, 255, 0.68);
+  border-color: rgba(165, 180, 252, 0.25);
+  box-shadow: 0 18px 50px rgba(67, 56, 202, 0.09);
+}
+
+/* Dark mode: restore deep dark glass treatment */
+.dark .home-hero .glass-card {
   background: rgba(255, 255, 255, 0.10);
   border-color: rgba(255, 255, 255, 0.20);
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.32);
 }
-
-.home-hero .glass-card span[style] {
-  color: #e2e8f0 !important;
-}
-
-.home-hero .stats-glass {
+.dark .home-hero .glass-card span[style] { color: #e2e8f0 !important; }
+.dark .home-hero .stats-glass {
   background: rgba(255, 255, 255, 0.08);
   border-color: rgba(255, 255, 255, 0.16);
   box-shadow: 0 18px 50px rgba(0, 0, 0, 0.38);

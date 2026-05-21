@@ -9,9 +9,9 @@
 
 <nav class="nav-shell sticky top-0 z-40 backdrop-blur">
   <div class="max-w-7xl mx-auto px-6 py-3 flex flex-wrap items-center justify-between gap-3">
-    <a href="/" class="flex items-center gap-3 text-slate-100" aria-label="PaperSub.AI home">
+    <a href="/" class="flex items-center gap-3" aria-label="PaperSub.AI home">
       <span class="brand-mark inline-flex h-8 w-8 items-center justify-center rounded-md text-sm font-black text-white" aria-hidden="true">P</span>
-      <span class="font-semibold tracking-tight text-base">PaperSub<span class="text-cyan-300">.AI</span></span>
+      <span class="nav-logo-text font-semibold tracking-tight text-base">PaperSub<span class="nav-logo-accent">.AI</span></span>
     </a>
     <div class="flex flex-wrap items-center justify-end gap-1 text-sm">
       <a class="nav-link" href="/reader">Read</a>
@@ -41,8 +41,8 @@
         <button id="darkToggle" class="dark-toggle" title="Toggle dark mode" aria-label="Toggle dark mode" role="switch" aria-checked="false">
           <span class="dark-toggle-thumb"></span>
         </button>
-        <span class="ml-2 text-xs text-slate-400 hidden sm:inline" aria-label="Logged in as <%= currentUser.username %>">@<%= currentUser.username %></span>
-        <a class="nav-link text-rose-200 hover:text-rose-100 hover:bg-rose-500/10" href="/logout">Sign out</a>
+        <span class="nav-user-label ml-2 text-xs hidden sm:inline" aria-label="Logged in as <%= currentUser.username %>">@<%= currentUser.username %></span>
+        <a class="nav-link nav-signout hover:bg-rose-500/10" href="/logout">Sign out</a>
       <% } else { %>
         <button id="darkToggle" class="dark-toggle" title="Toggle dark mode" aria-label="Toggle dark mode" role="switch" aria-checked="false">
           <span class="dark-toggle-thumb"></span>
