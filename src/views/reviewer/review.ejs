@@ -193,16 +193,17 @@
   </main>
 
   <!-- Decline modal -->
-  <div id="declineModal" class="hidden confirm-overlay">
+  <div id="declineModal" class="hidden confirm-overlay" role="dialog" aria-modal="true" aria-labelledby="declineModalTitle">
     <div class="confirm-box">
-      <h2 class="font-display font-bold text-lg mb-1" style="color:var(--text-primary)">Decline review assignment</h2>
+      <h2 id="declineModalTitle" class="font-display font-bold text-lg mb-1" style="color:var(--text-primary)">Decline review assignment</h2>
       <p class="text-sm mb-4" style="color:var(--text-secondary)">Please provide a reason. The editor will be notified.</p>
+      <label for="declineReason" class="sr-only">Decline reason</label>
       <textarea id="declineReason" rows="3" placeholder="e.g., Outside my area of expertise, workload constraints…"
         class="w-full rounded-md border px-3 py-2 text-sm mb-4"
         style="background:var(--surface-1);border-color:var(--border-default);color:var(--text-primary)"></textarea>
       <div class="flex gap-3">
-        <button onclick="submitDecline()" class="btn btn-sm btn-danger">Decline</button>
-        <button onclick="document.getElementById('declineModal').classList.add('hidden')" class="btn btn-sm btn-secondary">Cancel</button>
+        <button id="declineSubmitBtn" class="btn btn-sm btn-danger">Decline</button>
+        <button id="declineCancelBtn" class="btn btn-sm btn-secondary">Cancel</button>
       </div>
     </div>
   </div>
@@ -255,7 +256,23 @@
       finally { btn.disabled = false; btn.textContent = 'Check quality'; }
     });
 
-    function openDeclineModal() { document.getElementById('declineModal').classList.remove('hidden'); }
+    let declineCleanup = null;
+    function openDeclineModal() {
+      const modal = document.getElementById('declineModal');
+      const trigger = document.activeElement;
+      modal.classList.remove('hidden');
+      declineCleanup = window.trapFocus(modal, trigger);
+      modal.addEventListener('keydown', function esc(e) {
+        if (e.key === 'Escape') { closeDeclineModal(); modal.removeEventListener('keydown', esc); }
+      });
+    }
+    function closeDeclineModal() {
+      document.getElementById('declineModal').classList.add('hidden');
+      if (declineCleanup) { declineCleanup(); declineCleanup = null; }
+    }
+    document.getElementById('declineCancelBtn').addEventListener('click', closeDeclineModal);
+    document.getElementById('declineSubmitBtn').addEventListener('click', submitDecline);
+
     async function submitDecline() {
       const reason = document.getElementById('declineReason').value.trim();
       if (!reason) { showToast('Please provide a reason', 'warning'); return; }

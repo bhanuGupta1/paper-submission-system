@@ -822,7 +822,43 @@ label { color: var(--text-secondary); }
 .dark .border-indigo-100 { border-color: rgba(67, 56, 202, 0.25) !important; }
 .dark .border-blue-200  { border-color: rgba(37, 99, 235, 0.4)  !important; }
 
-/* Focus rings — keep them visible */
+/* ── Accessibility — WCAG 2.1 AA ────────────────────────────────────────── */
+
+/* Skip-to-main link: visually hidden until focused */
+.skip-link {
+  position: absolute;
+  left: -9999px;
+  top: 1rem;
+  z-index: 9999;
+  padding: 0.5rem 1.25rem;
+  background: var(--brand-600);
+  color: #fff;
+  font-weight: 600;
+  font-size: 0.875rem;
+  border-radius: 0.5rem;
+  text-decoration: none;
+  white-space: nowrap;
+}
+.skip-link:focus { left: 1rem; outline: 3px solid var(--brand-300); outline-offset: 3px; }
+
+/* Global focus-visible rings for all interactive elements */
+a:focus-visible,
+button:focus-visible,
+[role="button"]:focus-visible,
+summary:focus-visible,
+[tabindex]:focus-visible {
+  outline: 2px solid var(--brand-500);
+  outline-offset: 2px;
+  border-radius: 3px;
+}
+
+/* Role cards: show outline on the card when its hidden radio is keyboard-focused */
+.role-card:has(.role-radio:focus-visible) {
+  outline: 2px solid var(--brand-500);
+  outline-offset: 3px;
+}
+
+/* Focus rings — keep them visible in dark mode (legacy Tailwind utilities) */
 .dark .focus\:ring-indigo-500:focus { box-shadow: 0 0 0 2px rgba(99,102,241,0.4) !important; }
 .dark .focus\:border-indigo-500:focus { border-color: var(--brand-500) !important; }
 

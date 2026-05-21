@@ -1,3 +1,6 @@
+<!-- Skip navigation (WCAG 2.1 AA - 2.4.1) -->
+<a href="#main-content" class="skip-link">Skip to main content</a>
+
 <!-- Global toast notification container -->
 <div id="toast-container" class="fixed top-4 right-4 z-[100] flex flex-col gap-2 pointer-events-none" aria-live="polite"></div>
 
@@ -168,4 +171,28 @@ window.showToast = function(message, type = 'info', duration = 4000) {
   };
 })();
 <% } %>
+
+// ── Accessibility utilities ───────────────────────────────────────────────────
+// Auto-assign id + tabindex to <main> so the skip link has a target
+(function() {
+  var main = document.querySelector('main');
+  if (main && !main.id) { main.id = 'main-content'; main.setAttribute('tabindex', '-1'); }
+})();
+
+// Focus trap for modals: call trapFocus(dialogEl, triggerEl) on open,
+// returned cleanup fn on close.
+window.trapFocus = function(el, trigger) {
+  var FOCUSABLE = 'a[href],button:not([disabled]),input:not([disabled]),select:not([disabled]),textarea:not([disabled]),[tabindex]:not([tabindex="-1"]),details>summary';
+  var nodes = Array.from(el.querySelectorAll(FOCUSABLE));
+  if (!nodes.length) return function() {};
+  nodes[0].focus();
+  function handler(e) {
+    if (e.key !== 'Tab') return;
+    var first = nodes[0], last = nodes[nodes.length - 1];
+    if (e.shiftKey) { if (document.activeElement === first) { e.preventDefault(); last.focus(); } }
+    else            { if (document.activeElement === last)  { e.preventDefault(); first.focus(); } }
+  }
+  el.addEventListener('keydown', handler);
+  return function() { el.removeEventListener('keydown', handler); if (trigger) trigger.focus(); };
+};
 </script>
