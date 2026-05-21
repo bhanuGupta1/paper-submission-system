@@ -70,7 +70,7 @@
             <option value="<%= s %>" <%= filter.status === s ? 'selected' : '' %>><%= s.replace('_', ' ') %></option>
           <% }) %>
         </select>
-        <button class="bg-slate-900 hover:bg-slate-800 text-white px-4 py-2 rounded-md text-sm font-medium transition">Filter</button>
+        <button class="btn btn-sm btn-secondary">Filter</button>
         <div class="text-xs text-slate-500 ml-auto"><%= filter.total %> matching — page <%= filter.page %> of <%= filter.pageCount %></div>
       </form>
 
@@ -199,7 +199,7 @@
                         <option value="<%= r.id %>"><%= r.username %><%= r.expertise ? ' – ' + r.expertise.slice(0, 28) : '' %><%= r.conflict && r.conflict.hasConflict ? ' ⚠ COI' : '' %></option>
                       <% }) %>
                     </select>
-                    <button class="text-xs bg-slate-700 hover:bg-slate-600 text-white px-3 py-1.5 rounded font-medium transition shrink-0">Assign</button>
+                    <button class="btn btn-sm btn-primary shrink-0">Assign</button>
                   </div>
                   <input type="date" name="deadline" aria-label="Review deadline" class="text-xs w-full border border-slate-300 rounded-md px-2 py-1.5 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 focus:outline-none">
                 </form>

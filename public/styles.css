@@ -559,7 +559,14 @@ input::placeholder, textarea::placeholder { color: var(--text-tertiary); }
 /* ── 23. Review grid ─────────────────────────────────────────────────────── */
 .review-grid { display: grid; gap: 1rem; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); }
 
-/* ── 24. Footer ──────────────────────────────────────────────────────────── */
+/* ── 24. Visibility guard ────────────────────────────────────────────────── */
+/* Tailwind's .hidden (display:none) can be overridden by component classes
+   (e.g. .confirm-overlay sets display:flex) because our stylesheet loads after
+   Tailwind CDN injects its styles. Enforce .hidden with !important so toggling
+   visibility with class addition/removal always works correctly. */
+.hidden { display: none !important; }
+
+/* ── 25. Footer ─────────────────────────────────────────────────────────── */
 .footer-shell {
   background: var(--surface-0);
   border-top: 1px solid var(--border-default);
