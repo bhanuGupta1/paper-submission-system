@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="en">
+<head><%- include('../partials/head') %></head>
+<body class="min-h-screen flex flex-col" style="background:var(--surface-0);color:var(--text-primary)">
+  <%- include('../partials/nav') %>
+  <main class="flex-1">
+    <div class="max-w-5xl mx-auto px-6 py-10">
+
+      <div class="mb-8">
+        <a href="/editor" class="text-sm" style="color:var(--brand-500)">← Editor dashboard</a>
+        <h1 class="font-display text-3xl font-extrabold mt-1 gradient-text">Version diff</h1>
+        <p class="text-sm mt-1 font-semibold" style="color:var(--text-secondary)"><%= paper.title %></p>
+      </div>
+
+      <% if (versions.length < 2) { %>
+        <div class="glass-card p-10 text-center">
+          <p style="color:var(--text-secondary)">Only one version exists — no diff available yet.</p>
+        </div>
+      <% } else { %>
+
+        <!-- Version picker -->
+        <form method="get" action="/editor/papers/<%= paper.id %>/versions" class="glass-card p-5 mb-8 flex flex-wrap items-end gap-4">
+          <div>
+            <label class="block text-xs font-semibold mb-1" style="color:var(--text-secondary)">Version A (older)</label>
+            <select name="a" class="rounded-md px-3 py-2 text-sm" style="background:var(--surface-1);border:1px solid var(--border-default);color:var(--text-primary)">
+              <% versions.forEach(v => { %>
+                <option value="<%= v.version_number %>" <%= vA && vA.version_number === v.version_number ? 'selected' : '' %>>
+                  v<%= v.version_number %> — <%= new Date(v.submitted_at).toLocaleDateString() %>
+                </option>
+              <% }) %>
+            </select>
+          </div>
+          <div>
+            <label class="block text-xs font-semibold mb-1" style="color:var(--text-secondary)">Version B (newer)</label>
+            <select name="b" class="rounded-md px-3 py-2 text-sm" style="background:var(--surface-1);border:1px solid var(--border-default);color:var(--text-primary)">
+              <% versions.forEach(v => { %>
+                <option value="<%= v.version_number %>" <%= vB && vB.version_number === v.version_number ? 'selected' : '' %>>
+                  v<%= v.version_number %> — <%= new Date(v.submitted_at).toLocaleDateString() %>
+                </option>
+              <% }) %>
+            </select>
+          </div>
+          <button type="submit" class="btn-gradient shimmer-btn text-sm">Compare</button>
+        </form>
+
+        <!-- Diff results -->
+        <div class="space-y-6">
+          <% fields.forEach(f => { %>
+            <div class="glass-card p-5">
+              <div class="flex items-center justify-between mb-3">
+                <h2 class="font-display font-bold text-lg capitalize" style="color:var(--text-primary)"><%= f.field %></h2>
+                <% if (!f.changed) { %>
+                  <span class="status-pill text-xs" style="background:rgba(100,116,139,0.10);color:#64748b;border:1px solid rgba(100,116,139,0.25)">Unchanged</span>
+                <% } else { %>
+                  <span class="status-pill text-xs" style="background:rgba(217,119,6,0.10);color:#d97706;border:1px solid rgba(217,119,6,0.25)">Changed</span>
+                <% } %>
+              </div>
+              <% if (!f.changed) { %>
+                <p class="text-sm" style="color:var(--text-secondary)"><%= f.a || '(empty)' %></p>
+              <% } else { %>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <p class="text-xs font-bold uppercase tracking-wider mb-2" style="color:var(--text-tertiary)">v<%= vA.version_number %> (before)</p>
+                    <div class="rounded-lg p-3 text-sm leading-relaxed whitespace-pre-wrap" style="background:rgba(220,38,38,0.06);border:1px solid rgba(220,38,38,0.15);color:var(--text-secondary)" id="diff-a-<%= f.field %>"><%= f.a || '(empty)' %></div>
+                  </div>
+                  <div>
+                    <p class="text-xs font-bold uppercase tracking-wider mb-2" style="color:var(--text-tertiary)">v<%= vB.version_number %> (after)</p>
+                    <div class="rounded-lg p-3 text-sm leading-relaxed whitespace-pre-wrap" style="background:rgba(5,150,105,0.06);border:1px solid rgba(5,150,105,0.15);color:var(--text-secondary)" id="diff-b-<%= f.field %>"><%= f.b || '(empty)' %></div>
+                  </div>
+                </div>
+                <div class="mt-3">
+                  <p class="text-xs font-bold uppercase tracking-wider mb-2" style="color:var(--text-tertiary)">Word-level diff</p>
+                  <div class="rounded-lg p-3 text-sm leading-relaxed" style="background:var(--surface-1);border:1px solid var(--border-default)" id="diff-inline-<%= f.field %>"></div>
+                </div>
+              <% } %>
+            </div>
+          <% }) %>
+        </div>
+
+        <!-- Version timeline -->
+        <div class="glass-card p-5 mt-8">
+          <h2 class="font-display font-bold text-base mb-4" style="color:var(--text-primary)">Revision history</h2>
+          <ol class="space-y-3">
+            <% versions.slice().reverse().forEach(v => { %>
+              <li class="flex items-start gap-3">
+                <span class="w-6 h-6 rounded-full text-xs font-bold flex items-center justify-center shrink-0 mt-0.5" style="background:var(--brand-100);color:var(--brand-600)">v<%= v.version_number %></span>
+                <div>
+                  <p class="text-xs" style="color:var(--text-tertiary)"><%= new Date(v.submitted_at).toLocaleString() %></p>
+                  <% if (v.change_note) { %>
+                    <p class="text-sm mt-0.5" style="color:var(--text-secondary)"><%= v.change_note %></p>
+                  <% } %>
+                </div>
+              </li>
+            <% }) %>
+          </ol>
+        </div>
+
+      <% } %>
+    </div>
+  </main>
+  <%- include('../partials/footer') %>
+
+  <script>
+  // Simple word-level diff highlighter
+  function wordDiff(a, b) {
+    const wa = a.split(/(\s+)/);
+    const wb = b.split(/(\s+)/);
+    // LCS-based word diff
+    const m = wa.length, n = wb.length;
+    const dp = Array.from({length: m+1}, () => new Array(n+1).fill(0));
+    for (let i = 1; i <= m; i++) for (let j = 1; j <= n; j++) {
+      dp[i][j] = wa[i-1] === wb[j-1] ? dp[i-1][j-1] + 1 : Math.max(dp[i-1][j], dp[i][j-1]);
+    }
+    const result = [];
+    let i = m, j = n;
+    while (i > 0 || j > 0) {
+      if (i > 0 && j > 0 && wa[i-1] === wb[j-1]) { result.unshift({t: 'eq', v: wa[i-1]}); i--; j--; }
+      else if (j > 0 && (i === 0 || dp[i][j-1] >= dp[i-1][j])) { result.unshift({t: 'ins', v: wb[j-1]}); j--; }
+      else { result.unshift({t: 'del', v: wa[i-1]}); i--; }
+    }
+    return result.map(d => {
+      if (d.t === 'eq') return d.v;
+      if (d.t === 'ins') return `<mark style="background:rgba(5,150,105,0.2);color:var(--text-primary);border-radius:2px">${d.v}</mark>`;
+      return `<del style="background:rgba(220,38,38,0.12);color:#dc2626;border-radius:2px">${d.v}</del>`;
+    }).join('');
+  }
+
+  const diffs = <%- JSON.stringify(fields.filter(f => f.changed).map(f => ({field: f.field, a: f.a, b: f.b}))) %>;
+  diffs.forEach(d => {
+    const el = document.getElementById('diff-inline-' + d.field);
+    if (el) el.innerHTML = wordDiff(d.a, d.b);
+  });
+  </script>
+</body>
+</html>

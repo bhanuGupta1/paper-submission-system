@@ -312,6 +312,30 @@ async function listInvitations(req, res, next) {
   } catch (err) { next(err); }
 }
 
+async function versionDiff(req, res, next) {
+  try {
+    const paperId = req.params.id;
+    const paper = await Paper.findById(paperId);
+    if (!paper) return res.status(404).render('error', { title: 'Not found', message: 'Paper not found.' });
+    const versions = await Paper.versionsForPaper(paperId);
+    if (versions.length < 2) return res.render('editor/version-diff', { title: 'Version diff', paper, versions, vA: null, vB: null, fields: [] });
+
+    const aNum = parseInt(req.query.a, 10) || versions[1].version_number;
+    const bNum = parseInt(req.query.b, 10) || versions[0].version_number;
+    const vA = versions.find((v) => v.version_number === aNum);
+    const vB = versions.find((v) => v.version_number === bNum);
+
+    const fields = ['title', 'abstract', 'authors', 'keywords'].map((field) => ({
+      field,
+      a: (vA && vA[field]) || '',
+      b: (vB && vB[field]) || '',
+      changed: (vA && vA[field]) !== (vB && vB[field]),
+    }));
+
+    res.render('editor/version-diff', { title: `Version diff | ${paper.title}`, paper, versions, vA, vB, fields });
+  } catch (err) { next(err); }
+}
+
 async function analyticsView(req, res, next) {
   try {
     const data = await analytics.getEditorAnalytics();
@@ -322,5 +346,5 @@ async function analyticsView(req, res, next) {
 module.exports = {
   dashboard, assignReviewer, bulkAssign, decide, viewDecisionLetter,
   updateTags, downloadManuscript, viewManuscript, reviewProgress, auditTrail,
-  getDiscussion, postDiscussion, inviteReviewer, listInvitations, analyticsView,
+  getDiscussion, postDiscussion, inviteReviewer, listInvitations, analyticsView, versionDiff,
 };

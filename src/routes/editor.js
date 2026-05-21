@@ -23,5 +23,6 @@ router.post('/papers/:id/discussion', ctl.postDiscussion);
 router.post('/papers/:id/invite-reviewer', ctl.inviteReviewer);
 router.get('/papers/:id/invitations', ctl.listInvitations);
 router.get('/analytics', ctl.analyticsView);
+router.get('/papers/:id/versions', ctl.versionDiff);
 
 module.exports = router;

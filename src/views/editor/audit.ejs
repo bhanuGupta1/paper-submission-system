@@ -5,7 +5,10 @@
   <%- include('../partials/nav') %>
   <main class="flex-1">
     <div class="max-w-7xl mx-auto px-6 py-8">
-      <a href="/editor" class="text-sm text-indigo-600 hover:text-indigo-500 link-line">Back to editor dashboard</a>
+      <div class="flex items-center gap-4">
+        <a href="/editor" class="text-sm text-indigo-600 hover:text-indigo-500 link-line">Back to editor dashboard</a>
+        <a href="/editor/papers/<%= paper.id %>/versions" class="text-sm" style="color:var(--brand-500)">Version diff →</a>
+      </div>
       <div class="dashboard-hero mt-4 mb-6">
         <div>
           <p class="eyebrow text-indigo-200">Audit trail</p>
