@@ -106,7 +106,12 @@ async function complete(systemPrompt, userPrompt, { maxTokens = 800, taskType = 
         logger.warn({ model, taskType, delayMs: delay }, '[openrouter] 429 rate-limited, waiting before next fallback');
         continue;
       }
-      if (err.status === 404) { logger.warn({ model, taskType }, '[openrouter] model not found, trying next'); continue; }
+      // Transient upstream errors — keep trying other models
+      if (err.status === 404 || err.status === 500 || err.status === 502 || err.status === 503) {
+        logger.warn({ model, taskType, status: err.status }, '[openrouter] model unavailable, trying next');
+        delay = 1000;
+        continue;
+      }
       throw err;
     }
   }
@@ -369,7 +374,7 @@ async function responseToReviewers(paperTitle, reviewerComment) {
 
 async function analyticsInsights(stats) {
   const sys = 'You are an academic journal analytics expert. Analyze these platform statistics. Return ONLY valid JSON with exactly these keys: {"insights":["string"],"key_findings":["string"],"action_items":["string"],"trend_summary":"string","confidence":85}. Maximum 4 items per array. Reference actual numbers.';
-  try { return safeJson(await complete(sys, JSON.stringify(stats), { maxTokens: 500, taskType: 'analysis' }), null); }
+  try { return safeJson(await complete(sys, JSON.stringify(stats), { maxTokens: 700, taskType: 'analysis' }), null); }
   catch (err) { logger.error({ err: err.message }, '[openrouter] analyticsInsights failed'); return null; }
 }
 
