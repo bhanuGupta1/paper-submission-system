@@ -65,4 +65,9 @@ router.post('/profile/notification-prefs', ctl.updateNotificationPrefs);
 router.get('/profile/export', ctl.exportMyData);
 router.post('/profile/request-deletion', ctl.requestDeletion);
 
+router.get('/api-keys', ctl.listApiKeys);
+router.post('/api-keys', ctl.createApiKey);
+router.post('/api-keys/:id/revoke', ctl.revokeApiKey);
+router.delete('/api-keys/:id', ctl.deleteApiKey);
+
 module.exports = router;

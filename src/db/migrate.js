@@ -395,7 +395,26 @@ async function migrate() {
     )
   `);
 
-  logger.info('Migration complete (v7)');
+  // ── v8: API key management ────────────────────────────────────────────────────
+  await run(`
+    CREATE TABLE IF NOT EXISTS api_keys (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      user_id INTEGER NOT NULL,
+      name TEXT NOT NULL,
+      key_hash TEXT NOT NULL UNIQUE,
+      key_prefix TEXT NOT NULL,
+      scopes TEXT NOT NULL DEFAULT 'read:papers',
+      last_used_at TEXT,
+      expires_at TEXT,
+      is_active INTEGER NOT NULL DEFAULT 1,
+      created_at TEXT NOT NULL DEFAULT (datetime('now')),
+      FOREIGN KEY(user_id) REFERENCES users(id) ON DELETE CASCADE
+    )
+  `);
+  await run('CREATE INDEX IF NOT EXISTS idx_api_keys_user ON api_keys(user_id)');
+  await run('CREATE INDEX IF NOT EXISTS idx_api_keys_hash ON api_keys(key_hash)');
+
+  logger.info('Migration complete (v8)');
 }
 
 if (require.main === module) {

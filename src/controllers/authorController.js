@@ -296,4 +296,42 @@ async function requestDeletion(req, res, next) {
   } catch (err) { next(err); }
 }
 
-module.exports = { dashboard, showSubmit, submit, paperDetail, showRevise, submitRevision, downloadPaper, viewPaper, profile, updateProfile, updateNotificationPrefs, exportMyData, requestDeletion };
+// ── API key management ────────────────────────────────────────────────────────
+const apiKeys = require('../services/apiKeys');
+
+async function listApiKeys(req, res, next) {
+  try {
+    const keys = await apiKeys.listForUser(req.user.id);
+    res.json({ keys });
+  } catch (err) { next(err); }
+}
+
+async function createApiKey(req, res, next) {
+  try {
+    const { name, scopes, expiresInDays } = req.body;
+    if (!name || !name.trim()) return res.status(400).json({ error: 'Name required' });
+    const validScopes = ['read:papers', 'write:papers', 'read:reviews', 'admin'];
+    const chosenScopes = (Array.isArray(scopes) ? scopes : [scopes]).filter((s) => validScopes.includes(s)).join(',');
+    const result = await apiKeys.create({ userId: req.user.id, name: name.trim(), scopes: chosenScopes || 'read:papers', expiresInDays: parseInt(expiresInDays, 10) || null });
+    await audit.log(req.user.id, 'api_key.created', 'api_keys', null, { name, prefix: result.prefix }, req);
+    res.json({ key: result.key, prefix: result.prefix, message: 'Save this key — it will not be shown again.' });
+  } catch (err) { next(err); }
+}
+
+async function revokeApiKey(req, res, next) {
+  try {
+    await apiKeys.revoke(req.params.id, req.user.id);
+    await audit.log(req.user.id, 'api_key.revoked', 'api_keys', req.params.id, {}, req);
+    res.json({ ok: true });
+  } catch (err) { next(err); }
+}
+
+async function deleteApiKey(req, res, next) {
+  try {
+    await apiKeys.deleteKey(req.params.id, req.user.id);
+    await audit.log(req.user.id, 'api_key.deleted', 'api_keys', req.params.id, {}, req);
+    res.json({ ok: true });
+  } catch (err) { next(err); }
+}
+
+module.exports = { dashboard, showSubmit, submit, paperDetail, showRevise, submitRevision, downloadPaper, viewPaper, profile, updateProfile, updateNotificationPrefs, exportMyData, requestDeletion, listApiKeys, createApiKey, revokeApiKey, deleteApiKey };

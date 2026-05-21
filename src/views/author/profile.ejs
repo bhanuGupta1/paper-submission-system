@@ -248,8 +248,124 @@
         </details>
       </section>
 
+      <!-- API key management -->
+      <section class="glass-card gradient-border-card p-6 sm:p-8 mt-6">
+        <h2 class="font-display font-bold text-xl mb-1" style="color:var(--text-primary)">API keys</h2>
+        <p class="text-sm mb-5" style="color:var(--text-tertiary)">Use API keys to query published papers and integrate PaperSub.AI with your systems. Keys never expire unless you set a duration.</p>
+
+        <!-- Create key form -->
+        <details class="group mb-5">
+          <summary class="cursor-pointer text-sm font-semibold" style="color:var(--brand-500)">+ Create new API key</summary>
+          <div class="mt-4 space-y-3">
+            <div>
+              <label class="block text-xs font-semibold mb-1" style="color:var(--text-secondary)">Key name</label>
+              <input type="text" id="apikey-name" placeholder="e.g. My university integration" class="w-full sm:w-72 rounded-md px-3 py-2 text-sm" style="background:var(--surface-1);border:1px solid var(--border-default);color:var(--text-primary)">
+            </div>
+            <div>
+              <label class="block text-xs font-semibold mb-1" style="color:var(--text-secondary)">Scopes</label>
+              <div class="flex flex-wrap gap-3">
+                <label class="flex items-center gap-1.5 text-sm cursor-pointer">
+                  <input type="checkbox" id="scope-read" value="read:papers" checked class="rounded"> read:papers
+                </label>
+                <label class="flex items-center gap-1.5 text-sm cursor-pointer">
+                  <input type="checkbox" id="scope-write" value="write:papers" class="rounded"> write:papers
+                </label>
+                <label class="flex items-center gap-1.5 text-sm cursor-pointer">
+                  <input type="checkbox" id="scope-reviews" value="read:reviews" class="rounded"> read:reviews
+                </label>
+              </div>
+            </div>
+            <div>
+              <label class="block text-xs font-semibold mb-1" style="color:var(--text-secondary)">Expires in (days, blank = never)</label>
+              <input type="number" id="apikey-expires" placeholder="Never" min="1" max="365" class="w-32 rounded-md px-3 py-2 text-sm" style="background:var(--surface-1);border:1px solid var(--border-default);color:var(--text-primary)">
+            </div>
+            <button onclick="createApiKey()" class="btn-gradient shimmer-btn text-sm">Generate key</button>
+          </div>
+        </details>
+
+        <!-- New key reveal -->
+        <div id="new-key-box" class="hidden rounded-xl p-4 mb-5 text-sm" style="background:rgba(5,150,105,0.08);border:1px solid rgba(5,150,105,0.25)">
+          <p class="font-semibold mb-2" style="color:#059669">Copy this key — it will not be shown again.</p>
+          <div class="flex items-center gap-2">
+            <code id="new-key-value" class="flex-1 text-xs rounded px-2 py-1.5 break-all" style="background:var(--surface-1);color:var(--text-primary)"></code>
+            <button onclick="navigator.clipboard.writeText(document.getElementById('new-key-value').textContent).then(()=>showToast('Copied','success'))" class="btn btn-sm btn-secondary shrink-0 text-xs">Copy</button>
+          </div>
+        </div>
+
+        <!-- Existing keys table -->
+        <div id="apikeys-table">
+          <p class="text-xs italic" style="color:var(--text-tertiary)">Loading keys…</p>
+        </div>
+      </section>
+
     </div>
   </main>
   <%- include('../partials/footer') %>
+
+  <script>
+    async function loadApiKeys() {
+      const el = document.getElementById('apikeys-table');
+      try {
+        const r = await fetch('/author/api-keys');
+        const d = await r.json();
+        if (!d.keys || d.keys.length === 0) {
+          el.innerHTML = '<p class="text-xs italic" style="color:var(--text-tertiary)">No API keys yet.</p>';
+          return;
+        }
+        el.innerHTML = '<table class="w-full text-xs" style="border-collapse:collapse">'
+          + '<thead><tr style="border-bottom:1px solid var(--border-default)">'
+          + '<th class="text-left py-2 pr-4" style="color:var(--text-tertiary)">Name</th>'
+          + '<th class="text-left py-2 pr-4" style="color:var(--text-tertiary)">Prefix</th>'
+          + '<th class="text-left py-2 pr-4" style="color:var(--text-tertiary)">Scopes</th>'
+          + '<th class="text-left py-2 pr-4" style="color:var(--text-tertiary)">Last used</th>'
+          + '<th class="text-left py-2" style="color:var(--text-tertiary)">Expires</th>'
+          + '<th></th>'
+          + '</tr></thead><tbody>'
+          + d.keys.map(k => `<tr style="border-bottom:1px solid var(--border-subtle)">
+            <td class="py-2 pr-4 font-medium" style="color:var(--text-primary)">${esc(k.name)}</td>
+            <td class="py-2 pr-4 font-mono" style="color:var(--text-secondary)">${esc(k.key_prefix)}…</td>
+            <td class="py-2 pr-4" style="color:var(--text-tertiary)">${esc(k.scopes)}</td>
+            <td class="py-2 pr-4" style="color:var(--text-tertiary)">${k.last_used_at ? new Date(k.last_used_at).toLocaleDateString() : '—'}</td>
+            <td class="py-2" style="color:var(--text-tertiary)">${k.expires_at ? new Date(k.expires_at).toLocaleDateString() : 'Never'}</td>
+            <td class="py-2 pl-3"><button onclick="revokeKey(${k.id})" class="text-xs px-2 py-1 rounded" style="color:#dc2626;border:1px solid rgba(220,38,38,0.3);background:rgba(220,38,38,0.06)">${k.is_active ? 'Revoke' : 'Revoked'}</button></td>
+          </tr>`).join('')
+          + '</tbody></table>';
+      } catch { el.innerHTML = '<p class="text-xs text-rose-500">Failed to load keys.</p>'; }
+    }
+
+    function esc(s) { const d = document.createElement('div'); d.textContent = s; return d.innerHTML; }
+
+    async function createApiKey() {
+      const name = document.getElementById('apikey-name').value.trim();
+      if (!name) { showToast('Enter a key name', 'warning'); return; }
+      const scopes = ['scope-read','scope-write','scope-reviews'].map(id => document.getElementById(id)).filter(el => el.checked).map(el => el.value);
+      const expiresInDays = parseInt(document.getElementById('apikey-expires').value, 10) || null;
+      try {
+        const r = await fetch('/author/api-keys', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ name, scopes, expiresInDays }),
+        });
+        const d = await r.json();
+        if (!r.ok) { showToast(d.error || 'Error', 'error'); return; }
+        document.getElementById('new-key-value').textContent = d.key;
+        document.getElementById('new-key-box').classList.remove('hidden');
+        document.getElementById('apikey-name').value = '';
+        await loadApiKeys();
+        showToast('API key created', 'success');
+      } catch { showToast('Network error', 'error'); }
+    }
+
+    async function revokeKey(id) {
+      if (!confirm('Revoke this API key? It will stop working immediately.')) return;
+      try {
+        await fetch('/author/api-keys/' + id + '/revoke', { method: 'POST' });
+        await loadApiKeys();
+        showToast('Key revoked', 'success');
+      } catch { showToast('Error', 'error'); }
+    }
+
+    loadApiKeys();
+  </script>
 </body>
 </html>
