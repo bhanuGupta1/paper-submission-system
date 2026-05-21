@@ -5,7 +5,7 @@
  *
  * Selected via `LLM_PROVIDER`:
  *   - "heuristic"   (default) — offline rule-based, zero cost
- *   - "claude"                — Anthropic API via ANTHROPIC_API_KEY
+ *   - "claude"                — Claude API via ANTHROPIC_API_KEY
  *   - "openrouter"            — OpenRouter API via OPENROUTER_API_KEY
  *                               Defaults to free-tier model; override with OPENROUTER_MODEL
  *

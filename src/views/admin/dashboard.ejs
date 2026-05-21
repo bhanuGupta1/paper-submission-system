@@ -53,6 +53,20 @@
         </article>
       </div>
 
+      <!-- AI API status bar -->
+      <div id="ai-status-bar" class="glass-card px-5 py-3 mb-6 flex items-center justify-between gap-4">
+        <div class="flex items-center gap-3">
+          <span id="ai-status-dot" class="w-2.5 h-2.5 rounded-full bg-slate-400 shrink-0"></span>
+          <span class="text-sm font-medium" style="color:var(--text-primary)">AI API</span>
+          <span id="ai-status-text" class="text-xs" style="color:var(--text-tertiary)">Not checked yet</span>
+        </div>
+        <div class="flex items-center gap-3">
+          <span id="ai-model-label" class="text-xs font-mono hidden px-2 py-0.5 rounded" style="background:var(--surface-2);color:var(--text-secondary)"></span>
+          <span id="ai-latency-label" class="text-xs hidden" style="color:var(--text-tertiary)"></span>
+          <button id="ai-test-btn" class="btn btn-sm text-xs" style="background:var(--brand-600);color:white;border-color:var(--brand-600)" onclick="testAiApi()">Test API</button>
+        </div>
+      </div>
+
       <!-- Pipeline + Integrity row -->
       <div class="grid lg:grid-cols-[1.3fr_0.7fr] gap-5 mb-6">
         <!-- Submission pipeline -->
@@ -274,5 +288,46 @@
     </div>
   </main>
   <%- include('../partials/footer') %>
+<script>
+async function testAiApi() {
+  const btn = document.getElementById('ai-test-btn');
+  const dot = document.getElementById('ai-status-dot');
+  const txt = document.getElementById('ai-status-text');
+  const modelLabel = document.getElementById('ai-model-label');
+  const latLabel = document.getElementById('ai-latency-label');
+  btn.disabled = true;
+  btn.textContent = 'Testing…';
+  dot.className = 'w-2.5 h-2.5 rounded-full bg-amber-400 shrink-0 animate-pulse';
+  txt.textContent = 'Contacting API…';
+  try {
+    const r = await fetch('/admin/ai-status');
+    const d = await r.json();
+    if (d.status === 'ok') {
+      dot.className = 'w-2.5 h-2.5 rounded-full bg-emerald-400 shrink-0';
+      txt.textContent = 'API key valid — live AI responses active';
+      if (d.model) { modelLabel.textContent = d.model; modelLabel.classList.remove('hidden'); }
+      if (d.latencyMs) { latLabel.textContent = d.latencyMs + 'ms'; latLabel.classList.remove('hidden'); }
+      showToast('API working · ' + (d.latencyMs || '?') + 'ms · ' + (d.model || ''), 'success');
+    } else if (d.status === 'unconfigured') {
+      dot.className = 'w-2.5 h-2.5 rounded-full bg-slate-400 shrink-0';
+      txt.textContent = 'API key not configured — using heuristic fallback';
+      showToast('No API key set. Add OPENROUTER_API_KEY in your environment.', 'warning', 6000);
+    } else {
+      dot.className = 'w-2.5 h-2.5 rounded-full bg-red-500 shrink-0';
+      txt.textContent = 'API error: ' + (d.message || 'unknown');
+      showToast('API error: ' + (d.message || 'unknown'), 'error', 6000);
+    }
+  } catch (e) {
+    dot.className = 'w-2.5 h-2.5 rounded-full bg-red-500 shrink-0';
+    txt.textContent = 'Request failed';
+    showToast('Could not reach /admin/ai-status', 'error');
+  } finally {
+    btn.disabled = false;
+    btn.textContent = 'Test API';
+  }
+}
+// Auto-test on page load
+window.addEventListener('DOMContentLoaded', () => setTimeout(testAiApi, 800));
+</script>
 </body>
 </html>

@@ -151,6 +151,10 @@
                   Predict acceptance
                 </button>
                 <span class="predict-result-<%= p.id %> hidden text-slate-600"></span>
+                <button class="btn-review-summary text-violet-600 hover:text-violet-800 font-medium inline-flex items-center gap-1 transition" data-paper-id="<%= p.id %>" aria-label="AI review summary">
+                  <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h7"/></svg>
+                  AI summary
+                </button>
                 <a href="/editor/papers/<%= p.id %>/audit" class="text-indigo-600 hover:text-indigo-500 link-line">Audit trail</a>
                 <a href="/editor/papers/<%= p.id %>/letters" class="text-indigo-600 hover:text-indigo-500 link-line">Letters</a>
                 <button class="btn-discussion text-indigo-600 hover:text-indigo-500 font-medium link-line" data-paper-id="<%= p.id %>" aria-label="View discussion thread for this paper">Discussion</button>
@@ -430,6 +434,36 @@
     });
   });
 
+  // ── AI review summary ─────────────────────────────────────────────────────────
+  document.querySelectorAll('.btn-review-summary').forEach(btn => {
+    btn.addEventListener('click', async function () {
+      const paperId = this.dataset.paperId;
+      this.disabled = true;
+      this.innerHTML = '<svg class="w-3.5 h-3.5 animate-spin inline" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path></svg> Summarising…';
+      try {
+        const resp = await fetch('/api/ai/paper/' + paperId + '/review-summary');
+        if (!resp.ok) { showToast('Summary unavailable.', 'error'); return; }
+        const data = await resp.json();
+        if (data.summary) {
+          const box = document.createElement('div');
+          box.className = 'mt-2 p-3 rounded text-xs leading-relaxed';
+          box.style.cssText = 'background:var(--surface-1);color:var(--text-primary);border:1px solid var(--border-default)';
+          box.innerHTML = '<span class="font-semibold" style="color:var(--accent-600)">AI review summary</span> <span style="color:var(--text-tertiary)">(' + data.reviewCount + ' reviews)</span><p class="mt-1">' + esc(data.summary) + '</p>';
+          this.parentNode.insertAdjacentElement('afterend', box);
+          this.style.display = 'none';
+        } else {
+          showToast(data.message || 'No reviews to summarise.', 'info');
+          this.disabled = false;
+          this.innerHTML = '<svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h7"/></svg> AI summary';
+        }
+      } catch (e) {
+        showToast('Summary request failed.', 'error');
+        this.disabled = false;
+        this.innerHTML = '<svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h7"/></svg> AI summary';
+      }
+    });
+  });
+
   // ── AI decision draft ─────────────────────────────────────────────────────────
   document.querySelectorAll('.btn-ai-draft').forEach(btn => {
     btn.addEventListener('click', async function () {
@@ -446,18 +480,23 @@
         if (data.suggestion && data.suggestion !== 'no_reviews') {
           panel.classList.remove('hidden');
           const confColor = data.confidence === 'high' ? 'text-emerald-700' : data.confidence === 'medium' ? 'text-amber-700' : 'text-slate-600';
-          panel.innerHTML = '<div class="flex items-center gap-2 mb-1">'
+          let html = '<div class="flex items-center gap-2 mb-1">'
             + '<strong class="capitalize">' + data.suggestion + '</strong>'
             + '<span class="' + confColor + '">(' + data.confidence + ' confidence)</span>'
             + '<span class="text-slate-500">· ' + data.reviewCount + ' review' + (data.reviewCount !== 1 ? 's' : '') + '</span>'
             + '</div>'
             + (data.explanation || []).map(e => '<p>· ' + esc(e) + '</p>').join('');
+          if (data.decisionLetter) {
+            html += '<details class="mt-3"><summary class="text-xs font-semibold cursor-pointer" style="color:var(--brand-600)">AI-drafted decision letter ▾</summary>'
+              + '<div class="mt-2 p-3 rounded text-xs whitespace-pre-wrap" style="background:var(--surface-1);color:var(--text-primary);line-height:1.6">' + esc(data.decisionLetter) + '</div></details>';
+          }
+          panel.innerHTML = html;
           // Pre-fill the decision dropdown
           if (decisionSelect) {
             const optionMap = { accepted: 'accepted', rejected: 'rejected', revisions: 'revisions' };
             if (optionMap[data.suggestion]) decisionSelect.value = optionMap[data.suggestion];
           }
-          showToast('AI draft loaded — ' + data.suggestion, 'info');
+          showToast('AI draft loaded — ' + data.suggestion + (data.decisionLetter ? ' · letter ready' : ''), 'info');
         } else {
           showToast(data.explanation ? data.explanation[0] : 'No reviews available for AI draft.', 'info');
         }

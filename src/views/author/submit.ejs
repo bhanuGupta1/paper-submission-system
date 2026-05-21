@@ -213,11 +213,16 @@
         const out = await resp.json();
         const levelIcon = { error: '❌', warning: '⚠️', success: '✅', info: 'ℹ️' };
         const levelColor = { error: 'var(--error-700)', warning: 'var(--warning-700)', success: 'var(--success-700)', info: 'var(--text-secondary)' };
-        feedbackPanel.innerHTML = '<div class="text-xs font-semibold mb-2" style="color:var(--text-tertiary)">' + out.wordCount + ' words · ' + out.sentenceCount + ' sentences</div>'
+        let html = '<div class="text-xs font-semibold mb-2" style="color:var(--text-tertiary)">' + out.wordCount + ' words · ' + out.sentenceCount + ' sentences</div>'
           + (out.feedback || []).map(f =>
             '<div class="text-xs" style="color:' + (levelColor[f.level] || 'var(--text-secondary)') + '">'
             + (levelIcon[f.level] || '•') + ' ' + escapeHtml(f.message) + '</div>'
           ).join('');
+        if (out.aiSuggestions && out.aiSuggestions.length) {
+          html += '<div class="text-xs font-semibold mt-3 mb-1" style="color:var(--brand-600)">AI suggestions</div>'
+            + out.aiSuggestions.map(s => '<div class="text-xs" style="color:var(--text-secondary)">✦ ' + escapeHtml(s) + '</div>').join('');
+        }
+        feedbackPanel.innerHTML = html;
       } catch {
         feedbackPanel.innerHTML = '<em class="text-xs" style="color:var(--error-700)">Could not contact AI service.</em>';
       }

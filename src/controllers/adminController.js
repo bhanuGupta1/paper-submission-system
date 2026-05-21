@@ -307,4 +307,29 @@ async function triggerDigest(req, res, next) {
   }
 }
 
-module.exports = { dashboard, listUsers, updateUser, listTracks, createTrack, updateTrack, deleteTrack, exportXlsx, exportCsv, auditLogView, auditLogCsv, backupView, triggerBackup, downloadBackup, lmsView, createLmsIntegration, toggleLmsIntegration, deleteLmsIntegration, triggerDigest };
+// ── AI status check ───────────────────────────────────────────────────────────
+
+async function aiStatus(req, res, next) {
+  try {
+    const cfg = require('../config');
+    const llm = require('../services/llm');
+    const provider = cfg.llm.provider;
+    const configured = provider === 'openrouter' && !!cfg.llm.openrouter.apiKey;
+    const model = cfg.llm.openrouter.model || null;
+
+    if (!configured) {
+      return res.json({ status: 'unconfigured', provider, model: null, message: 'No API key set. Add OPENROUTER_API_KEY to your environment.' });
+    }
+
+    // Quick live test — extract 3 keywords from a short string
+    const start = Date.now();
+    const keywords = await llm.extractKeywords('academic peer review system for scientific papers', 3);
+    const ms = Date.now() - start;
+
+    res.json({ status: 'ok', provider, model, latencyMs: ms, testResult: keywords });
+  } catch (err) {
+    res.json({ status: 'error', message: err.message });
+  }
+}
+
+module.exports = { dashboard, listUsers, updateUser, listTracks, createTrack, updateTrack, deleteTrack, exportXlsx, exportCsv, auditLogView, auditLogCsv, backupView, triggerBackup, downloadBackup, lmsView, createLmsIntegration, toggleLmsIntegration, deleteLmsIntegration, triggerDigest, aiStatus };

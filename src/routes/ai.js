@@ -31,5 +31,6 @@ router.get('/search', ctl.search);
 router.get('/review/:reviewId/quality', ctl.checkReviewQuality);
 router.get('/paper/:paperId/predict', ctl.predictAcceptance);
 router.get('/paper/:paperId/decision-draft', ctl.decisionDraft);
+router.get('/paper/:paperId/review-summary', ctl.reviewSummary);
 
 module.exports = router;

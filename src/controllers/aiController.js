@@ -70,9 +70,21 @@ async function writingFeedback(req, res, next) {
     const passiveMatches = (text.match(/\b(is|are|was|were|be|been|being)\s+\w+ed\b/gi) || []).length;
     if (passiveMatches > 3) feedback.push({ level: 'info', message: `Passive voice detected ${passiveMatches} times. Active voice is often clearer.` });
 
-    await run('INSERT INTO ai_audit (user_id, action, provider) VALUES (?,?,?)', [req.user.id, 'writing_feedback', 'heuristic']);
+    // LLM-powered suggestions on top of heuristic checks
+    const llm = require('../services/llm');
+    let aiSuggestions = null;
+    if (llm.providerName !== 'heuristic') {
+      try {
+        const polished = await llm.polishAbstract(text);
+        if (polished && Array.isArray(polished.suggestions) && polished.suggestions.length) {
+          aiSuggestions = polished.suggestions;
+        }
+      } catch (_) {}
+    }
 
-    res.json({ feedback, wordCount: wc, sentenceCount: sentences.length });
+    await run('INSERT INTO ai_audit (user_id, action, provider) VALUES (?,?,?)', [req.user.id, 'writing_feedback', llm.providerName || 'heuristic']);
+
+    res.json({ feedback, wordCount: wc, sentenceCount: sentences.length, aiSuggestions });
   } catch (err) { next(err); }
 }
 
@@ -190,10 +202,44 @@ async function decisionDraft(req, res, next) {
     if (paper.similarity_score > 0.8) explanation.push('⚠ High similarity score — verify originality before accepting.');
     if (paper.ai_text_likelihood > 0.8) explanation.push('⚠ High AI-text likelihood — review integrity policy.');
 
-    await run('INSERT INTO ai_audit (user_id, paper_id, action, provider) VALUES (?,?,?,?)', [user.id, paperId, 'decision_draft', 'heuristic']);
+    // LLM-generated decision letter body
+    const llm = require('../services/llm');
+    let decisionLetter = null;
+    if (llm.providerName !== 'heuristic') {
+      try {
+        decisionLetter = await llm.generateDecisionLetter(paper, submitted, suggestion, explanation);
+      } catch (_) {}
+    }
 
-    res.json({ suggestion, confidence, explanation, reviewCount: submitted.length, recCounts, avgScore: parseFloat(avgScore.toFixed(2)) });
+    await run('INSERT INTO ai_audit (user_id, paper_id, action, provider) VALUES (?,?,?,?)', [user.id, paperId, 'decision_draft', llm.providerName || 'heuristic']);
+
+    res.json({ suggestion, confidence, explanation, reviewCount: submitted.length, recCounts, avgScore: parseFloat(avgScore.toFixed(2)), decisionLetter });
   } catch (err) { next(err); }
 }
 
-module.exports = { polish, titles, keywords, writingFeedback, checkReviewQuality, predictAcceptance, search, decisionDraft };
+// ── Review summary (LLM) ──────────────────────────────────────────────────────
+
+async function reviewSummary(req, res, next) {
+  try {
+    const { paperId } = req.params;
+    const user = req.user || req.apiUser;
+    if (!['editor', 'admin'].includes(user.role)) return res.status(403).json({ error: 'Editors and admins only' });
+
+    const paper = await Paper.findById(paperId);
+    if (!paper) return res.status(404).json({ error: 'Paper not found' });
+
+    const reviews = await Review.listByPaper(paperId);
+    const submitted = reviews.filter((r) => r.review_date && !r.declined_at);
+
+    if (submitted.length === 0) return res.json({ summary: null, message: 'No completed reviews to summarize.' });
+
+    const llm = require('../services/llm');
+    const summary = await llm.summarizeReviews(paper, submitted);
+
+    await run('INSERT INTO ai_audit (user_id, paper_id, action, provider) VALUES (?,?,?,?)', [user.id, paperId, 'review_summary', llm.providerName || 'heuristic']);
+
+    res.json({ summary, reviewCount: submitted.length, provider: llm.providerName });
+  } catch (err) { next(err); }
+}
+
+module.exports = { polish, titles, keywords, writingFeedback, checkReviewQuality, predictAcceptance, search, decisionDraft, reviewSummary };

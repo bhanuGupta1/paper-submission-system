@@ -187,4 +187,7 @@ function polishAbstract(text) {
   return { revised, suggestions };
 }
 
-module.exports = { draftReview, summarize, extractKeywords, polishAbstract, suggestTitles };
+function generateDecisionLetter() { return null; }
+function summarizeReviews() { return null; }
+
+module.exports = { draftReview, summarize, extractKeywords, polishAbstract, suggestTitles, generateDecisionLetter, summarizeReviews };
