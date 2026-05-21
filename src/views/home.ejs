@@ -4,46 +4,47 @@
 <body class="min-h-screen bg-slate-50 text-slate-900 flex flex-col">
   <%- include('partials/nav') %>
   <main class="flex-1">
+
     <section class="hero-grad text-white">
       <div class="max-w-7xl mx-auto px-6 py-20 md:py-28">
         <div class="max-w-3xl">
-          <span class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/10 text-indigo-100 border border-white/15 text-xs font-semibold">
+          <span class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/10 text-indigo-100 border border-white/12 text-xs font-semibold">
             <span class="h-1.5 w-1.5 rounded-full bg-emerald-300"></span>
             Research operations, peer review, and AI governance in one product
           </span>
-          <h1 class="font-display text-5xl md:text-7xl font-bold tracking-tight mt-6 leading-[0.98]">
+          <h1 class="font-display text-5xl md:text-7xl font-extrabold tracking-tight mt-6" style="line-height:0.98; letter-spacing:-0.035em">
             PaperSub.AI
           </h1>
-          <p class="mt-5 text-xl text-slate-200 max-w-2xl leading-relaxed">
+          <p class="mt-5 text-xl leading-relaxed" style="color: rgba(226,232,240,0.9); max-width:36rem">
             A polished academic submission platform with reviewer matching, conflict-of-interest intelligence, integrity screening, AI-assisted reviews, audit trails, and public publishing.
           </p>
           <div class="mt-8 flex flex-wrap gap-3">
-            <a href="/reader" class="bg-white text-slate-950 hover:bg-indigo-50 px-5 py-2.5 rounded-md font-semibold shadow-sm transition">Browse articles</a>
+            <a href="/reader" class="btn btn-lg" style="background:white; color:#0f172a">Browse articles</a>
             <% if (!currentUser) { %>
-              <a href="/register" class="bg-indigo-500 hover:bg-indigo-400 text-white px-5 py-2.5 rounded-md font-semibold shadow-sm transition">Create account</a>
-              <a href="/login" class="bg-white/10 border border-white/20 hover:bg-white/15 text-white px-5 py-2.5 rounded-md font-semibold transition">Sign in</a>
+              <a href="/register" class="btn btn-lg btn-primary">Create account</a>
+              <a href="/login" class="btn btn-lg" style="background:rgba(255,255,255,0.10); border-color:rgba(255,255,255,0.18); color:white">Sign in</a>
             <% } else if (currentUser.role === 'author') { %>
-              <a href="/author/submit" class="bg-indigo-500 hover:bg-indigo-400 text-white px-5 py-2.5 rounded-md font-semibold shadow-sm transition">Submit a paper</a>
+              <a href="/author/submit" class="btn btn-lg btn-primary">Submit a paper</a>
             <% } %>
           </div>
         </div>
 
         <div class="grid md:grid-cols-4 gap-3 mt-14 max-w-5xl">
-          <div class="bg-white/10 border border-white/15 rounded-md p-4 backdrop-blur">
-            <div class="stat-num text-3xl text-cyan-200">5</div>
-            <div class="text-xs uppercase tracking-wider text-slate-300 mt-1">Role dashboards</div>
+          <div class="hero-panel p-4">
+            <div class="stat-num text-3xl" style="color:#a5f3fc">5</div>
+            <div class="text-xs uppercase tracking-wider mt-1" style="color:rgba(203,213,225,0.8)">Role dashboards</div>
           </div>
-          <div class="bg-white/10 border border-white/15 rounded-md p-4 backdrop-blur">
-            <div class="stat-num text-3xl text-emerald-200">COI</div>
-            <div class="text-xs uppercase tracking-wider text-slate-300 mt-1">Conflict signals</div>
+          <div class="hero-panel p-4">
+            <div class="stat-num text-3xl" style="color:#a7f3d0">COI</div>
+            <div class="text-xs uppercase tracking-wider mt-1" style="color:rgba(203,213,225,0.8)">Conflict signals</div>
           </div>
-          <div class="bg-white/10 border border-white/15 rounded-md p-4 backdrop-blur">
-            <div class="stat-num text-3xl text-indigo-200">AI</div>
-            <div class="text-xs uppercase tracking-wider text-slate-300 mt-1">Audited assists</div>
+          <div class="hero-panel p-4">
+            <div class="stat-num text-3xl" style="color:#c7d2fe">AI</div>
+            <div class="text-xs uppercase tracking-wider mt-1" style="color:rgba(203,213,225,0.8)">Audited assists</div>
           </div>
-          <div class="bg-white/10 border border-white/15 rounded-md p-4 backdrop-blur">
-            <div class="stat-num text-3xl text-amber-200">0</div>
-            <div class="text-xs uppercase tracking-wider text-slate-300 mt-1">API keys required</div>
+          <div class="hero-panel p-4">
+            <div class="stat-num text-3xl" style="color:#fde68a">0</div>
+            <div class="text-xs uppercase tracking-wider mt-1" style="color:rgba(203,213,225,0.8)">API keys required</div>
           </div>
         </div>
       </div>
@@ -51,28 +52,28 @@
 
     <section class="feature-band">
       <div class="max-w-7xl mx-auto px-6 py-16">
-        <div class="grid lg:grid-cols-[0.9fr_1.1fr] gap-10 items-start">
+        <div class="grid lg:grid-cols-[0.9fr_1.1fr] gap-12 items-start">
           <div>
             <p class="eyebrow text-indigo-700">End-to-end workflow</p>
             <h2 class="font-display text-4xl font-bold mt-2">A complete editorial system, not a demo shell.</h2>
-            <p class="text-slate-600 mt-4 leading-relaxed">The platform covers the full manuscript lifecycle: submission, enrichment, reviewer matching, review drafting, editorial decisions, notifications, exports, and public reader access.</p>
+            <p class="mt-4 leading-relaxed" style="color: var(--text-secondary)">The platform covers the full manuscript lifecycle: submission, enrichment, reviewer matching, review drafting, editorial decisions, notifications, exports, and public reader access.</p>
           </div>
           <div class="grid md:grid-cols-2 gap-5">
             <div class="process-step">
-              <h3 class="font-semibold">Submit</h3>
-              <p class="text-sm text-slate-600 mt-1">Authors upload manuscripts and use local AI assists for titles, keywords, and abstract polish.</p>
+              <h3 class="font-semibold text-base">Submit</h3>
+              <p class="text-sm mt-1" style="color: var(--text-secondary)">Authors upload manuscripts and use local AI assists for titles, keywords, and abstract polish.</p>
             </div>
             <div class="process-step">
-              <h3 class="font-semibold">Screen</h3>
-              <p class="text-sm text-slate-600 mt-1">The system records similarity and AI-text signals as transparent triage markers.</p>
+              <h3 class="font-semibold text-base">Screen</h3>
+              <p class="text-sm mt-1" style="color: var(--text-secondary)">The system records similarity and AI-text signals as transparent triage markers.</p>
             </div>
             <div class="process-step">
-              <h3 class="font-semibold">Match</h3>
-              <p class="text-sm text-slate-600 mt-1">Editors get ranked reviewers with conflict-of-interest warnings before assignment.</p>
+              <h3 class="font-semibold text-base">Match</h3>
+              <p class="text-sm mt-1" style="color: var(--text-secondary)">Editors get ranked reviewers with conflict-of-interest warnings before assignment.</p>
             </div>
             <div class="process-step">
-              <h3 class="font-semibold">Publish</h3>
-              <p class="text-sm text-slate-600 mt-1">Accepted papers flow into a clean public feed with secure access boundaries.</p>
+              <h3 class="font-semibold text-base">Publish</h3>
+              <p class="text-sm mt-1" style="color: var(--text-secondary)">Accepted papers flow into a clean public feed with secure access boundaries.</p>
             </div>
           </div>
         </div>
@@ -80,29 +81,32 @@
     </section>
 
     <section class="max-w-7xl mx-auto px-6 py-16">
-      <div class="grid md:grid-cols-2 lg:grid-cols-4 gap-4">
-        <div class="card p-6">
-          <div class="h-10 w-10 rounded-md bg-indigo-100 text-indigo-700 flex items-center justify-center font-bold">A</div>
-          <h3 class="font-display font-semibold mt-4 text-lg">Author workspace</h3>
-          <p class="text-sm text-slate-600 mt-2 leading-relaxed">Submission tracking, integrity signals, decision history, and manuscript downloads.</p>
+      <p class="eyebrow text-indigo-700 text-center">Four perspectives, one platform</p>
+      <h2 class="font-display text-3xl font-bold mt-2 text-center">Built for every role in the editorial workflow.</h2>
+      <div class="grid md:grid-cols-2 lg:grid-cols-4 gap-4 mt-10">
+        <div class="card p-6 hover:shadow-md transition-shadow duration-200">
+          <div class="h-10 w-10 rounded-lg bg-indigo-50 text-indigo-600 flex items-center justify-center font-bold text-lg">A</div>
+          <h3 class="font-display font-semibold mt-4 text-base">Author workspace</h3>
+          <p class="text-sm mt-2 leading-relaxed" style="color: var(--text-secondary)">Submission tracking, integrity signals, decision history, and manuscript downloads.</p>
         </div>
-        <div class="card p-6">
-          <div class="h-10 w-10 rounded-md bg-cyan-100 text-cyan-700 flex items-center justify-center font-bold">R</div>
-          <h3 class="font-display font-semibold mt-4 text-lg">Reviewer cockpit</h3>
-          <p class="text-sm text-slate-600 mt-2 leading-relaxed">Assignments, completion metrics, structured scoring, and AI draft insertion.</p>
+        <div class="card p-6 hover:shadow-md transition-shadow duration-200">
+          <div class="h-10 w-10 rounded-lg bg-cyan-50 text-cyan-600 flex items-center justify-center font-bold text-lg">R</div>
+          <h3 class="font-display font-semibold mt-4 text-base">Reviewer cockpit</h3>
+          <p class="text-sm mt-2 leading-relaxed" style="color: var(--text-secondary)">Assignments, completion metrics, structured scoring, and AI draft insertion.</p>
         </div>
-        <div class="card p-6">
-          <div class="h-10 w-10 rounded-md bg-amber-100 text-amber-700 flex items-center justify-center font-bold">E</div>
-          <h3 class="font-display font-semibold mt-4 text-lg">Editor intelligence</h3>
-          <p class="text-sm text-slate-600 mt-2 leading-relaxed">Reviewer recommendations, COI badges, manual overrides, and final decisions.</p>
+        <div class="card p-6 hover:shadow-md transition-shadow duration-200">
+          <div class="h-10 w-10 rounded-lg bg-amber-50 text-amber-600 flex items-center justify-center font-bold text-lg">E</div>
+          <h3 class="font-display font-semibold mt-4 text-base">Editor intelligence</h3>
+          <p class="text-sm mt-2 leading-relaxed" style="color: var(--text-secondary)">Reviewer recommendations, COI badges, manual overrides, and final decisions.</p>
         </div>
-        <div class="card p-6">
-          <div class="h-10 w-10 rounded-md bg-emerald-100 text-emerald-700 flex items-center justify-center font-bold">O</div>
-          <h3 class="font-display font-semibold mt-4 text-lg">Operations layer</h3>
-          <p class="text-sm text-slate-600 mt-2 leading-relaxed">Admin analytics, exports, health checks, and auditable AI usage records.</p>
+        <div class="card p-6 hover:shadow-md transition-shadow duration-200">
+          <div class="h-10 w-10 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center font-bold text-lg">O</div>
+          <h3 class="font-display font-semibold mt-4 text-base">Operations layer</h3>
+          <p class="text-sm mt-2 leading-relaxed" style="color: var(--text-secondary)">Admin analytics, exports, health checks, and auditable AI usage records.</p>
         </div>
       </div>
     </section>
+
   </main>
   <%- include('partials/footer') %>
 </body>

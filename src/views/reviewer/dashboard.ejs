@@ -76,7 +76,7 @@
                 <% } %>
               </div>
               <div class="mt-5 flex justify-between items-center gap-2">
-                <a class="bg-slate-950 hover:bg-slate-800 text-white text-sm px-3 py-2 rounded-md font-semibold transition" href="/reviewer/papers/<%= p.paper_id %>">
+                <a class="btn btn-sm btn-primary" href="/reviewer/papers/<%= p.paper_id %>">
                   <%= p.recommendation ? 'View review' : 'Start review' %>
                 </a>
                 <% if (!p.recommendation) { %>
@@ -97,15 +97,15 @@
   <%- include('../partials/footer') %>
 
   <!-- COI Declaration Modal -->
-  <div id="coiModal" class="hidden fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
-    <div class="bg-white dark:bg-slate-800 rounded-xl shadow-xl w-full max-w-md p-6">
-      <h2 class="font-semibold text-lg mb-1">Declare Conflict of Interest</h2>
-      <p id="coiPaperTitle" class="text-sm text-slate-500 mb-4"></p>
+  <div id="coiModal" class="hidden confirm-overlay">
+    <div class="confirm-box">
+      <h2 class="font-display font-bold text-lg mb-1">Declare Conflict of Interest</h2>
+      <p id="coiPaperTitle" class="text-sm mb-4" style="color:var(--text-secondary)"></p>
       <textarea id="coiReason" rows="3" placeholder="Describe the nature of the conflict (e.g. co-author, shared institution, personal relationship)..."
-        class="w-full border border-slate-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:border-amber-500 mb-4"></textarea>
+        class="w-full border border-slate-300 rounded-md px-3 py-2 text-sm mb-4"></textarea>
       <div class="flex gap-3">
-        <button onclick="submitCoi()" class="bg-amber-500 hover:bg-amber-600 text-white px-4 py-2 rounded-md text-sm font-medium">Declare & Decline</button>
-        <button onclick="document.getElementById('coiModal').classList.add('hidden')" class="px-4 py-2 border border-slate-300 rounded-md text-sm text-slate-700">Cancel</button>
+        <button onclick="submitCoi()" class="btn btn-sm" style="background:#f59e0b;border-color:#f59e0b;color:white">Declare & Decline</button>
+        <button onclick="document.getElementById('coiModal').classList.add('hidden')" class="btn btn-sm btn-secondary">Cancel</button>
       </div>
     </div>
   </div>
