@@ -4,57 +4,99 @@
 <body class="min-h-screen bg-slate-50 text-slate-900 flex flex-col">
   <%- include('../partials/nav') %>
   <main class="flex-1">
+
+    <!-- Search hero -->
     <section class="hero-grad text-white">
       <div class="max-w-6xl mx-auto px-6 py-16">
-        <p class="eyebrow text-indigo-200">Public research library</p>
+        <p class="eyebrow text-indigo-200">Open access research</p>
         <h1 class="font-display text-5xl font-bold mt-2 leading-tight">Published articles</h1>
-        <p class="text-slate-200 mt-3 max-w-2xl">Accepted manuscripts are available here without an account. Search across titles, abstracts, and keywords.</p>
+        <p class="mt-3 max-w-xl" style="color:rgba(226,232,240,0.85)">Accepted manuscripts are freely available. Search across titles, abstracts, authors, and keywords.</p>
         <form method="get" action="/reader" class="max-w-2xl mt-7">
           <div class="flex flex-col sm:flex-row gap-2">
-            <input name="q" value="<%= q %>" placeholder="Search title, abstract, keywords..." class="flex-1 rounded-md border border-white/20 bg-white/95 text-slate-900 px-4 py-2.5 focus:border-indigo-300 focus:ring-1 focus:ring-indigo-300 focus:outline-none">
-            <button class="bg-indigo-500 hover:bg-indigo-400 text-white px-5 py-2.5 rounded-md font-semibold transition">Search</button>
+            <input name="q" value="<%= q %>" placeholder="Search title, author, abstract, keywords…"
+              class="flex-1 rounded-lg border border-white/20 px-4 py-2.5 text-sm focus:border-white/60 focus:outline-none focus:ring-0"
+              style="background:rgba(255,255,255,0.95);color:#0f172a">
+            <button class="btn btn-primary" style="padding:.625rem 1.25rem">
+              <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+              Search
+            </button>
           </div>
         </form>
       </div>
     </section>
 
+    <!-- Results -->
     <div class="max-w-7xl mx-auto px-6 py-10">
-      <% if (papers.length === 0) { %>
-        <div class="card p-12 text-center">
-          <p class="eyebrow text-indigo-700"><%= q ? 'No matches' : 'Library opening soon' %></p>
-          <h2 class="font-display text-3xl font-bold mt-2"><%= q ? 'No matching articles found.' : 'No published articles yet.' %></h2>
-          <p class="text-slate-600 mt-3"><%= q ? 'Try a broader keyword or clear the search.' : 'Accepted papers will appear here automatically.' %></p>
+      <% if (q) { %>
+        <div class="flex items-center justify-between mb-6">
+          <p class="text-sm" style="color:var(--text-secondary)">
+            <strong style="color:var(--text-primary)"><%= papers.length %></strong> result<%= papers.length !== 1 ? 's' : '' %> for "<strong style="color:var(--text-primary)"><%= q %></strong>"
+          </p>
+          <a href="/reader" class="btn btn-sm btn-ghost" style="font-size:0.8125rem">Clear search</a>
+        </div>
+      <% } else { %>
+        <div class="mb-6">
+          <h2 class="font-display text-2xl font-bold" style="color:var(--text-primary)">Latest published work</h2>
+          <p class="text-sm mt-1" style="color:var(--text-secondary)"><%= papers.length %> paper<%= papers.length !== 1 ? 's' : '' %> in the library</p>
         </div>
       <% } %>
-      <div class="grid md:grid-cols-2 xl:grid-cols-3 gap-5">
-        <% papers.forEach(p => { %>
-          <article class="publication-card p-6 flex flex-col">
-            <div class="flex items-center justify-between gap-3">
-              <span class="text-xs uppercase tracking-wider text-slate-500 font-bold">Published</span>
-              <span class="text-xs text-slate-500"><%= new Date(p.submission_date).toLocaleDateString() %></span>
-            </div>
-            <h2 class="font-display text-2xl font-bold leading-tight mt-3"><%= p.title %></h2>
-            <div class="text-xs text-slate-500 mt-2">By <%= p.authors %></div>
-            <p class="text-sm text-slate-700 line-clamp-5 leading-relaxed mt-4 flex-1"><%= p.abstract %></p>
-            <% if (p.keywords) { %>
-              <div class="mt-5 flex flex-wrap gap-1.5">
-                <% p.keywords.split(',').slice(0, 5).forEach(k => { %>
-                  <span class="inline-block text-xs bg-indigo-50 text-indigo-800 border border-indigo-100 px-2 py-0.5 rounded-full"><%= k.trim() %></span>
-                <% }) %>
+
+      <% if (papers.length === 0) { %>
+        <div class="card p-16 text-center">
+          <div class="empty-state-icon mx-auto">📚</div>
+          <h2 class="font-display text-3xl font-bold mt-3" style="color:var(--text-primary)"><%= q ? 'No matching articles.' : 'Library opening soon.' %></h2>
+          <p class="mt-3" style="color:var(--text-secondary)"><%= q ? 'Try a broader search term or clear your query.' : 'Accepted papers will appear here automatically.' %></p>
+          <% if (q) { %><a href="/reader" class="btn btn-secondary btn-lg mt-6">Clear search</a><% } %>
+        </div>
+      <% } else { %>
+        <div class="grid md:grid-cols-2 xl:grid-cols-3 gap-5">
+          <% papers.forEach(p => { %>
+            <article class="publication-card p-6 flex flex-col group">
+              <!-- Meta row -->
+              <div class="flex items-center justify-between gap-2 mb-3">
+                <span class="badge badge-accepted">Published</span>
+                <span class="text-xs" style="color:var(--text-tertiary)"><%= new Date(p.submission_date).toLocaleDateString('en', {year:'numeric',month:'short',day:'numeric'}) %></span>
               </div>
-            <% } %>
-            <% if (p.ai_summary) { %>
-              <div class="mt-4 rounded-md border border-slate-200 bg-slate-50 p-3 text-xs text-slate-600">
-                <strong class="text-slate-800">AI summary:</strong> <%= p.ai_summary %>
+
+              <!-- Title -->
+              <h2 class="font-display text-xl font-bold leading-snug" style="color:var(--text-primary)"><%= p.title %></h2>
+              <div class="text-xs mt-1.5" style="color:var(--text-tertiary)">By <%= p.authors %></div>
+
+              <!-- Abstract excerpt -->
+              <p class="text-sm mt-4 flex-1 leading-relaxed line-clamp-5" style="color:var(--text-secondary)"><%= p.abstract %></p>
+
+              <!-- Keywords -->
+              <% if (p.keywords) { %>
+                <div class="mt-4 flex flex-wrap gap-1.5">
+                  <% p.keywords.split(',').slice(0, 5).forEach(k => { %>
+                    <span class="tag-pill text-xs"><%= k.trim() %></span>
+                  <% }) %>
+                </div>
+              <% } %>
+
+              <!-- AI summary -->
+              <% if (p.ai_summary) { %>
+                <div class="mt-4 p-3 rounded-lg text-xs leading-relaxed" style="background:rgba(99,102,241,0.06);border:1px solid rgba(99,102,241,0.15);color:var(--text-secondary)">
+                  <span class="font-semibold" style="color:var(--brand-600)">AI summary: </span><%= p.ai_summary %>
+                </div>
+              <% } %>
+
+              <!-- Action -->
+              <div class="flex items-center justify-between mt-5 pt-4" style="border-top:1px solid var(--border-default)">
+                <div class="text-xs" style="color:var(--text-tertiary)">
+                  <% if (p.tags) { %><span class="tag-pill"><%= p.tags.split(',')[0].trim() %></span><% } %>
+                </div>
+                <a href="/reader/papers/<%= p.id %>/download" class="btn btn-sm btn-primary">
+                  <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
+                  Download
+                </a>
               </div>
-            <% } %>
-            <div class="flex items-center justify-end mt-5">
-              <a href="/reader/papers/<%= p.id %>/download" class="btn btn-sm btn-primary">Download article</a>
-            </div>
-          </article>
-        <% }) %>
-      </div>
+            </article>
+          <% }) %>
+        </div>
+      <% } %>
     </div>
+
   </main>
   <%- include('../partials/footer') %>
 </body>

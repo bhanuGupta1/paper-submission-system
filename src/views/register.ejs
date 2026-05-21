@@ -4,70 +4,132 @@
 <body class="min-h-screen bg-slate-50 text-slate-900 flex flex-col">
   <%- include('partials/nav') %>
   <main class="flex-1">
-    <div class="max-w-6xl mx-auto px-6 py-12 grid lg:grid-cols-[0.5fr_0.5fr] gap-10 items-start">
-      <section class="pt-4">
-        <p class="eyebrow text-indigo-700">Join the workflow</p>
-        <h1 class="font-display text-5xl font-bold mt-2 leading-tight">Create your research operations account.</h1>
-        <p class="mt-4 leading-relaxed" style="color: var(--text-secondary)">Choose a role, add affiliation metadata for conflict checks, and start using the platform as an author, reviewer, editor, or reader.</p>
-        <div class="grid sm:grid-cols-2 gap-3 mt-6">
-          <div class="metric-card">
-            <div class="metric-label">COI ready</div>
-            <p class="text-sm mt-2" style="color: var(--text-secondary)">Affiliations feed reviewer conflict detection.</p>
+    <div class="max-w-6xl mx-auto px-6 py-12 grid lg:grid-cols-2 gap-12 items-start">
+
+      <!-- Left: brand context -->
+      <section class="hidden lg:block pt-4">
+        <p class="eyebrow" style="color:var(--brand-600)">Join the workflow</p>
+        <h1 class="font-display text-5xl font-extrabold mt-3 leading-tight" style="color:var(--text-primary)">
+          Your research ops<br>account starts here.
+        </h1>
+        <p class="mt-4 text-lg leading-relaxed max-w-sm" style="color:var(--text-secondary)">
+          Choose your role, add affiliation metadata for conflict checks, and start using the full editorial platform.
+        </p>
+
+        <!-- Role preview cards -->
+        <div class="mt-8 grid grid-cols-2 gap-3">
+          <div class="card p-4" style="border-left:3px solid var(--brand-500)">
+            <div class="font-bold text-sm" style="color:var(--text-primary)">✍ Author</div>
+            <p class="text-xs mt-1" style="color:var(--text-secondary)">Submit papers, track status, access AI writing tools.</p>
           </div>
-          <div class="metric-card">
-            <div class="metric-label">Matching ready</div>
-            <p class="text-sm mt-2" style="color: var(--text-secondary)">Expertise tags improve reviewer recommendations.</p>
+          <div class="card p-4" style="border-left:3px solid var(--accent-500)">
+            <div class="font-bold text-sm" style="color:var(--text-primary)">🔎 Reviewer</div>
+            <p class="text-xs mt-1" style="color:var(--text-secondary)">Review assignments with AI-drafted scaffolds.</p>
+          </div>
+          <div class="card p-4" style="border-left:3px solid #7c3aed">
+            <div class="font-bold text-sm" style="color:var(--text-primary)">📖 Reader</div>
+            <p class="text-xs mt-1" style="color:var(--text-secondary)">Browse and download published accepted papers.</p>
+          </div>
+          <div class="card p-4" style="border-left:3px solid #059669">
+            <div class="font-bold text-sm" style="color:var(--text-primary)">🔒 COI-ready</div>
+            <p class="text-xs mt-1" style="color:var(--text-secondary)">Affiliation metadata feeds conflict detection.</p>
           </div>
         </div>
+
+        <p class="text-xs mt-6" style="color:var(--text-tertiary)">
+          Editor and admin accounts are provisioned by the platform owner. Contact your journal administrator.
+        </p>
       </section>
-      <section class="glass-auth p-8">
-        <h2 class="font-display text-2xl font-bold">Create account</h2>
-        <p class="text-sm mt-1" style="color: var(--text-secondary)">It takes about a minute.</p>
+
+      <!-- Right: registration form -->
+      <section class="glass-auth p-8 w-full">
+        <div class="flex items-center gap-3 mb-6">
+          <span class="brand-mark inline-flex h-9 w-9 items-center justify-center rounded-lg text-sm font-black text-white">P</span>
+          <div>
+            <div class="font-bold text-base" style="color:var(--text-primary)">PaperSub.AI</div>
+            <div class="text-xs" style="color:var(--text-tertiary)">Create your account — takes about a minute</div>
+          </div>
+        </div>
+
+        <h2 class="font-display text-2xl font-bold" style="color:var(--text-primary)">Create account</h2>
+
         <% if (error) { %>
-          <div class="alert alert-warning mt-4"><%= error %></div>
+          <div class="alert alert-warning mt-4" role="alert">
+            <svg class="w-4 h-4 shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
+            <span><%= error %></span>
+          </div>
         <% } %>
-        <form action="/register" method="post" class="mt-6 space-y-4">
-          <div>
-            <label class="block text-sm font-semibold mb-1" style="color: var(--text-secondary)">Username</label>
-            <input name="username" required minlength="3" class="block w-full rounded-md border border-slate-300 px-3 py-2.5">
+
+        <form action="/register" method="post" class="mt-5 space-y-4">
+          <div class="grid grid-cols-2 gap-4">
+            <div class="col-span-2">
+              <label class="block text-sm font-semibold mb-1.5" style="color:var(--text-secondary)">Username</label>
+              <input name="username" required minlength="3" placeholder="e.g. jsmith"
+                class="block w-full rounded-lg border px-3.5 py-2.5 text-sm"
+                style="background:var(--surface-1);border-color:var(--border-default);color:var(--text-primary)">
+            </div>
+            <div class="col-span-2">
+              <label class="block text-sm font-semibold mb-1.5" style="color:var(--text-secondary)">
+                Email <span class="font-normal text-xs" style="color:var(--text-tertiary)">(optional)</span>
+              </label>
+              <input type="email" name="email" placeholder="you@university.edu"
+                class="block w-full rounded-lg border px-3.5 py-2.5 text-sm"
+                style="background:var(--surface-1);border-color:var(--border-default);color:var(--text-primary)">
+            </div>
+            <div>
+              <label class="block text-sm font-semibold mb-1.5" style="color:var(--text-secondary)">Password</label>
+              <input type="password" name="password" required minlength="8"
+                class="block w-full rounded-lg border px-3.5 py-2.5 text-sm"
+                style="background:var(--surface-1);border-color:var(--border-default);color:var(--text-primary)">
+            </div>
+            <div>
+              <label class="block text-sm font-semibold mb-1.5" style="color:var(--text-secondary)">Confirm password</label>
+              <input type="password" name="confirmPassword" required minlength="8"
+                class="block w-full rounded-lg border px-3.5 py-2.5 text-sm"
+                style="background:var(--surface-1);border-color:var(--border-default);color:var(--text-primary)">
+            </div>
           </div>
+
           <div>
-            <label class="block text-sm font-semibold mb-1" style="color: var(--text-secondary)">
-              Email <span class="font-normal" style="color: var(--text-tertiary)">(optional)</span>
-            </label>
-            <input type="email" name="email" class="block w-full rounded-md border border-slate-300 px-3 py-2.5">
-          </div>
-          <div>
-            <label class="block text-sm font-semibold mb-1" style="color: var(--text-secondary)">Password</label>
-            <input type="password" name="password" required minlength="8" class="block w-full rounded-md border border-slate-300 px-3 py-2.5">
-          </div>
-          <div>
-            <label class="block text-sm font-semibold mb-1" style="color: var(--text-secondary)">Confirm password</label>
-            <input type="password" name="confirmPassword" required minlength="8" class="block w-full rounded-md border border-slate-300 px-3 py-2.5">
-          </div>
-          <div>
-            <label class="block text-sm font-semibold mb-1" style="color: var(--text-secondary)">Role</label>
-            <select name="role" required class="block w-full rounded-md border border-slate-300 px-3 py-2.5 bg-white">
-              <option value="author">Author</option>
-              <option value="reviewer">Reviewer</option>
-              <option value="reader">Reader</option>
+            <label class="block text-sm font-semibold mb-1.5" style="color:var(--text-secondary)">Role</label>
+            <select name="role" required
+              class="block w-full rounded-lg border px-3.5 py-2.5 text-sm"
+              style="background:var(--surface-1);border-color:var(--border-default);color:var(--text-primary)">
+              <option value="author">Author — submit manuscripts</option>
+              <option value="reviewer">Reviewer — peer-review papers</option>
+              <option value="reader">Reader — browse published work</option>
             </select>
-            <p class="text-xs mt-1" style="color: var(--text-tertiary)">Editor and admin accounts are provisioned by the platform owner.</p>
           </div>
+
           <div>
-            <label class="block text-sm font-semibold mb-1" style="color: var(--text-secondary)">
-              Affiliation <span class="font-normal" style="color: var(--text-tertiary)">(used for COI detection)</span>
+            <label class="block text-sm font-semibold mb-1.5" style="color:var(--text-secondary)">
+              Affiliation
+              <span class="font-normal text-xs ml-1" style="color:var(--text-tertiary)">(feeds COI detection)</span>
             </label>
-            <input name="affiliation" placeholder="University of Auckland" class="block w-full rounded-md border border-slate-300 px-3 py-2.5">
+            <input name="affiliation" placeholder="University of Auckland"
+              class="block w-full rounded-lg border px-3.5 py-2.5 text-sm"
+              style="background:var(--surface-1);border-color:var(--border-default);color:var(--text-primary)">
           </div>
+
           <div>
-            <label class="block text-sm font-semibold mb-1" style="color: var(--text-secondary)">
-              Expertise tags <span class="font-normal" style="color: var(--text-tertiary)">(reviewers only)</span>
+            <label class="block text-sm font-semibold mb-1.5" style="color:var(--text-secondary)">
+              Expertise tags
+              <span class="font-normal text-xs ml-1" style="color:var(--text-tertiary)">(reviewers — improves matching)</span>
             </label>
-            <input name="expertise" placeholder="NLP, transformers, machine learning" class="block w-full rounded-md border border-slate-300 px-3 py-2.5">
+            <input name="expertise" placeholder="NLP, transformers, machine learning"
+              class="block w-full rounded-lg border px-3.5 py-2.5 text-sm"
+              style="background:var(--surface-1);border-color:var(--border-default);color:var(--text-primary)">
           </div>
-          <button class="btn btn-primary w-full py-2.5">Create account</button>
+
+          <button class="btn btn-primary w-full py-2.5 mt-2">
+            Create account
+            <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6"/></svg>
+          </button>
         </form>
+
+        <p class="text-sm mt-5 text-center" style="color:var(--text-secondary)">
+          Already have an account? <a href="/login" class="font-semibold link-line" style="color:var(--brand-600)">Sign in</a>
+        </p>
       </section>
     </div>
   </main>

@@ -1,0 +1,68 @@
+services:
+  - type: web
+    name: papersub-ai
+    runtime: node
+    region: oregon
+    plan: free
+
+    buildCommand: npm install --omit=dev --no-audit --no-fund
+    startCommand: node src/db/migrate.js && node src/db/seed.js && node src/server.js
+
+    healthCheckPath: /health
+
+    autoDeploy: true
+
+    envVars:
+      - key: NODE_ENV
+        value: production
+
+      - key: PORT
+        value: "10000"
+
+      - key: TRUST_PROXY
+        value: "1"
+
+      # Required secrets — set these in the Render dashboard
+      - key: SESSION_SECRET
+        generateValue: true
+
+      - key: JWT_SECRET
+        generateValue: true
+
+      - key: JWT_REFRESH_SECRET
+        generateValue: true
+
+      # Optional — set to your Render service URL once deployed
+      - key: APP_URL
+        value: https://papersub-ai.onrender.com
+
+      # Optional — enable to use Claude AI features
+      # - key: ANTHROPIC_API_KEY
+      #   sync: false
+
+      # Optional — SQLite data path (Render free tier uses ephemeral disk)
+      # For persistent data, upgrade to Starter and use a mounted disk
+      - key: DB_PATH
+        value: data/paper_submission.db
+
+      # Optional — email (SMTP) configuration
+      # - key: EMAIL_ENABLED
+      #   value: "true"
+      # - key: SMTP_HOST
+      #   sync: false
+      # - key: SMTP_PORT
+      #   value: "587"
+      # - key: SMTP_USER
+      #   sync: false
+      # - key: SMTP_PASS
+      #   sync: false
+      # - key: EMAIL_FROM
+      #   value: noreply@papersub.ai
+
+      # Logging
+      - key: LOG_LEVEL
+        value: info
+
+      # Session cookies over HTTPS
+      - key: SESSION_COOKIE_SECURE
+        value: "true"

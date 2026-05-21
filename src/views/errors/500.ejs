@@ -3,18 +3,32 @@
 <head><%- include('../partials/head') %></head>
 <body class="min-h-screen bg-slate-50 text-slate-900 flex flex-col">
   <%- include('../partials/nav') %>
-  <main class="flex-1 flex items-center justify-center px-6">
+  <main class="flex-1 flex items-center justify-center px-6 py-20">
     <div class="text-center max-w-lg">
-      <p class="text-8xl font-display font-bold text-red-200">500</p>
-      <h1 class="text-2xl font-bold text-slate-800 mt-4">Something went wrong</h1>
-      <p class="text-slate-500 mt-2">An unexpected error occurred on our end. Please try again or contact support.</p>
-      <% if (message && process && process.env && process.env.NODE_ENV === 'development') { %>
-        <pre class="mt-4 bg-red-50 border border-red-200 rounded-lg p-4 text-xs text-red-800 text-left overflow-x-auto"><%= message %></pre>
-      <% } %>
-      <div class="mt-8 flex gap-3 justify-center">
-        <a href="/" class="bg-indigo-600 hover:bg-indigo-700 text-white px-5 py-2.5 rounded-md font-medium transition">Go home</a>
-        <button onclick="location.reload()" class="px-5 py-2.5 border border-slate-300 rounded-md text-slate-700 hover:bg-slate-100 font-medium transition">Try again</button>
+      <div class="relative inline-block mb-8">
+        <div class="font-display font-extrabold select-none" style="font-size:9rem;line-height:1;color:var(--border-default);letter-spacing:-0.04em">500</div>
+        <div class="absolute inset-0 flex items-center justify-center">
+          <div class="w-20 h-20 rounded-2xl flex items-center justify-center" style="background:linear-gradient(135deg,#7c3aed,#db2777);box-shadow:0 16px 40px rgba(124,58,237,0.35)">
+            <svg class="w-9 h-9 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+          </div>
+        </div>
       </div>
+
+      <h1 class="font-display text-3xl font-bold" style="color:var(--text-primary)">Something went wrong</h1>
+      <p class="mt-3 text-base" style="color:var(--text-secondary)">An unexpected error occurred. This has been logged and our team will investigate.</p>
+
+      <% if (message && process && process.env && process.env.NODE_ENV === 'development') { %>
+        <div class="mt-6 p-4 rounded-lg text-left" style="background:var(--error-50);border:1px solid var(--error-200)">
+          <p class="text-xs font-mono overflow-x-auto" style="color:var(--error-700)"><%= message %></p>
+        </div>
+      <% } %>
+
+      <div class="mt-8 flex flex-wrap gap-3 justify-center">
+        <a href="/" class="btn btn-primary btn-lg">Go home</a>
+        <button onclick="location.reload()" class="btn btn-secondary btn-lg">Try again</button>
+      </div>
+
+      <p class="mt-8 text-xs" style="color:var(--text-tertiary)">Error reference: <%= Date.now() %></p>
     </div>
   </main>
   <%- include('../partials/footer') %>

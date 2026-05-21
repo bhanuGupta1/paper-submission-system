@@ -3,15 +3,33 @@
 <head><%- include('../partials/head') %></head>
 <body class="min-h-screen bg-slate-50 text-slate-900 flex flex-col">
   <%- include('../partials/nav') %>
-  <main class="flex-1 flex items-center justify-center px-6">
-    <div class="text-center max-w-md">
-      <p class="font-display font-extrabold" style="font-size:6rem; line-height:1; color:var(--border-strong)">404</p>
-      <h1 class="font-display text-2xl font-bold mt-4">Page not found</h1>
-      <p class="mt-2" style="color:var(--text-tertiary)">The page <code class="font-mono px-1.5 py-0.5 rounded text-sm" style="background:var(--surface-2)"><%= path %></code> doesn't exist.</p>
-      <div class="mt-8 flex gap-3 justify-center">
-        <a href="/" class="btn btn-primary">Go home</a>
-        <button onclick="history.back()" class="btn btn-secondary">Go back</button>
+  <main class="flex-1 flex items-center justify-center px-6 py-20">
+    <div class="text-center max-w-lg">
+      <div class="relative inline-block mb-8">
+        <div class="font-display font-extrabold select-none" style="font-size:9rem;line-height:1;color:var(--border-default);letter-spacing:-0.04em">404</div>
+        <div class="absolute inset-0 flex items-center justify-center">
+          <div class="w-20 h-20 rounded-2xl flex items-center justify-center" style="background:linear-gradient(135deg,var(--brand-600),var(--accent-500));box-shadow:0 16px 40px rgba(99,102,241,0.35)">
+            <svg class="w-9 h-9 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+          </div>
+        </div>
       </div>
+
+      <h1 class="font-display text-3xl font-bold" style="color:var(--text-primary)">Page not found</h1>
+      <p class="mt-3 text-base" style="color:var(--text-secondary)">
+        The path <code class="font-mono px-1.5 py-0.5 rounded text-sm" style="background:var(--surface-2);color:var(--text-primary)"><%= path %></code> doesn't exist or has been moved.
+      </p>
+
+      <div class="mt-8 flex flex-wrap gap-3 justify-center">
+        <a href="/" class="btn btn-primary btn-lg">Go home</a>
+        <a href="/reader" class="btn btn-secondary btn-lg">Browse papers</a>
+        <% if (currentUser) { %>
+          <a href="/<%= currentUser.role %>" class="btn btn-secondary btn-lg">My dashboard</a>
+        <% } %>
+      </div>
+
+      <p class="mt-8 text-sm" style="color:var(--text-tertiary)">
+        If you believe this is a broken link, please <a href="/" class="link-line" style="color:var(--brand-600)">let us know</a>.
+      </p>
     </div>
   </main>
   <%- include('../partials/footer') %>
