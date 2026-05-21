@@ -281,7 +281,24 @@ async function migrate() {
   await run('CREATE INDEX IF NOT EXISTS idx_discussions_paper ON discussions(paper_id)');
   await run('CREATE INDEX IF NOT EXISTS idx_coi_declarations_paper ON coi_declarations(paper_id)');
 
-  logger.info('Migration complete (v4)');
+  // v5: outgoing webhooks (Zapier, custom integrations)
+  await run(`
+    CREATE TABLE IF NOT EXISTS webhooks (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      owner_id INTEGER NOT NULL,
+      url TEXT NOT NULL,
+      events TEXT NOT NULL DEFAULT 'submission,decision,review',
+      secret TEXT,
+      is_active INTEGER NOT NULL DEFAULT 1,
+      last_delivery_at TEXT,
+      last_delivery_status INTEGER,
+      created_at TEXT NOT NULL DEFAULT (datetime('now')),
+      FOREIGN KEY(owner_id) REFERENCES users(id) ON DELETE CASCADE
+    )
+  `);
+  await run('CREATE INDEX IF NOT EXISTS idx_webhooks_owner ON webhooks(owner_id)');
+
+  logger.info('Migration complete (v5)');
 }
 
 if (require.main === module) {

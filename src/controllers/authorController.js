@@ -10,6 +10,7 @@ const writingAssistant = require('../services/writingAssistant');
 const textExtract = require('../utils/textExtract');
 const N = require('../services/notifications');
 const slack = require('../services/slack');
+const webhooks = require('../services/webhooks');
 const logger = require('../utils/logger');
 const { all } = require('../db/connection');
 const path = require('path');
@@ -52,6 +53,7 @@ async function submit(req, res, next) {
     // Run AI pipeline asynchronously — never block submission
     runAiPipeline(paper, req.user.id).catch((err) => logger.warn({ err: err.message, paperId: paper.id }, 'AI pipeline failed'));
     slack.notifyNewSubmission({ paperId: paper.id, title: paper.title, author: req.user.username, submittedAt: new Date() }).catch(() => {});
+    webhooks.fire('submission', { paperId: paper.id, title: paper.title, author: req.user.username, status: 'pending' }).catch(() => {});
 
     res.redirect(`/author/papers/${paper.id}`);
   } catch (err) { next(err); }

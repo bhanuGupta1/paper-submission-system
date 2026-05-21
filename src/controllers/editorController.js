@@ -12,6 +12,7 @@ const analytics = require('../services/operationsAnalytics');
 const N = require('../services/notifications');
 const emailService = require('../services/email');
 const slack = require('../services/slack');
+const webhooks = require('../services/webhooks');
 const { all } = require('../db/connection');
 const logger = require('../utils/logger');
 
@@ -133,8 +134,9 @@ async function decide(req, res, next) {
       emailService.send({ to: author.email, subject, html, text }).catch((e) => logger.warn({ e }, 'Decision email failed'));
     }
 
-    // Slack notification (non-blocking)
+    // Slack + webhook notifications (non-blocking)
     slack.notifyDecision({ paperId, title: paper.title, decision, editorUsername: req.user.username }).catch(() => {});
+    webhooks.fire('decision', { paperId, title: paper.title, decision, editorUsername: req.user.username }).catch(() => {});
 
     res.redirect('/editor');
   } catch (err) { next(err); }
