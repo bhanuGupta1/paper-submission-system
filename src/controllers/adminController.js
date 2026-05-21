@@ -2,6 +2,7 @@
 
 const path = require('path');
 const fs = require('fs/promises');
+const fsSync = require('fs');
 const ExcelJS = require('exceljs');
 const Paper = require('../models/Paper');
 const Review = require('../models/Review');
@@ -213,4 +214,35 @@ async function auditLogCsv(req, res, next) {
   } catch (err) { next(err); }
 }
 
-module.exports = { dashboard, listUsers, updateUser, listTracks, createTrack, updateTrack, deleteTrack, exportXlsx, exportCsv, auditLogView, auditLogCsv };
+// ── Backup ────────────────────────────────────────────────────────────────────
+const backupService = require('../db/backup');
+
+async function backupView(req, res, next) {
+  try {
+    const backups = backupService.list();
+    res.render('admin/backup', { title: 'Database backups', backups, success: req.query.success || null, error: req.query.error || null });
+  } catch (err) { next(err); }
+}
+
+async function triggerBackup(req, res, next) {
+  try {
+    const result = await backupService.run();
+    await audit.log(req.user.id, 'admin.backup.triggered', 'system', null, { path: result.path, bytes: result.size }, req);
+    res.redirect('/admin/backup?success=' + encodeURIComponent(`Backup created: ${result.path} (${(result.size / 1024).toFixed(1)} KB)`));
+  } catch (err) {
+    res.redirect('/admin/backup?error=' + encodeURIComponent('Backup failed: ' + err.message));
+  }
+}
+
+async function downloadBackup(req, res, next) {
+  try {
+    const { filename } = req.params;
+    if (!/^backup_[\d-_T]+\.db$/.test(filename)) return res.status(400).send('Invalid filename');
+    const filePath = require('path').join(backupService.BACKUP_DIR, filename);
+    if (!fsSync.existsSync(filePath)) return res.status(404).send('Backup not found');
+    await audit.log(req.user.id, 'admin.backup.download', 'system', null, { filename }, req);
+    res.download(filePath, filename);
+  } catch (err) { next(err); }
+}
+
+module.exports = { dashboard, listUsers, updateUser, listTracks, createTrack, updateTrack, deleteTrack, exportXlsx, exportCsv, auditLogView, auditLogCsv, backupView, triggerBackup, downloadBackup };

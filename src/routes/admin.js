@@ -19,5 +19,8 @@ router.get('/export.xlsx', ctl.exportXlsx);
 router.get('/export.csv', ctl.exportCsv);
 router.get('/audit-log', ctl.auditLogView);
 router.get('/audit-log.csv', ctl.auditLogCsv);
+router.get('/backup', ctl.backupView);
+router.post('/backup', ctl.triggerBackup);
+router.get('/backup/download/:filename', ctl.downloadBackup);
 
 module.exports = router;
