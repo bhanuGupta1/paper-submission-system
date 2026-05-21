@@ -13,11 +13,22 @@
  */
 
 const express = require('express');
+const rateLimit = require('express-rate-limit');
 const { requireApiKey } = require('../middleware/apiKeyAuth');
 const { all, get } = require('../db/connection');
 
 const router = express.Router();
 router.use(express.json({ limit: '32kb' }));
+
+const apiLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 100,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: 'Too many requests — limit: 100 per 15 minutes' },
+  keyGenerator: (req) => req.headers.authorization || req.query.api_key || req.ip,
+});
+router.use(apiLimiter);
 
 // API health check
 router.get('/status', requireApiKey(), (req, res) => {

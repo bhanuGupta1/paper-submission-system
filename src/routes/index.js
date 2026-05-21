@@ -14,6 +14,7 @@ const health = require('./health');
 const webhooks = require('./webhooks');
 const lms = require('./lms');
 const publicApi = require('./publicApi');
+const apiDocs = require('./apiDocs');
 
 router.get('/', (req, res) => {
   res.render('home', {
@@ -36,5 +37,6 @@ router.use('/notifications', notifications);
 router.use('/api/webhooks', webhooks);
 router.use('/api/lms', lms);
 router.use('/api/v1', publicApi);
+router.use('/api/docs', apiDocs);
 
 module.exports = router;
