@@ -43,6 +43,10 @@ router.post('/auth/forgot-password', resetLimiter, ctl.forgotPassword);
 router.get('/auth/reset-password', ctl.showResetPassword);
 router.post('/auth/reset-password', resetLimiter, ctl.resetPassword);
 
+// Reviewer invitation acceptance
+router.get('/auth/invite/:token', ctl.showInvite);
+router.post('/auth/invite/:token', ctl.acceptInvite);
+
 // JWT API routes
 router.post('/api/auth/login', loginLimiter, ctl.apiLogin);
 router.post('/api/auth/refresh', ctl.apiRefresh);

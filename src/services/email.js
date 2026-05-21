@@ -80,4 +80,38 @@ function reviewReminderEmail(username, paperTitle, deadline) {
   };
 }
 
-module.exports = { send, verificationEmail, passwordResetEmail, submissionStatusEmail, reviewReminderEmail };
+function reviewAssignmentEmail(username, paperTitle, paperId, deadline) {
+  const link = `${config.appUrl}/reviewer/papers/${paperId}`;
+  const dueLine = deadline ? `\n<p>Review due: <strong>${deadline}</strong></p>` : '';
+  return {
+    subject: `Review assignment: "${paperTitle}"`,
+    html: `<p>Hi ${username},</p>
+<p>You have been assigned to review the manuscript "<strong>${paperTitle}</strong>".</p>${dueLine}
+<p><a href="${link}">Open the manuscript</a></p>
+<p style="color:#64748b;font-size:0.875rem">If you have a conflict of interest or are unable to complete this review, please decline via the review dashboard.</p>`,
+    text: `Hi ${username},\n\nYou have been assigned to review "${paperTitle}".${deadline ? `\nDue: ${deadline}` : ''}\n\n${link}`,
+  };
+}
+
+function submissionConfirmedEmail(username, paperTitle, paperId) {
+  const link = `${config.appUrl}/author/papers/${paperId}`;
+  return {
+    subject: `Submission received: "${paperTitle}"`,
+    html: `<p>Hi ${username},</p>
+<p>We have received your manuscript "<strong>${paperTitle}</strong>". Our editorial team will review it shortly.</p>
+<p><a href="${link}">Track your submission</a></p>`,
+    text: `Hi ${username},\n\nYour manuscript "${paperTitle}" has been received.\n\n${link}`,
+  };
+}
+
+function reviewerInvitationEmail(inviterUsername, paperTitle, inviteUrl) {
+  return {
+    subject: `Invitation to review: "${paperTitle}"`,
+    html: `<p>You have been invited by <strong>${inviterUsername}</strong> to peer-review the manuscript "<strong>${paperTitle}</strong>" on PaperSub.AI.</p>
+<p><a href="${inviteUrl}">Accept invitation and create account</a></p>
+<p style="color:#64748b;font-size:0.875rem">This invitation expires in 7 days. If you did not expect this, you can ignore it.</p>`,
+    text: `You have been invited by ${inviterUsername} to peer-review "${paperTitle}" on PaperSub.AI.\n\nAccept: ${inviteUrl}\n\nExpires in 7 days.`,
+  };
+}
+
+module.exports = { send, verificationEmail, passwordResetEmail, submissionStatusEmail, reviewReminderEmail, reviewAssignmentEmail, submissionConfirmedEmail, reviewerInvitationEmail };

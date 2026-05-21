@@ -328,7 +328,74 @@ async function migrate() {
   // GDPR/FERPA — soft-delete & account deletion request tracking
   await run(`ALTER TABLE users ADD COLUMN account_deletion_requested_at TEXT`).catch(() => {});
 
-  logger.info('Migration complete (v6)');
+  // ── v7: reviewer invitations, FTS5 search, LMS webhooks ────────────────────
+
+  // Reviewer invitation tokens — editors invite external reviewers by email
+  await run(`
+    CREATE TABLE IF NOT EXISTS reviewer_invitations (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      paper_id INTEGER NOT NULL,
+      invited_by INTEGER NOT NULL,
+      email TEXT NOT NULL,
+      token TEXT NOT NULL UNIQUE,
+      expires_at TEXT NOT NULL,
+      accepted_at TEXT,
+      created_at TEXT NOT NULL DEFAULT (datetime('now')),
+      FOREIGN KEY(paper_id) REFERENCES papers(id) ON DELETE CASCADE,
+      FOREIGN KEY(invited_by) REFERENCES users(id) ON DELETE CASCADE
+    )
+  `);
+  await run('CREATE INDEX IF NOT EXISTS idx_invitations_token ON reviewer_invitations(token)');
+  await run('CREATE INDEX IF NOT EXISTS idx_invitations_email ON reviewer_invitations(email)');
+
+  // FTS5 virtual table for full-text search over papers
+  await run(`
+    CREATE VIRTUAL TABLE IF NOT EXISTS papers_fts USING fts5(
+      title, abstract, keywords, authors,
+      content='papers', content_rowid='id',
+      tokenize='porter ascii'
+    )
+  `).catch(() => {});
+
+  // FTS triggers to keep the index in sync
+  await run(`
+    CREATE TRIGGER IF NOT EXISTS papers_fts_insert AFTER INSERT ON papers BEGIN
+      INSERT INTO papers_fts(rowid, title, abstract, keywords, authors)
+      VALUES (new.id, new.title, new.abstract, COALESCE(new.keywords,''), COALESCE(new.authors,''));
+    END
+  `).catch(() => {});
+  await run(`
+    CREATE TRIGGER IF NOT EXISTS papers_fts_update AFTER UPDATE ON papers BEGIN
+      INSERT INTO papers_fts(papers_fts, rowid, title, abstract, keywords, authors)
+      VALUES ('delete', old.id, old.title, old.abstract, COALESCE(old.keywords,''), COALESCE(old.authors,''));
+      INSERT INTO papers_fts(rowid, title, abstract, keywords, authors)
+      VALUES (new.id, new.title, new.abstract, COALESCE(new.keywords,''), COALESCE(new.authors,''));
+    END
+  `).catch(() => {});
+  await run(`
+    CREATE TRIGGER IF NOT EXISTS papers_fts_delete AFTER DELETE ON papers BEGIN
+      INSERT INTO papers_fts(papers_fts, rowid, title, abstract, keywords, authors)
+      VALUES ('delete', old.id, old.title, old.abstract, COALESCE(old.keywords,''), COALESCE(old.authors,''));
+    END
+  `).catch(() => {});
+
+  // LMS integration config (per-admin, stores Canvas/Moodle webhook settings)
+  await run(`
+    CREATE TABLE IF NOT EXISTS lms_integrations (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      owner_id INTEGER NOT NULL,
+      provider TEXT NOT NULL CHECK(provider IN ('canvas','moodle','generic')),
+      name TEXT NOT NULL,
+      base_url TEXT,
+      api_key TEXT,
+      webhook_secret TEXT,
+      is_active INTEGER NOT NULL DEFAULT 1,
+      created_at TEXT NOT NULL DEFAULT (datetime('now')),
+      FOREIGN KEY(owner_id) REFERENCES users(id) ON DELETE CASCADE
+    )
+  `);
+
+  logger.info('Migration complete (v7)');
 }
 
 if (require.main === module) {

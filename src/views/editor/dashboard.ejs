@@ -232,6 +232,18 @@
                 </form>
               </div>
 
+              <!-- Invite external reviewer by email -->
+              <div>
+                <div class="text-xs uppercase tracking-wider font-semibold mb-2" style="color:var(--text-tertiary)">Invite external reviewer</div>
+                <div class="flex items-center gap-2">
+                  <input type="email" id="invite-email-<%= p.id %>" placeholder="reviewer@university.edu" aria-label="Reviewer email address"
+                    class="text-sm rounded-md border px-2 py-1.5 flex-1"
+                    style="background:var(--surface-0);border-color:var(--border-default);color:var(--text-primary)">
+                  <button type="button" class="btn btn-sm btn-secondary shrink-0 invite-btn" data-paper-id="<%= p.id %>">Send invite</button>
+                </div>
+                <div id="invite-msg-<%= p.id %>" class="hidden text-xs mt-1.5" style="color:var(--success-700)"></div>
+              </div>
+
               <!-- Final decision + AI draft -->
               <div>
                 <div class="text-xs uppercase tracking-wider font-semibold mb-2" style="color:var(--text-tertiary)">Final decision</div>
@@ -537,6 +549,35 @@
       container.innerHTML = '<p class="text-xs text-rose-500">Failed to load messages.</p>';
     }
   }
+
+  // ── Reviewer invitation ───────────────────────────────────────────────────────
+  document.querySelectorAll('.invite-btn').forEach(btn => {
+    btn.addEventListener('click', async function () {
+      const paperId = this.dataset.paperId;
+      const emailInput = document.getElementById('invite-email-' + paperId);
+      const msg = document.getElementById('invite-msg-' + paperId);
+      const email = emailInput.value.trim();
+      if (!email) { showToast('Enter an email address', 'warning'); return; }
+      this.disabled = true;
+      try {
+        const r = await fetch('/editor/papers/' + paperId + '/invite-reviewer', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ paperId, email }),
+        });
+        const d = await r.json();
+        if (r.ok) {
+          msg.classList.remove('hidden');
+          msg.textContent = 'Invitation sent to ' + email;
+          emailInput.value = '';
+          showToast('Invitation sent', 'success');
+        } else {
+          showToast(d.error || 'Failed to send invitation', 'error');
+        }
+      } catch { showToast('Network error', 'error'); }
+      finally { this.disabled = false; }
+    });
+  });
 
   // ── Smart search ─────────────────────────────────────────────────────────────
   document.getElementById('btn-smart-search-toggle').addEventListener('click', function () {

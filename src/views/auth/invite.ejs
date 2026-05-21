@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="en">
+<head><%- include('../partials/head') %></head>
+<body class="min-h-screen flex flex-col overflow-x-hidden" style="background:var(--surface-0);color:var(--text-primary)">
+  <%- include('../partials/nav') %>
+  <main class="auth-canvas flex-1 relative overflow-hidden">
+    <div class="page-photo-bg" style="background-image:url('https://images.unsplash.com/photo-1481627834876-b7833e8f5570?auto=format&fit=crop&w=1920&q=80')" aria-hidden="true"></div>
+    <div class="mesh-bg" aria-hidden="true">
+      <span class="mesh-blob mesh-blob-one"></span>
+      <span class="mesh-blob mesh-blob-two"></span>
+    </div>
+    <div class="relative z-10 min-h-[calc(100vh-65px)] flex items-center justify-center px-6 py-12">
+      <section class="glass-card gradient-border-card auth-card animate-slide-up-fade w-full max-w-[480px] p-8 sm:p-9">
+
+        <div class="text-center mb-7">
+          <span class="brand-mark mx-auto inline-flex h-12 w-12 items-center justify-center rounded-xl text-base font-black text-white">P</span>
+          <p class="eyebrow mt-5" style="color:var(--accent-500)">Peer-review invitation</p>
+          <h1 class="font-display mt-3 text-2xl sm:text-3xl font-extrabold gradient-text">You've been invited to review</h1>
+          <p class="mt-2 text-sm font-semibold" style="color:var(--text-secondary)">"<%= inv.paper_title %>"</p>
+          <p class="mt-1 text-xs" style="color:var(--text-tertiary)">Invited by <strong><%= inv.inviter_username %></strong> · Expires <%= new Date(inv.expires_at).toLocaleDateString() %></p>
+        </div>
+
+        <% if (error) { %>
+          <div class="alert alert-warning mb-5" role="alert">
+            <svg class="w-4 h-4 shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/></svg>
+            <span><%= error %></span>
+          </div>
+        <% } %>
+
+        <form action="/auth/invite/<%= inv.token %>" method="post" class="space-y-4">
+          <p class="text-xs rounded-lg px-3 py-2" style="background:var(--surface-2);color:var(--text-tertiary)">Create your reviewer account below. Your invitation email (<strong style="color:var(--text-secondary)"><%= inv.email %></strong>) will be used as your address.</p>
+
+          <div>
+            <label for="username" class="block text-sm font-semibold mb-1.5" style="color:var(--text-secondary)">Choose a username</label>
+            <input id="username" name="username" required minlength="3" autocomplete="username" placeholder="jsmith"
+              class="auth-input block w-full rounded-xl border px-4 py-3 text-sm"
+              style="background:rgba(255,255,255,0.55);border-color:var(--border-default);color:var(--text-primary)">
+          </div>
+
+          <div>
+            <label for="password" class="block text-sm font-semibold mb-1.5" style="color:var(--text-secondary)">Create a password</label>
+            <input id="password" type="password" name="password" required minlength="8" autocomplete="new-password" placeholder="8+ characters"
+              class="auth-input block w-full rounded-xl border px-4 py-3 text-sm"
+              style="background:rgba(255,255,255,0.55);border-color:var(--border-default);color:var(--text-primary)">
+          </div>
+
+          <button class="btn-gradient shimmer-btn w-full mt-2">
+            Accept &amp; create account
+            <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6"/></svg>
+          </button>
+        </form>
+
+        <p class="text-xs text-center mt-5" style="color:var(--text-tertiary)">By creating an account, you agree to our <a href="/privacy" class="underline" style="color:var(--brand-500)">Privacy Policy</a>.</p>
+      </section>
+    </div>
+  </main>
+  <%- include('../partials/footer') %>
+</body>
+</html>

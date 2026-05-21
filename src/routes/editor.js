@@ -20,5 +20,7 @@ router.get('/papers/:id/audit', ctl.auditTrail);
 router.get('/papers/:id/letters', ctl.viewDecisionLetter);
 router.get('/papers/:id/discussion', ctl.getDiscussion);
 router.post('/papers/:id/discussion', ctl.postDiscussion);
+router.post('/papers/:id/invite-reviewer', ctl.inviteReviewer);
+router.get('/papers/:id/invitations', ctl.listInvitations);
 
 module.exports = router;

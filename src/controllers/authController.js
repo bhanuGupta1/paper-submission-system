@@ -5,6 +5,10 @@ const User = require('../models/User');
 const EmailToken = require('../models/EmailToken');
 const jwtService = require('../services/jwt');
 const emailService = require('../services/email');
+const invitation = require('../services/invitation');
+const Review = require('../models/Review');
+const Paper = require('../models/Paper');
+const N = require('../services/notifications');
 const audit = require('../services/auditLog');
 const config = require('../config');
 const logger = require('../utils/logger');
@@ -250,8 +254,54 @@ async function apiLogout(req, res, next) {
   } catch (err) { next(err); }
 }
 
+// ── Reviewer invitation acceptance ──────────────────────────────────────────
+
+async function showInvite(req, res, next) {
+  try {
+    const inv = await invitation.findByToken(req.params.token);
+    if (!inv || invitation.isExpired(inv) || inv.accepted_at) {
+      return res.render('auth/invite-invalid', { title: 'Invalid invitation' });
+    }
+    res.render('auth/invite', { title: `Review invitation: "${inv.paper_title}"`, inv, error: null });
+  } catch (err) { next(err); }
+}
+
+async function acceptInvite(req, res, next) {
+  try {
+    const inv = await invitation.findByToken(req.params.token);
+    if (!inv || invitation.isExpired(inv) || inv.accepted_at) {
+      return res.render('auth/invite-invalid', { title: 'Invalid invitation' });
+    }
+
+    const { username, password } = req.body;
+    if (!username || username.length < 3) return res.render('auth/invite', { title: `Review invitation: "${inv.paper_title}"`, inv, error: 'Username must be at least 3 characters' });
+    if (!password || password.length < 8) return res.render('auth/invite', { title: `Review invitation: "${inv.paper_title}"`, inv, error: 'Password must be at least 8 characters' });
+
+    // Check username uniqueness
+    const existing = await User.findByUsername(username);
+    if (existing) return res.render('auth/invite', { title: `Review invitation: "${inv.paper_title}"`, inv, error: 'Username already taken' });
+
+    // Create reviewer account
+    const user = await User.create({ username, email: inv.email, password, role: 'reviewer' });
+    await invitation.accept(inv.token);
+
+    // Auto-assign to paper
+    const paper = await Paper.findById(inv.paper_id);
+    if (paper) {
+      await Review.assign(inv.paper_id, user.id, null);
+      await Paper.updateStatus(inv.paper_id, 'under_review');
+      await N.notify(user.id, { kind: 'assignment', title: `New review assignment: ${inv.paper_title}`, body: 'Welcome to PaperSub.AI. Your first review assignment is ready.', link: `/reviewer/papers/${inv.paper_id}` });
+    }
+
+    await audit.log(user.id, 'register.invite', 'user', user.id, { paper_id: inv.paper_id }, req);
+    await setSession(req, user);
+    res.redirect('/reviewer');
+  } catch (err) { next(err); }
+}
+
 module.exports = {
   showLogin, showRegister, login, register, logout,
   verifyEmail, showForgotPassword, forgotPassword, showResetPassword, resetPassword,
   apiLogin, apiRefresh, apiLogout,
+  showInvite, acceptInvite,
 };

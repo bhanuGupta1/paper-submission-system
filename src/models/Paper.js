@@ -127,18 +127,52 @@ function versionsForPaper(paperId) {
   return all('SELECT * FROM paper_versions WHERE paper_id = ? ORDER BY version_number DESC', [paperId]);
 }
 
-function listAccepted({ limit = 50, offset = 0, q = null } = {}) {
-  const params = [];
-  let extra = '';
-  if (q) { extra = 'AND (p.title LIKE ? OR p.abstract LIKE ? OR p.keywords LIKE ?)'; params.push(`%${q}%`, `%${q}%`, `%${q}%`); }
+async function listAccepted({ limit = 50, offset = 0, q = null } = {}) {
+  if (q && q.trim()) {
+    // Use FTS5 for full-text search; fall back to LIKE if FTS table doesn't exist yet
+    try {
+      const ftsQ = q.trim().split(/\s+/).map((w) => `"${w.replace(/"/g, '')}"`).join(' OR ');
+      return await all(
+        `SELECT p.id, p.title, p.authors, p.abstract, p.keywords, p.tags, p.ai_summary, p.submission_date, rank
+         FROM papers_fts fts JOIN papers p ON p.id = fts.rowid
+         WHERE papers_fts MATCH ? AND p.review_status='accepted'
+         ORDER BY rank LIMIT ? OFFSET ?`,
+        [ftsQ, limit, offset]
+      );
+    } catch {
+      // FTS table not yet populated — fall back to LIKE
+      return all(
+        `SELECT p.id, p.title, p.authors, p.abstract, p.keywords, p.tags, p.ai_summary, p.submission_date FROM papers p WHERE p.review_status='accepted' AND (p.title LIKE ? OR p.abstract LIKE ? OR p.keywords LIKE ? OR p.authors LIKE ?) ORDER BY p.submission_date DESC LIMIT ? OFFSET ?`,
+        [`%${q}%`, `%${q}%`, `%${q}%`, `%${q}%`, limit, offset]
+      );
+    }
+  }
   return all(
-    `SELECT p.id, p.title, p.authors, p.abstract, p.keywords, p.tags, p.ai_summary, p.submission_date FROM papers p WHERE p.review_status='accepted' ${extra} ORDER BY p.submission_date DESC LIMIT ? OFFSET ?`,
-    [...params, limit, offset]
+    `SELECT p.id, p.title, p.authors, p.abstract, p.keywords, p.tags, p.ai_summary, p.submission_date FROM papers p WHERE p.review_status='accepted' ORDER BY p.submission_date DESC LIMIT ? OFFSET ?`,
+    [limit, offset]
   );
 }
 
+async function fullTextSearch({ q, status = null, limit = 50, offset = 0 } = {}) {
+  if (!q || !q.trim()) return listAll({ limit, offset, status });
+  try {
+    const ftsQ = q.trim().split(/\s+/).map((w) => `"${w.replace(/"/g, '')}"`).join(' OR ');
+    const whereStatus = status ? `AND p.review_status = ?` : '';
+    const params = [ftsQ, ...(status ? [status] : []), limit, offset];
+    return await all(
+      `SELECT p.*, u.username AS author_username, rank
+       FROM papers_fts fts JOIN papers p ON p.id = fts.rowid JOIN users u ON u.id = p.author_id
+       WHERE papers_fts MATCH ? ${whereStatus}
+       ORDER BY rank LIMIT ? OFFSET ?`,
+      params
+    );
+  } catch {
+    return listAll({ limit, offset, status, q });
+  }
+}
+
 module.exports = {
-  create, findById, listByAuthor, listAll, countAll, listForReviewer, listAccepted,
+  create, findById, listByAuthor, listAll, countAll, listForReviewer, listAccepted, fullTextSearch,
   updateAiMetadata, updateStatus, updateTags, recordDecision, decisionsForPaper, authorStats,
   submitRevision, versionsForPaper,
 };

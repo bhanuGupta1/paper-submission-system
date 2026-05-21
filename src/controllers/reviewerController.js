@@ -215,4 +215,42 @@ async function viewManuscript(req, res, next) {
   } catch (err) { next(err); }
 }
 
-module.exports = { dashboard, showReview, aiDraft, submit, declineAssignment, declareCoi, postDiscussion, viewManuscript };
+async function calendarExport(req, res, next) {
+  try {
+    const assignments = await Review.listByReviewer(req.user.id);
+    const withDeadlines = assignments.filter((r) => r.deadline && !r.recommendation && !r.declined_at);
+
+    const icsLines = [
+      'BEGIN:VCALENDAR',
+      'VERSION:2.0',
+      'PRODID:-//PaperSub.AI//Reviewer Calendar//EN',
+      'CALSCALE:GREGORIAN',
+      'METHOD:PUBLISH',
+      'X-WR-CALNAME:PaperSub Review Deadlines',
+    ];
+
+    for (const r of withDeadlines) {
+      const uid = `review-${r.paper_id}-${r.reviewer_id}@papersub.ai`;
+      const dtStamp = new Date().toISOString().replace(/[-:]/g, '').split('.')[0] + 'Z';
+      const dtStart = new Date(r.deadline).toISOString().replace(/[-:]/g, '').split('.')[0] + 'Z';
+      icsLines.push(
+        'BEGIN:VEVENT',
+        `UID:${uid}`,
+        `DTSTAMP:${dtStamp}`,
+        `DTSTART:${dtStart}`,
+        `DTEND:${dtStart}`,
+        `SUMMARY:Review due: ${(r.paper_title || 'Paper').replace(/[,;\\]/g, ' ')}`,
+        `DESCRIPTION:Submit your review on PaperSub.AI`,
+        `URL:${require('../config').appUrl}/reviewer/papers/${r.paper_id}`,
+        'END:VEVENT',
+      );
+    }
+    icsLines.push('END:VCALENDAR');
+
+    res.setHeader('Content-Type', 'text/calendar; charset=utf-8');
+    res.setHeader('Content-Disposition', 'attachment; filename="papersub-reviews.ics"');
+    res.send(icsLines.join('\r\n'));
+  } catch (err) { next(err); }
+}
+
+module.exports = { dashboard, showReview, aiDraft, submit, declineAssignment, declareCoi, postDiscussion, viewManuscript, calendarExport };

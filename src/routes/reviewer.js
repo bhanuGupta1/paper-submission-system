@@ -16,5 +16,6 @@ router.post('/reviews/:reviewId', ctl.submit);
 router.post('/reviews/:reviewId/decline', ctl.declineAssignment);
 router.post('/papers/:paperId/coi', ctl.declareCoi);
 router.post('/papers/:paperId/discussion', ctl.postDiscussion);
+router.get('/calendar.ics', ctl.calendarExport);
 
 module.exports = router;

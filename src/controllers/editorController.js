@@ -14,6 +14,8 @@ const emailService = require('../services/email');
 const slack = require('../services/slack');
 const teams = require('../services/teams');
 const webhooks = require('../services/webhooks');
+const invitation = require('../services/invitation');
+const config = require('../config');
 const { all } = require('../db/connection');
 const logger = require('../utils/logger');
 
@@ -76,6 +78,15 @@ async function assignReviewer(req, res, next) {
     });
     await N.notify(paper.author_id, { kind: 'status', title: 'Your paper is under review', body: `"${paper.title}" was assigned to a reviewer.`, link: `/author/papers/${paperId}` });
 
+    // Email reviewer if they have an email address and haven't opted out
+    if (reviewer.email) {
+      const prefs = reviewer.notification_prefs ? (() => { try { return JSON.parse(reviewer.notification_prefs); } catch { return {}; } })() : {};
+      if (prefs.email_on_assignment !== false) {
+        const { subject, html, text } = emailService.reviewAssignmentEmail(reviewer.username, paper.title, paperId, deadline || null);
+        emailService.send({ to: reviewer.email, subject, html, text }).catch((e) => logger.warn({ e }, 'Assignment email failed'));
+      }
+    }
+
     res.redirect('/editor');
   } catch (err) { next(err); }
 }
@@ -99,6 +110,13 @@ async function bulkAssign(req, res, next) {
         await Review.assign(paperId, reviewerId, deadline || null);
         await Paper.updateStatus(paperId, 'under_review');
         await N.notify(reviewer.id, { kind: 'assignment', title: `New review assignment: ${paper.title}`, body: 'A new manuscript has been assigned to you.', link: `/reviewer/papers/${paperId}` });
+        if (reviewer.email) {
+          const prefs = reviewer.notification_prefs ? (() => { try { return JSON.parse(reviewer.notification_prefs); } catch { return {}; } })() : {};
+          if (prefs.email_on_assignment !== false) {
+            const { subject, html, text } = emailService.reviewAssignmentEmail(reviewer.username, paper.title, paperId, null);
+            emailService.send({ to: reviewer.email, subject, html, text }).catch(() => {});
+          }
+        }
         results.push({ paperId, status: 'assigned' });
       } else {
         results.push({ paperId, status: 'already_assigned' });
@@ -268,8 +286,34 @@ async function postDiscussion(req, res, next) {
   } catch (err) { next(err); }
 }
 
+async function inviteReviewer(req, res, next) {
+  try {
+    const { paperId, email } = req.body;
+    if (!paperId || !email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      return res.status(400).json({ error: 'Valid paperId and email are required' });
+    }
+    const paper = await Paper.findById(paperId);
+    if (!paper) return res.status(404).json({ error: 'Paper not found' });
+
+    const token = await invitation.create({ paperId, invitedBy: req.user.id, email });
+    const inviteUrl = `${config.appUrl}/auth/invite/${token}`;
+    const { subject, html, text } = emailService.reviewerInvitationEmail(req.user.username, paper.title, inviteUrl);
+    await emailService.send({ to: email, subject, html, text });
+
+    res.json({ ok: true, message: `Invitation sent to ${email}` });
+  } catch (err) { next(err); }
+}
+
+async function listInvitations(req, res, next) {
+  try {
+    const { paperId } = req.params;
+    const invitations = await invitation.listForPaper(paperId);
+    res.json({ invitations });
+  } catch (err) { next(err); }
+}
+
 module.exports = {
   dashboard, assignReviewer, bulkAssign, decide, viewDecisionLetter,
   updateTags, downloadManuscript, viewManuscript, reviewProgress, auditTrail,
-  getDiscussion, postDiscussion,
+  getDiscussion, postDiscussion, inviteReviewer, listInvitations,
 };

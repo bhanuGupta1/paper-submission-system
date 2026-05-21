@@ -56,6 +56,14 @@ async function submit(req, res, next) {
     runAiPipeline(paper, req.user.id).catch((err) => logger.warn({ err: err.message, paperId: paper.id }, 'AI pipeline failed'));
     slack.notifyNewSubmission({ paperId: paper.id, title: paper.title, author: req.user.username, submittedAt: new Date() }).catch(() => {});
     teams.notifyNewSubmission({ paperId: paper.id, title: paper.title, author: req.user.username, submittedAt: new Date() }).catch(() => {});
+    // Confirmation email to author
+    const emailSvc = require('../services/email');
+    User.findById(req.user.id).then((u) => {
+      if (u && u.email) {
+        const { subject, html, text } = emailSvc.submissionConfirmedEmail(u.username, paper.title, paper.id);
+        emailSvc.send({ to: u.email, subject, html, text }).catch(() => {});
+      }
+    }).catch(() => {});
     webhooks.fire('submission', { paperId: paper.id, title: paper.title, author: req.user.username, status: 'pending' }).catch(() => {});
     audit.log(req.user.id, 'paper.submit', 'paper', paper.id, { title: paper.title }, req).catch(() => {});
 
@@ -92,6 +100,17 @@ async function runAiPipeline(paper, userId) {
     }
     slack.notifyReviewAssigned({ paperId: paper.id, paperTitle: paper.title, reviewerUsername: picked.map((r) => r.username).join(', ') }).catch(() => {});
     teams.notifyReviewAssigned({ paperId: paper.id, paperTitle: paper.title, reviewerUsername: picked.map((r) => r.username).join(', ') }).catch(() => {});
+    // Email auto-assigned reviewers respecting their prefs
+    const emailSvcPipe = require('../services/email');
+    for (const r of picked) {
+      const reviewer = await User.findById(r.id).catch(() => null);
+      if (!reviewer || !reviewer.email) continue;
+      const prefs = reviewer.notification_prefs ? (() => { try { return JSON.parse(reviewer.notification_prefs); } catch { return {}; } })() : {};
+      if (prefs.email_on_assignment !== false) {
+        const { subject, html, text } = emailSvcPipe.reviewAssignmentEmail(reviewer.username, paper.title, paper.id, null);
+        emailSvcPipe.send({ to: reviewer.email, subject, html, text }).catch(() => {});
+      }
+    }
   }
 
   await N.notify(userId, {
