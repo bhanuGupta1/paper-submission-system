@@ -463,6 +463,16 @@ label { color: var(--text-secondary); }
   pointer-events: none;
 }
 
+/* ── 15a. Page photo background ─────────────────────────────────────────── */
+.page-photo-bg {
+  position: absolute; inset: 0;
+  background-size: cover; background-position: center; background-repeat: no-repeat;
+  opacity: 0.11;
+  pointer-events: none;
+  transition: opacity 0.4s ease;
+}
+.dark .page-photo-bg { opacity: 0.07; }
+
 /* ── 15. Hero / home page ────────────────────────────────────────────────── */
 .hero-grad {
   background:

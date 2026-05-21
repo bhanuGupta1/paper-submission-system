@@ -4,8 +4,9 @@
 <body class="min-h-screen flex flex-col" style="background:var(--surface-0);color:var(--text-primary)">
   <%- include('../partials/nav') %>
 
-  <main class="author-shell flex-1">
-    <div class="max-w-[1500px] mx-auto px-4 sm:px-6 py-6 lg:py-8">
+  <main class="author-shell flex-1 relative overflow-hidden">
+    <div class="page-photo-bg" style="background-image:url('https://images.unsplash.com/photo-1455390582262-044cdead277a?auto=format&fit=crop&w=1920&q=80')" aria-hidden="true"></div>
+    <div class="max-w-[1500px] mx-auto px-4 sm:px-6 py-6 lg:py-8 relative z-10">
       <div class="grid lg:grid-cols-[280px_1fr] gap-6">
         <aside class="author-sidebar glass-card p-4 lg:min-h-[calc(100vh-130px)]">
           <div class="flex items-center gap-3 p-3">

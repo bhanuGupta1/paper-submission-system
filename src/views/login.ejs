@@ -5,6 +5,7 @@
   <%- include('partials/nav') %>
 
   <main class="auth-canvas flex-1 relative overflow-hidden">
+    <div class="page-photo-bg" style="background-image:url('https://images.unsplash.com/photo-1507842217343-583bb7270b66?auto=format&fit=crop&w=1920&q=80')" aria-hidden="true"></div>
     <div class="mesh-bg" aria-hidden="true">
       <span class="mesh-blob mesh-blob-one"></span>
       <span class="mesh-blob mesh-blob-two"></span>
@@ -12,38 +13,8 @@
       <span class="mesh-blob mesh-blob-four"></span>
     </div>
 
-    <div class="relative z-10 min-h-[calc(100vh-65px)] w-full max-w-7xl mx-auto px-6 py-12 grid lg:grid-cols-[1.05fr_0.95fr] gap-12 items-center">
-      <section class="hidden lg:block relative pr-8">
-        <div class="absolute -top-10 right-20 abstract-orb abstract-orb-lg"></div>
-        <div class="absolute top-48 right-2 abstract-ring abstract-ring-md"></div>
-        <div class="absolute bottom-4 left-12 abstract-orb abstract-orb-sm"></div>
-
-        <p class="eyebrow" style="color:var(--accent-500)">Secure research operations</p>
-        <h1 class="font-display mt-5 text-6xl xl:text-7xl font-extrabold leading-[0.95]">
-          Welcome back to
-          <span class="brand-underline gradient-text inline-block mt-2">PaperSub.AI</span>
-        </h1>
-        <p class="mt-7 max-w-xl text-lg leading-8" style="color:var(--text-secondary)">
-          Pick up submissions, reviews, editorial decisions, and audit-ready AI signals from one precise workspace.
-        </p>
-
-        <div class="mt-10 grid grid-cols-3 gap-3 max-w-xl">
-          <div class="glass-card p-4">
-            <div class="font-display text-3xl font-extrabold gradient-text">5x</div>
-            <div class="mt-1 text-xs font-semibold uppercase tracking-[0.12em]" style="color:var(--text-tertiary)">Faster triage</div>
-          </div>
-          <div class="glass-card p-4">
-            <div class="font-display text-3xl font-extrabold gradient-text">COI</div>
-            <div class="mt-1 text-xs font-semibold uppercase tracking-[0.12em]" style="color:var(--text-tertiary)">Conflict aware</div>
-          </div>
-          <div class="glass-card p-4">
-            <div class="font-display text-3xl font-extrabold gradient-text">AI</div>
-            <div class="mt-1 text-xs font-semibold uppercase tracking-[0.12em]" style="color:var(--text-tertiary)">Fully logged</div>
-          </div>
-        </div>
-      </section>
-
-      <section class="glass-card gradient-border-card auth-card animate-slide-up-fade w-full max-w-md mx-auto p-8 sm:p-9">
+    <div class="relative z-10 min-h-[calc(100vh-65px)] flex items-center justify-center px-6 py-12">
+      <section class="glass-card gradient-border-card auth-card animate-slide-up-fade w-full max-w-[460px] p-8 sm:p-9">
         <div class="flex items-center justify-between gap-4 mb-8">
           <div class="flex items-center gap-3">
             <span class="brand-mark inline-flex h-11 w-11 items-center justify-center rounded-xl text-base font-black text-white">P</span>

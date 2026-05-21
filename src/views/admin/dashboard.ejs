@@ -3,8 +3,9 @@
 <head><%- include('../partials/head') %></head>
 <body class="min-h-screen flex flex-col" style="background:var(--surface-0);color:var(--text-primary)">
   <%- include('../partials/nav') %>
-  <main class="flex-1">
-    <div class="max-w-7xl mx-auto px-6 py-8">
+  <main class="flex-1 relative overflow-hidden">
+    <div class="page-photo-bg" style="background-image:url('https://images.unsplash.com/photo-1521587760476-6c12a4b040da?auto=format&fit=crop&w=1920&q=80')" aria-hidden="true"></div>
+    <div class="max-w-7xl mx-auto px-6 py-8 relative z-10">
 
       <!-- Hero -->
       <div class="dashboard-hero mb-8">
