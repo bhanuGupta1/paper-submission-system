@@ -48,7 +48,16 @@ services:
       # - key: GITHUB_CLIENT_SECRET
       #   sync: false
 
-      # Optional — enable to use Claude AI features
+      # OpenRouter AI (free-tier LLM — llama-3.3-70b by default)
+      # Set OPENROUTER_API_KEY in the Render dashboard (Environment → Secret Files)
+      - key: LLM_PROVIDER
+        value: openrouter
+      - key: OPENROUTER_MODEL
+        value: meta-llama/llama-3.3-70b-instruct:free
+      # - key: OPENROUTER_API_KEY
+      #   sync: false
+
+      # Optional — enable to use Claude AI features instead
       # - key: ANTHROPIC_API_KEY
       #   sync: false
 

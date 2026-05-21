@@ -66,6 +66,10 @@ const config = {
       apiKey: process.env.ANTHROPIC_API_KEY || '',
       model: process.env.ANTHROPIC_MODEL || 'claude-sonnet-4-6',
     },
+    openrouter: {
+      apiKey: process.env.OPENROUTER_API_KEY || '',
+      model: process.env.OPENROUTER_MODEL || 'meta-llama/llama-3.3-70b-instruct:free',
+    },
   },
   email: {
     host: process.env.SMTP_HOST || 'localhost',
