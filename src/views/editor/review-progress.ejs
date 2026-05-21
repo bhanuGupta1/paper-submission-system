@@ -89,6 +89,44 @@
       <% } %>
 
       <!-- Decided papers -->
+      <!-- Reviewer leaderboard -->
+      <% if (leaderboard && leaderboard.length > 0) { %>
+        <h2 class="font-display text-xl font-semibold mb-3 mt-8" style="color:var(--text-primary)">Reviewer leaderboard</h2>
+        <div class="glass-card overflow-hidden mb-8">
+          <table class="w-full text-sm">
+            <thead>
+              <tr style="border-bottom:1px solid var(--border-default)">
+                <th class="text-left px-4 py-3 text-xs font-bold uppercase tracking-wider" style="color:var(--text-tertiary)">#</th>
+                <th class="text-left px-4 py-3 text-xs font-bold uppercase tracking-wider" style="color:var(--text-tertiary)">Reviewer</th>
+                <th class="text-right px-4 py-3 text-xs font-bold uppercase tracking-wider" style="color:var(--text-tertiary)">Assigned</th>
+                <th class="text-right px-4 py-3 text-xs font-bold uppercase tracking-wider" style="color:var(--text-tertiary)">Completed</th>
+                <th class="text-right px-4 py-3 text-xs font-bold uppercase tracking-wider" style="color:var(--text-tertiary)">Rate</th>
+                <th class="text-right px-4 py-3 text-xs font-bold uppercase tracking-wider" style="color:var(--text-tertiary)">Avg days</th>
+                <th class="text-right px-4 py-3 text-xs font-bold uppercase tracking-wider" style="color:var(--text-tertiary)">Avg score</th>
+              </tr>
+            </thead>
+            <tbody>
+              <% leaderboard.forEach((r, idx) => { %>
+                <% const rate = r.assigned > 0 ? Math.round((r.completed / r.assigned) * 100) : 0; %>
+                <% const scores = [r.avg_novelty, r.avg_clarity, r.avg_significance].filter(v => v != null); %>
+                <% const avgScore = scores.length > 0 ? (scores.reduce((a,b) => a + Number(b), 0) / scores.length).toFixed(1) : '—'; %>
+                <tr style="border-bottom:1px solid var(--border-subtle)">
+                  <td class="px-4 py-3 text-xs font-bold" style="color:<%= idx === 0 ? '#d97706' : idx === 1 ? '#64748b' : idx === 2 ? '#92400e' : 'var(--text-tertiary)' %>"><%= idx + 1 %></td>
+                  <td class="px-4 py-3 font-medium" style="color:var(--text-primary)"><%= r.username %></td>
+                  <td class="px-4 py-3 text-right text-xs" style="color:var(--text-secondary)"><%= r.assigned %></td>
+                  <td class="px-4 py-3 text-right text-xs" style="color:var(--text-secondary)"><%= r.completed %></td>
+                  <td class="px-4 py-3 text-right">
+                    <span class="text-xs font-semibold" style="color:<%= rate >= 80 ? '#059669' : rate >= 50 ? '#d97706' : '#dc2626' %>"><%= rate %>%</span>
+                  </td>
+                  <td class="px-4 py-3 text-right text-xs" style="color:var(--text-secondary)"><%= r.avg_days !== null ? r.avg_days + 'd' : '—' %></td>
+                  <td class="px-4 py-3 text-right text-xs font-semibold" style="color:var(--text-primary)"><%= avgScore %></td>
+                </tr>
+              <% }) %>
+            </tbody>
+          </table>
+        </div>
+      <% } %>
+
       <% if (decided.length > 0) { %>
         <h2 class="font-display text-xl font-semibold mb-3" style="color:var(--text-primary)">Decided (<%= decided.length %>)</h2>
         <div class="rounded-xl border overflow-hidden" style="border-color:var(--border-default)">

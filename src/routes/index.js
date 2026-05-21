@@ -25,6 +25,14 @@ router.get('/', (req, res) => {
 
 router.get('/privacy', (req, res) => res.render('privacy', { title: 'Privacy policy' }));
 
+router.get('/guidelines', async (req, res, next) => {
+  try {
+    const Track = require('../models/Track');
+    const tracks = await Track.listAll().catch(() => []);
+    res.render('guidelines', { title: 'Submission guidelines', tracks });
+  } catch (err) { next(err); }
+});
+
 router.use(auth);
 router.use('/health', health);
 router.use('/author', author);

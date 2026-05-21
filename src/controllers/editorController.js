@@ -237,7 +237,8 @@ async function reviewProgress(req, res, next) {
     }));
     const active = enriched.filter((p) => ['pending', 'under_review'].includes(p.review_status));
     const decided = enriched.filter((p) => ['accepted', 'rejected', 'revisions'].includes(p.review_status));
-    res.render('editor/review-progress', { title: 'Review progress', active, decided });
+    const leaderboard = await analytics.getReviewerPerformance(15);
+    res.render('editor/review-progress', { title: 'Review progress', active, decided, leaderboard });
   } catch (err) { next(err); }
 }
 

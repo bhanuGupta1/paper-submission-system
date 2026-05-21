@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="en">
+<head><%- include('partials/head') %></head>
+<body class="min-h-screen flex flex-col" style="background:var(--surface-0);color:var(--text-primary)">
+  <%- include('partials/nav') %>
+  <main class="flex-1">
+    <section class="relative overflow-hidden" style="min-height:14rem">
+      <div class="page-photo-bg" style="background-image:url('https://images.unsplash.com/photo-1456513080510-7bf3a84b82f8?auto=format&fit=crop&w=1920&q=80')" aria-hidden="true"></div>
+      <div class="relative z-10 max-w-4xl mx-auto px-6 py-16">
+        <p class="eyebrow text-indigo-200">Author resources</p>
+        <h1 class="font-display text-4xl sm:text-5xl font-extrabold text-white mt-2">Submission guidelines</h1>
+        <p class="text-slate-300 mt-3 max-w-2xl">Everything you need to know before submitting a manuscript to PaperSub.AI.</p>
+      </div>
+    </section>
+
+    <div class="max-w-4xl mx-auto px-6 py-12">
+      <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+
+        <!-- Main content -->
+        <div class="lg:col-span-2 space-y-8">
+
+          <section class="glass-card p-6">
+            <h2 class="font-display font-bold text-xl mb-4" style="color:var(--text-primary)">Before you submit</h2>
+            <ul class="space-y-3 text-sm" style="color:var(--text-secondary)">
+              <li class="flex gap-2"><span style="color:var(--brand-500)">✓</span> Ensure your manuscript is original and not under review elsewhere.</li>
+              <li class="flex gap-2"><span style="color:var(--brand-500)">✓</span> All authors have approved the submission.</li>
+              <li class="flex gap-2"><span style="color:var(--brand-500)">✓</span> Funding sources and conflicts of interest are disclosed.</li>
+              <li class="flex gap-2"><span style="color:var(--brand-500)">✓</span> Ethics approvals are in place where required.</li>
+              <li class="flex gap-2"><span style="color:var(--brand-500)">✓</span> Data availability statement included in the manuscript.</li>
+            </ul>
+          </section>
+
+          <section class="glass-card p-6">
+            <h2 class="font-display font-bold text-xl mb-4" style="color:var(--text-primary)">File requirements</h2>
+            <div class="space-y-4 text-sm" style="color:var(--text-secondary)">
+              <div>
+                <p class="font-semibold mb-1" style="color:var(--text-primary)">Accepted formats</p>
+                <div class="flex flex-wrap gap-2">
+                  <span class="score-chip">PDF</span>
+                  <span class="score-chip">DOCX</span>
+                  <span class="score-chip">TXT</span>
+                </div>
+              </div>
+              <div>
+                <p class="font-semibold mb-1" style="color:var(--text-primary)">Maximum file size</p>
+                <p>10 MB. Contact editors if your supplementary material is larger.</p>
+              </div>
+              <div>
+                <p class="font-semibold mb-1" style="color:var(--text-primary)">Anonymous review</p>
+                <p>Remove author names and affiliations from the manuscript body to enable double-blind peer review. Author information is collected separately during submission.</p>
+              </div>
+            </div>
+          </section>
+
+          <section class="glass-card p-6">
+            <h2 class="font-display font-bold text-xl mb-4" style="color:var(--text-primary)">Required fields</h2>
+            <div class="overflow-auto">
+              <table class="w-full text-sm">
+                <thead>
+                  <tr style="border-bottom:1px solid var(--border-default)">
+                    <th class="text-left py-2 pr-4 text-xs font-bold uppercase tracking-wider" style="color:var(--text-tertiary)">Field</th>
+                    <th class="text-left py-2 pr-4 text-xs font-bold uppercase tracking-wider" style="color:var(--text-tertiary)">Required</th>
+                    <th class="text-left py-2 text-xs font-bold uppercase tracking-wider" style="color:var(--text-tertiary)">Notes</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <% [
+                    ['Title', 'Yes', 'Concise, descriptive, max 20 words'],
+                    ['Authors', 'Yes', 'Full names, comma-separated. Corresponding author first.'],
+                    ['Abstract', 'Yes', '150–300 words. Structured: Background, Methods, Results, Conclusion.'],
+                    ['Keywords', 'Yes', '4–8 terms, comma-separated. Use MeSH or domain-specific controlled vocabulary where applicable.'],
+                    ['Manuscript file', 'Yes', 'PDF, DOCX, or TXT. See file requirements above.'],
+                    ['Track', 'Yes', 'Select the most relevant journal track.'],
+                    ['Revision note', 'Resubmission only', 'Describe changes made in response to reviewer comments.'],
+                  ].forEach(([field, req, note]) => { %>
+                    <tr style="border-bottom:1px solid var(--border-subtle)">
+                      <td class="py-2 pr-4 font-medium" style="color:var(--text-primary)"><%= field %></td>
+                      <td class="py-2 pr-4">
+                        <% if (req === 'Yes') { %>
+                          <span class="status-pill text-xs" style="background:rgba(5,150,105,0.10);color:#059669;border:1px solid rgba(5,150,105,0.25)">Required</span>
+                        <% } else { %>
+                          <span class="status-pill text-xs" style="background:rgba(100,116,139,0.10);color:#64748b;border:1px solid rgba(100,116,139,0.25)"><%= req %></span>
+                        <% } %>
+                      </td>
+                      <td class="py-2 text-xs" style="color:var(--text-secondary)"><%= note %></td>
+                    </tr>
+                  <% }) %>
+                </tbody>
+              </table>
+            </div>
+          </section>
+
+          <section class="glass-card p-6">
+            <h2 class="font-display font-bold text-xl mb-4" style="color:var(--text-primary)">Review process</h2>
+            <ol class="space-y-4">
+              <% [
+                ['Submission', 'Your manuscript is received and undergoes an initial desk check by the editorial team (typically 3–5 business days).'],
+                ['Reviewer assignment', 'Two or more experts are assigned by the editor. AI-assisted matching recommends reviewers based on expertise and conflict-of-interest checks.'],
+                ['Peer review', 'Reviewers have 21 days to submit structured evaluations covering novelty, clarity, and significance.'],
+                ['Decision', 'The editor makes one of four decisions: Accept, Minor revisions, Major revisions, or Reject.'],
+                ['Revision', 'Authors upload a revised manuscript and a response letter addressing all reviewer comments. Revised manuscripts are re-evaluated within 14 days.'],
+                ['Publication', 'Accepted manuscripts appear in the public library immediately and are permanently accessible with a stable URL.'],
+              ].forEach(([step, desc], idx) => { %>
+                <li class="flex gap-4">
+                  <span class="w-7 h-7 rounded-full text-sm font-bold flex items-center justify-center shrink-0 mt-0.5" style="background:var(--brand-100);color:var(--brand-600)"><%= idx + 1 %></span>
+                  <div>
+                    <p class="font-semibold text-sm" style="color:var(--text-primary)"><%= step %></p>
+                    <p class="text-sm mt-0.5" style="color:var(--text-secondary)"><%= desc %></p>
+                  </div>
+                </li>
+              <% }) %>
+            </ol>
+          </section>
+
+          <section class="glass-card p-6">
+            <h2 class="font-display font-bold text-xl mb-4" style="color:var(--text-primary)">AI tools</h2>
+            <p class="text-sm mb-3" style="color:var(--text-secondary)">PaperSub.AI uses AI to assist (not replace) editorial decisions:</p>
+            <ul class="space-y-2 text-sm" style="color:var(--text-secondary)">
+              <li class="flex gap-2"><span style="color:var(--brand-500)">→</span> <strong>AI draft review</strong> — auto-generated structured review from your abstract. Editors use this as a starting point, not a final decision.</li>
+              <li class="flex gap-2"><span style="color:var(--brand-500)">→</span> <strong>Plagiarism check</strong> — similarity score computed on upload. Flagged papers are reviewed manually.</li>
+              <li class="flex gap-2"><span style="color:var(--brand-500)">→</span> <strong>AI text detection</strong> — estimated AI-generated content ratio. Disclosed in the editorial audit trail.</li>
+              <li class="flex gap-2"><span style="color:var(--brand-500)">→</span> <strong>Writing assistant</strong> — optional abstract polish and keyword extraction available to authors before submission.</li>
+            </ul>
+          </section>
+        </div>
+
+        <!-- Sidebar -->
+        <div class="space-y-4">
+          <div class="glass-card p-5">
+            <h3 class="font-display font-bold text-base mb-3" style="color:var(--text-primary)">Quick links</h3>
+            <ul class="space-y-2 text-sm">
+              <li><a href="/auth/register" style="color:var(--brand-500)" class="hover:opacity-80 transition">Create an account</a></li>
+              <li><a href="/author/submit" style="color:var(--brand-500)" class="hover:opacity-80 transition">Submit a manuscript</a></li>
+              <li><a href="/reader" style="color:var(--brand-500)" class="hover:opacity-80 transition">Browse published papers</a></li>
+              <li><a href="/api/docs" style="color:var(--brand-500)" class="hover:opacity-80 transition">API documentation</a></li>
+            </ul>
+          </div>
+
+          <div class="glass-card p-5">
+            <h3 class="font-display font-bold text-base mb-3" style="color:var(--text-primary)">Track-specific rules</h3>
+            <% if (tracks && tracks.length > 0) { %>
+              <ul class="space-y-2 text-sm" style="color:var(--text-secondary)">
+                <% tracks.forEach(t => { %>
+                  <li class="flex items-start gap-2">
+                    <span style="color:var(--brand-500)" class="shrink-0 mt-0.5">→</span>
+                    <div>
+                      <p class="font-semibold" style="color:var(--text-primary)"><%= t.name %></p>
+                      <% if (t.description) { %><p class="text-xs mt-0.5"><%= t.description %></p><% } %>
+                    </div>
+                  </li>
+                <% }) %>
+              </ul>
+            <% } else { %>
+              <p class="text-sm" style="color:var(--text-tertiary)">No tracks configured yet.</p>
+            <% } %>
+          </div>
+
+          <div class="glass-card p-5">
+            <h3 class="font-display font-bold text-base mb-3" style="color:var(--text-primary)">Contact</h3>
+            <p class="text-sm" style="color:var(--text-secondary)">Questions about your submission? Email the editorial team or use the discussion panel on your paper page.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+  <%- include('partials/footer') %>
+</body>
+</html>
