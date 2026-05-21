@@ -22,5 +22,6 @@ router.get('/papers/:id/discussion', ctl.getDiscussion);
 router.post('/papers/:id/discussion', ctl.postDiscussion);
 router.post('/papers/:id/invite-reviewer', ctl.inviteReviewer);
 router.get('/papers/:id/invitations', ctl.listInvitations);
+router.get('/analytics', ctl.analyticsView);
 
 module.exports = router;

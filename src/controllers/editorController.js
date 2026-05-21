@@ -312,8 +312,15 @@ async function listInvitations(req, res, next) {
   } catch (err) { next(err); }
 }
 
+async function analyticsView(req, res, next) {
+  try {
+    const data = await analytics.getEditorAnalytics();
+    res.render('editor/analytics', { title: 'Editorial analytics', ...data });
+  } catch (err) { next(err); }
+}
+
 module.exports = {
   dashboard, assignReviewer, bulkAssign, decide, viewDecisionLetter,
   updateTags, downloadManuscript, viewManuscript, reviewProgress, auditTrail,
-  getDiscussion, postDiscussion, inviteReviewer, listInvitations,
+  getDiscussion, postDiscussion, inviteReviewer, listInvitations, analyticsView,
 };

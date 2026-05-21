@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="en">
+<head><%- include('../partials/head') %></head>
+<body class="min-h-screen flex flex-col" style="background:var(--surface-0);color:var(--text-primary)">
+  <%- include('../partials/nav') %>
+  <main class="flex-1">
+    <div class="max-w-5xl mx-auto px-6 py-10">
+
+      <div class="mb-8">
+        <a href="/admin" class="text-sm" style="color:var(--brand-500)">← Admin dashboard</a>
+        <h1 class="font-display text-3xl font-extrabold mt-1 gradient-text">LMS integrations</h1>
+        <p class="text-sm mt-1" style="color:var(--text-tertiary)">Connect Canvas, Moodle, or generic LMS platforms. Webhook endpoints receive signed events and auto-process submissions.</p>
+      </div>
+
+      <% if (success) { %>
+        <div class="rounded-lg px-4 py-3 mb-6 text-sm font-medium" style="background:rgba(5,150,105,0.10);border:1px solid rgba(5,150,105,0.25);color:#059669"><%= success %></div>
+      <% } %>
+      <% if (error) { %>
+        <div class="rounded-lg px-4 py-3 mb-6 text-sm font-medium" style="background:rgba(220,38,38,0.10);border:1px solid rgba(220,38,38,0.25);color:#dc2626"><%= error %></div>
+      <% } %>
+
+      <!-- Add integration -->
+      <div class="glass-card p-6 mb-8">
+        <h2 class="font-display font-bold text-lg mb-4" style="color:var(--text-primary)">Add integration</h2>
+        <form method="post" action="/admin/lms" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <label class="block text-xs font-semibold mb-1" style="color:var(--text-secondary)">Provider</label>
+            <select name="provider" required class="w-full rounded-md px-3 py-2 text-sm" style="background:var(--surface-1);border:1px solid var(--border-default);color:var(--text-primary)">
+              <option value="">Select provider…</option>
+              <option value="canvas">Canvas (Instructure)</option>
+              <option value="moodle">Moodle</option>
+              <option value="generic">Generic webhook</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-xs font-semibold mb-1" style="color:var(--text-secondary)">Display name</label>
+            <input type="text" name="name" required placeholder="e.g. CS101 Canvas" class="w-full rounded-md px-3 py-2 text-sm" style="background:var(--surface-1);border:1px solid var(--border-default);color:var(--text-primary)">
+          </div>
+          <div>
+            <label class="block text-xs font-semibold mb-1" style="color:var(--text-secondary)">Base URL <span style="color:var(--text-tertiary)">(optional)</span></label>
+            <input type="url" name="base_url" placeholder="https://canvas.university.edu" class="w-full rounded-md px-3 py-2 text-sm" style="background:var(--surface-1);border:1px solid var(--border-default);color:var(--text-primary)">
+          </div>
+          <div>
+            <label class="block text-xs font-semibold mb-1" style="color:var(--text-secondary)">Webhook secret <span style="color:var(--text-tertiary)">(used to verify signatures)</span></label>
+            <input type="password" name="webhook_secret" placeholder="••••••••" autocomplete="new-password" class="w-full rounded-md px-3 py-2 text-sm" style="background:var(--surface-1);border:1px solid var(--border-default);color:var(--text-primary)">
+          </div>
+          <div class="md:col-span-2 flex justify-end">
+            <button type="submit" class="btn-gradient shimmer-btn text-sm">Add integration</button>
+          </div>
+        </form>
+      </div>
+
+      <!-- Webhook URL reference -->
+      <div class="glass-card p-5 mb-8" style="border-left:3px solid var(--brand-500)">
+        <p class="text-xs font-bold uppercase tracking-wider mb-2" style="color:var(--brand-500)">Webhook endpoints</p>
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-3 text-xs" style="color:var(--text-secondary)">
+          <div>
+            <div class="font-semibold mb-0.5" style="color:var(--text-primary)">Canvas</div>
+            <code class="text-xs px-2 py-1 rounded" style="background:var(--surface-1);color:var(--brand-400)">/api/lms/canvas/webhook</code>
+            <p class="mt-1">Verifies <code>X-Canvas-Signature</code> HMAC-SHA256 against secret. Set <code>LMS_CANVAS_SECRET</code> env var.</p>
+          </div>
+          <div>
+            <div class="font-semibold mb-0.5" style="color:var(--text-primary)">Moodle</div>
+            <code class="text-xs px-2 py-1 rounded" style="background:var(--surface-1);color:var(--brand-400)">/api/lms/moodle/webhook</code>
+            <p class="mt-1">Verifies <code>Authorization: Bearer &lt;token&gt;</code> against secret. Set <code>LMS_MOODLE_SECRET</code> env var.</p>
+          </div>
+          <div>
+            <div class="font-semibold mb-0.5" style="color:var(--text-primary)">Generic</div>
+            <code class="text-xs px-2 py-1 rounded" style="background:var(--surface-1);color:var(--brand-400)">/api/lms/generic/webhook</code>
+            <p class="mt-1">No signature check. Events are normalised and logged to the audit trail.</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Existing integrations -->
+      <% if (integrations.length === 0) { %>
+        <div class="glass-card p-10 text-center">
+          <p class="font-semibold" style="color:var(--text-secondary)">No integrations configured yet.</p>
+        </div>
+      <% } else { %>
+        <div class="glass-card overflow-hidden">
+          <table class="w-full text-sm">
+            <thead>
+              <tr style="border-bottom:1px solid var(--border-default)">
+                <th class="text-left px-5 py-3 text-xs font-bold uppercase tracking-wider" style="color:var(--text-tertiary)">Name</th>
+                <th class="text-left px-5 py-3 text-xs font-bold uppercase tracking-wider" style="color:var(--text-tertiary)">Provider</th>
+                <th class="text-left px-5 py-3 text-xs font-bold uppercase tracking-wider" style="color:var(--text-tertiary)">Base URL</th>
+                <th class="text-left px-5 py-3 text-xs font-bold uppercase tracking-wider" style="color:var(--text-tertiary)">Status</th>
+                <th class="text-left px-5 py-3 text-xs font-bold uppercase tracking-wider" style="color:var(--text-tertiary)">Added</th>
+                <th class="px-5 py-3"></th>
+              </tr>
+            </thead>
+            <tbody>
+              <% integrations.forEach(i => { %>
+                <tr style="border-bottom:1px solid var(--border-subtle)">
+                  <td class="px-5 py-3 font-medium" style="color:var(--text-primary)"><%= i.name %></td>
+                  <td class="px-5 py-3">
+                    <span class="status-pill text-xs capitalize" style="background:<%= i.provider === 'canvas' ? 'rgba(99,102,241,0.10)' : i.provider === 'moodle' ? 'rgba(14,165,233,0.10)' : 'rgba(100,116,139,0.10)' %>;color:<%= i.provider === 'canvas' ? '#6366f1' : i.provider === 'moodle' ? '#0ea5e9' : '#64748b' %>;border:1px solid <%= i.provider === 'canvas' ? 'rgba(99,102,241,0.25)' : i.provider === 'moodle' ? 'rgba(14,165,233,0.25)' : 'rgba(100,116,139,0.25)' %>"><%= i.provider %></span>
+                  </td>
+                  <td class="px-5 py-3 text-xs max-w-xs truncate" style="color:var(--text-secondary)"><%= i.base_url || '—' %></td>
+                  <td class="px-5 py-3">
+                    <% if (i.is_active) { %>
+                      <span class="status-pill text-xs" style="background:rgba(5,150,105,0.10);color:#059669;border:1px solid rgba(5,150,105,0.25)">Active</span>
+                    <% } else { %>
+                      <span class="status-pill text-xs" style="background:rgba(100,116,139,0.10);color:#64748b;border:1px solid rgba(100,116,139,0.25)">Disabled</span>
+                    <% } %>
+                  </td>
+                  <td class="px-5 py-3 text-xs" style="color:var(--text-tertiary)"><%= new Date(i.created_at).toLocaleDateString() %></td>
+                  <td class="px-5 py-3">
+                    <div class="flex items-center gap-2 justify-end">
+                      <form method="post" action="/admin/lms/<%= i.id %>/toggle">
+                        <button type="submit" class="btn btn-sm btn-secondary text-xs"><%= i.is_active ? 'Disable' : 'Enable' %></button>
+                      </form>
+                      <form method="post" action="/admin/lms/<%= i.id %>/delete" onsubmit="return confirm('Delete this integration?')">
+                        <button type="submit" class="btn btn-sm text-xs" style="color:#dc2626;border-color:rgba(220,38,38,0.3);background:rgba(220,38,38,0.06)">Delete</button>
+                      </form>
+                    </div>
+                  </td>
+                </tr>
+              <% }) %>
+            </tbody>
+          </table>
+        </div>
+      <% } %>
+    </div>
+  </main>
+  <%- include('../partials/footer') %>
+</body>
+</html>

@@ -106,10 +106,101 @@ async function getAdminAnalytics() {
   return { statusBreakdown, reviewFunnel, integritySnapshot, atRiskPapers };
 }
 
+// Monthly submission counts for the past 12 months
+async function getSubmissionTrends() {
+  const rows = await all(`
+    SELECT strftime('%Y-%m', submission_date) AS month, COUNT(*) AS count
+    FROM papers
+    WHERE submission_date >= date('now', '-12 months')
+    GROUP BY month
+    ORDER BY month ASC
+  `);
+  return rows.map((r) => ({ month: r.month, count: num(r.count) }));
+}
+
+// Monthly accepted vs rejected for past 12 months
+async function getDecisionTrends() {
+  const rows = await all(`
+    SELECT strftime('%Y-%m', submission_date) AS month,
+           SUM(CASE WHEN review_status = 'accepted' THEN 1 ELSE 0 END) AS accepted,
+           SUM(CASE WHEN review_status = 'rejected' THEN 1 ELSE 0 END) AS rejected
+    FROM papers
+    WHERE submission_date >= date('now', '-12 months')
+    GROUP BY month
+    ORDER BY month ASC
+  `);
+  return rows.map((r) => ({ month: r.month, accepted: num(r.accepted), rejected: num(r.rejected) }));
+}
+
+// Per-reviewer stats: name, assigned, completed, avg scores, avg turnaround days
+async function getReviewerPerformance(limit = 20) {
+  return all(`
+    SELECT u.id, u.username,
+           COUNT(r.id) AS assigned,
+           SUM(CASE WHEN r.review_date IS NOT NULL THEN 1 ELSE 0 END) AS completed,
+           ROUND(AVG(CASE WHEN r.review_date IS NOT NULL THEN r.novelty_score END), 1) AS avg_novelty,
+           ROUND(AVG(CASE WHEN r.review_date IS NOT NULL THEN r.clarity_score END), 1) AS avg_clarity,
+           ROUND(AVG(CASE WHEN r.review_date IS NOT NULL THEN r.significance_score END), 1) AS avg_significance,
+           ROUND(AVG(CASE WHEN r.review_date IS NOT NULL
+             THEN CAST((julianday(r.review_date) - julianday(r.assigned_at)) AS REAL)
+           END), 1) AS avg_days
+    FROM reviews r
+    JOIN users u ON u.id = r.reviewer_id
+    GROUP BY u.id
+    ORDER BY completed DESC, assigned DESC
+    LIMIT ?
+  `, [limit]);
+}
+
+// Overall turnaround stats
+async function getTurnaroundStats() {
+  const row = await get(`
+    SELECT
+      ROUND(AVG(CASE WHEN r.review_date IS NOT NULL
+        THEN julianday(r.review_date) - julianday(p.submission_date) END), 1) AS avg_days_to_review,
+      ROUND(AVG(CASE WHEN d.created_at IS NOT NULL
+        THEN julianday(d.created_at) - julianday(p.submission_date) END), 1) AS avg_days_to_decision,
+      SUM(CASE WHEN p.review_status = 'accepted' THEN 1 ELSE 0 END) AS total_accepted,
+      SUM(CASE WHEN p.review_status = 'rejected' THEN 1 ELSE 0 END) AS total_rejected,
+      COUNT(DISTINCT p.id) AS total
+    FROM papers p
+    LEFT JOIN reviews r ON r.paper_id = p.id
+    LEFT JOIN decisions d ON d.paper_id = p.id AND d.to_status IN ('accepted','rejected')
+  `);
+  const total = num(row && row.total);
+  const accepted = num(row && row.total_accepted);
+  const rejected = num(row && row.total_rejected);
+  return {
+    avgDaysToReview: row && row.avg_days_to_review ? Number(row.avg_days_to_review) : null,
+    avgDaysToDecision: row && row.avg_days_to_decision ? Number(row.avg_days_to_decision) : null,
+    acceptanceRate: pct(accepted, accepted + rejected),
+    rejectionRate: pct(rejected, accepted + rejected),
+    totalAccepted: accepted,
+    totalRejected: rejected,
+    total,
+  };
+}
+
+async function getEditorAnalytics() {
+  const [submissionTrends, decisionTrends, reviewerPerformance, turnaroundStats, statusBreakdown] = await Promise.all([
+    getSubmissionTrends(),
+    getDecisionTrends(),
+    getReviewerPerformance(),
+    getTurnaroundStats(),
+    getStatusBreakdown(),
+  ]);
+  return { submissionTrends, decisionTrends, reviewerPerformance, turnaroundStats, statusBreakdown };
+}
+
 module.exports = {
   getStatusBreakdown,
   getReviewFunnel,
   getIntegritySnapshot,
   getAtRiskPapers,
   getAdminAnalytics,
+  getSubmissionTrends,
+  getDecisionTrends,
+  getReviewerPerformance,
+  getTurnaroundStats,
+  getEditorAnalytics,
 };

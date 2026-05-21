@@ -245,4 +245,53 @@ async function downloadBackup(req, res, next) {
   } catch (err) { next(err); }
 }
 
-module.exports = { dashboard, listUsers, updateUser, listTracks, createTrack, updateTrack, deleteTrack, exportXlsx, exportCsv, auditLogView, auditLogCsv, backupView, triggerBackup, downloadBackup };
+// ── LMS Integrations ──────────────────────────────────────────────────────────
+const { run: dbRun, all: dbAll, get: dbGet } = require('../db/connection');
+
+async function lmsView(req, res, next) {
+  try {
+    const integrations = await dbAll('SELECT id, provider, name, base_url, is_active, created_at FROM lms_integrations ORDER BY created_at DESC');
+    res.render('admin/lms', {
+      title: 'LMS integrations',
+      integrations,
+      success: req.query.success || null,
+      error: req.query.error || null,
+    });
+  } catch (err) { next(err); }
+}
+
+async function createLmsIntegration(req, res, next) {
+  try {
+    const { provider, name, base_url, api_key, webhook_secret } = req.body;
+    if (!['canvas', 'moodle', 'generic'].includes(provider)) return res.redirect('/admin/lms?error=Invalid+provider');
+    if (!name || !name.trim()) return res.redirect('/admin/lms?error=Name+required');
+    await dbRun(
+      'INSERT INTO lms_integrations (owner_id, provider, name, base_url, api_key, webhook_secret) VALUES (?, ?, ?, ?, ?, ?)',
+      [req.user.id, provider, name.trim(), base_url || null, api_key || null, webhook_secret || null],
+    );
+    await audit.log(req.user.id, 'admin.lms.create', 'lms_integrations', null, { provider, name }, req);
+    res.redirect('/admin/lms?success=Integration+added');
+  } catch (err) { next(err); }
+}
+
+async function toggleLmsIntegration(req, res, next) {
+  try {
+    const { id } = req.params;
+    const row = await dbGet('SELECT id, is_active FROM lms_integrations WHERE id = ?', [id]);
+    if (!row) return res.redirect('/admin/lms?error=Not+found');
+    await dbRun('UPDATE lms_integrations SET is_active = ? WHERE id = ?', [row.is_active ? 0 : 1, id]);
+    await audit.log(req.user.id, 'admin.lms.toggle', 'lms_integrations', id, { is_active: !row.is_active }, req);
+    res.redirect('/admin/lms?success=Updated');
+  } catch (err) { next(err); }
+}
+
+async function deleteLmsIntegration(req, res, next) {
+  try {
+    const { id } = req.params;
+    await dbRun('DELETE FROM lms_integrations WHERE id = ?', [id]);
+    await audit.log(req.user.id, 'admin.lms.delete', 'lms_integrations', id, {}, req);
+    res.redirect('/admin/lms?success=Deleted');
+  } catch (err) { next(err); }
+}
+
+module.exports = { dashboard, listUsers, updateUser, listTracks, createTrack, updateTrack, deleteTrack, exportXlsx, exportCsv, auditLogView, auditLogCsv, backupView, triggerBackup, downloadBackup, lmsView, createLmsIntegration, toggleLmsIntegration, deleteLmsIntegration };

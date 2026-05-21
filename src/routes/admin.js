@@ -23,4 +23,9 @@ router.get('/backup', ctl.backupView);
 router.post('/backup', ctl.triggerBackup);
 router.get('/backup/download/:filename', ctl.downloadBackup);
 
+router.get('/lms', ctl.lmsView);
+router.post('/lms', ctl.createLmsIntegration);
+router.post('/lms/:id/toggle', ctl.toggleLmsIntegration);
+router.post('/lms/:id/delete', ctl.deleteLmsIntegration);
+
 module.exports = router;

@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="en">
+<head><%- include('../partials/head') %></head>
+<body class="min-h-screen flex flex-col" style="background:var(--surface-0);color:var(--text-primary)">
+  <%- include('../partials/nav') %>
+  <main class="flex-1 relative overflow-hidden">
+    <div class="page-photo-bg" style="background-image:url('https://images.unsplash.com/photo-1551288049-bebda4e38f71?auto=format&fit=crop&w=1920&q=80')" aria-hidden="true"></div>
+    <div class="max-w-7xl mx-auto px-6 py-8 relative z-10">
+
+      <div class="dashboard-hero mb-6">
+        <div>
+          <p class="eyebrow text-indigo-200">Editorial intelligence</p>
+          <h1 class="font-display text-4xl sm:text-5xl font-extrabold text-white mt-2">Analytics</h1>
+          <p class="text-sm text-slate-300 mt-2 max-w-2xl">Submission trends, decision rates, reviewer performance, and turnaround benchmarks.</p>
+        </div>
+        <div class="shrink-0">
+          <a href="/editor" class="btn btn-sm" style="background:rgba(255,255,255,0.12);border-color:rgba(255,255,255,0.2);color:white">← Dashboard</a>
+        </div>
+      </div>
+
+      <!-- KPI strip -->
+      <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+        <article class="glass-card p-5">
+          <div class="text-3xl font-extrabold gradient-text"><%= turnaroundStats.total %></div>
+          <div class="metric-label">Total submissions</div>
+        </article>
+        <article class="glass-card p-5">
+          <div class="text-3xl font-extrabold gradient-text"><%= turnaroundStats.acceptanceRate %>%</div>
+          <div class="metric-label">Acceptance rate</div>
+        </article>
+        <article class="glass-card p-5">
+          <div class="text-3xl font-extrabold gradient-text"><%= turnaroundStats.avgDaysToReview !== null ? turnaroundStats.avgDaysToReview + 'd' : '—' %></div>
+          <div class="metric-label">Avg days to first review</div>
+        </article>
+        <article class="glass-card p-5">
+          <div class="text-3xl font-extrabold gradient-text"><%= turnaroundStats.avgDaysToDecision !== null ? turnaroundStats.avgDaysToDecision + 'd' : '—' %></div>
+          <div class="metric-label">Avg days to decision</div>
+        </article>
+      </div>
+
+      <!-- Charts row -->
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+
+        <!-- Submission trend -->
+        <div class="glass-card p-6">
+          <h2 class="font-display font-bold text-lg mb-4" style="color:var(--text-primary)">Submissions per month</h2>
+          <div style="position:relative;height:220px">
+            <canvas id="chart-submissions" aria-label="Monthly submission trend"></canvas>
+          </div>
+        </div>
+
+        <!-- Decision trend -->
+        <div class="glass-card p-6">
+          <h2 class="font-display font-bold text-lg mb-4" style="color:var(--text-primary)">Decisions per month</h2>
+          <div style="position:relative;height:220px">
+            <canvas id="chart-decisions" aria-label="Monthly accepted vs rejected"></canvas>
+          </div>
+        </div>
+      </div>
+
+      <!-- Status breakdown + reviewer table -->
+      <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
+
+        <!-- Status donut -->
+        <div class="glass-card p-6">
+          <h2 class="font-display font-bold text-lg mb-4" style="color:var(--text-primary)">Status breakdown</h2>
+          <div style="position:relative;height:200px">
+            <canvas id="chart-status" aria-label="Paper status donut chart"></canvas>
+          </div>
+          <ul class="mt-4 space-y-1.5 text-xs" style="color:var(--text-secondary)">
+            <% statusBreakdown.forEach(s => { %>
+              <li class="flex justify-between">
+                <span class="capitalize"><%= s.status.replace('_', ' ') %></span>
+                <span class="font-semibold" style="color:var(--text-primary)"><%= s.count %> (<%= s.percent %>%)</span>
+              </li>
+            <% }) %>
+          </ul>
+        </div>
+
+        <!-- Reviewer performance table -->
+        <div class="glass-card p-6 lg:col-span-2 overflow-auto">
+          <h2 class="font-display font-bold text-lg mb-4" style="color:var(--text-primary)">Reviewer performance</h2>
+          <% if (reviewerPerformance.length === 0) { %>
+            <p class="text-sm" style="color:var(--text-tertiary)">No review data yet.</p>
+          <% } else { %>
+            <table class="w-full text-xs">
+              <thead>
+                <tr style="border-bottom:1px solid var(--border-default)">
+                  <th class="text-left py-2 pr-3 font-bold uppercase tracking-wider" style="color:var(--text-tertiary)">Reviewer</th>
+                  <th class="text-right py-2 px-2 font-bold uppercase tracking-wider" style="color:var(--text-tertiary)">Assigned</th>
+                  <th class="text-right py-2 px-2 font-bold uppercase tracking-wider" style="color:var(--text-tertiary)">Done</th>
+                  <th class="text-right py-2 px-2 font-bold uppercase tracking-wider" style="color:var(--text-tertiary)">Rate</th>
+                  <th class="text-right py-2 px-2 font-bold uppercase tracking-wider" style="color:var(--text-tertiary)">Avg days</th>
+                  <th class="text-right py-2 pl-2 font-bold uppercase tracking-wider" style="color:var(--text-tertiary)">Avg score</th>
+                </tr>
+              </thead>
+              <tbody>
+                <% reviewerPerformance.forEach(r => { %>
+                  <% const rate = r.assigned > 0 ? Math.round((r.completed / r.assigned) * 100) : 0; %>
+                  <% const avgScore = [r.avg_novelty, r.avg_clarity, r.avg_significance].filter(v => v != null).length > 0 ? (([r.avg_novelty, r.avg_clarity, r.avg_significance].filter(v => v != null).reduce((a, b) => a + Number(b), 0)) / [r.avg_novelty, r.avg_clarity, r.avg_significance].filter(v => v != null).length).toFixed(1) : '—'; %>
+                  <tr style="border-bottom:1px solid var(--border-subtle)">
+                    <td class="py-2 pr-3 font-medium" style="color:var(--text-primary)"><%= r.username %></td>
+                    <td class="py-2 px-2 text-right" style="color:var(--text-secondary)"><%= r.assigned %></td>
+                    <td class="py-2 px-2 text-right" style="color:var(--text-secondary)"><%= r.completed %></td>
+                    <td class="py-2 px-2 text-right">
+                      <span class="font-semibold" style="color:<%= rate >= 80 ? '#059669' : rate >= 50 ? '#d97706' : '#dc2626' %>"><%= rate %>%</span>
+                    </td>
+                    <td class="py-2 px-2 text-right" style="color:var(--text-secondary)"><%= r.avg_days !== null ? r.avg_days + 'd' : '—' %></td>
+                    <td class="py-2 pl-2 text-right font-semibold" style="color:var(--text-primary)"><%= avgScore %></td>
+                  </tr>
+                <% }) %>
+              </tbody>
+            </table>
+          <% } %>
+        </div>
+      </div>
+
+    </div>
+  </main>
+  <%- include('../partials/footer') %>
+
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+  <script>
+    const isDark = document.documentElement.classList.contains('dark');
+    const gridColor = isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.06)';
+    const labelColor = isDark ? '#94a3b8' : '#64748b';
+
+    Chart.defaults.color = labelColor;
+    Chart.defaults.borderColor = gridColor;
+    Chart.defaults.font.family = "'Plus Jakarta Sans', sans-serif";
+    Chart.defaults.font.size = 11;
+
+    const subData = <%- JSON.stringify(submissionTrends) %>;
+    const decData = <%- JSON.stringify(decisionTrends) %>;
+    const statusData = <%- JSON.stringify(statusBreakdown) %>;
+
+    // Submission trend
+    new Chart(document.getElementById('chart-submissions'), {
+      type: 'bar',
+      data: {
+        labels: subData.map(d => d.month),
+        datasets: [{
+          label: 'Submissions',
+          data: subData.map(d => d.count),
+          backgroundColor: 'rgba(99,102,241,0.7)',
+          borderRadius: 4,
+        }],
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: { legend: { display: false } },
+        scales: { y: { beginAtZero: true, ticks: { precision: 0 } } },
+      },
+    });
+
+    // Decision trend
+    new Chart(document.getElementById('chart-decisions'), {
+      type: 'bar',
+      data: {
+        labels: decData.map(d => d.month),
+        datasets: [
+          { label: 'Accepted', data: decData.map(d => d.accepted), backgroundColor: 'rgba(5,150,105,0.7)', borderRadius: 4 },
+          { label: 'Rejected', data: decData.map(d => d.rejected), backgroundColor: 'rgba(220,38,38,0.6)', borderRadius: 4 },
+        ],
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: { legend: { position: 'top' } },
+        scales: { x: { stacked: true }, y: { stacked: true, beginAtZero: true, ticks: { precision: 0 } } },
+      },
+    });
+
+    // Status donut
+    const statusColors = {
+      pending: 'rgba(217,119,6,0.8)',
+      under_review: 'rgba(99,102,241,0.8)',
+      revisions: 'rgba(6,182,212,0.8)',
+      accepted: 'rgba(5,150,105,0.8)',
+      rejected: 'rgba(220,38,38,0.7)',
+    };
+    new Chart(document.getElementById('chart-status'), {
+      type: 'doughnut',
+      data: {
+        labels: statusData.map(s => s.status.replace('_', ' ')),
+        datasets: [{
+          data: statusData.map(s => s.count),
+          backgroundColor: statusData.map(s => statusColors[s.status] || 'rgba(100,116,139,0.7)'),
+          borderWidth: 1,
+          borderColor: isDark ? '#1e293b' : '#fff',
+        }],
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        cutout: '68%',
+        plugins: { legend: { display: false } },
+      },
+    });
+  </script>
+</body>
+</html>
