@@ -61,7 +61,13 @@ const config = {
     ],
   },
   llm: {
-    provider: (process.env.LLM_PROVIDER || 'heuristic').toLowerCase(),
+    provider: (() => {
+      const explicit = (process.env.LLM_PROVIDER || '').toLowerCase();
+      if (explicit) return explicit;
+      if (process.env.OPENROUTER_API_KEY) return 'openrouter';
+      if (process.env.ANTHROPIC_API_KEY) return 'claude';
+      return 'heuristic';
+    })(),
     anthropic: {
       apiKey: process.env.ANTHROPIC_API_KEY || '',
       model: process.env.ANTHROPIC_MODEL || 'claude-sonnet-4-6',

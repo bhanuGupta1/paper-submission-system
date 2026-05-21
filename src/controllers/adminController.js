@@ -318,7 +318,10 @@ async function aiStatus(req, res, next) {
     const model = cfg.llm.openrouter.model || null;
 
     if (!configured) {
-      return res.json({ status: 'unconfigured', provider, model: null, message: 'No API key set. Add OPENROUTER_API_KEY to your environment.' });
+      const hint = provider !== 'openrouter'
+        ? `LLM_PROVIDER is "${provider}" — set it to "openrouter" (or just set OPENROUTER_API_KEY; the app will auto-detect).`
+        : 'OPENROUTER_API_KEY is not set in your Render environment variables.';
+      return res.json({ status: 'unconfigured', provider, model: null, message: hint });
     }
 
     // Quick live test — extract 3 keywords from a short string
