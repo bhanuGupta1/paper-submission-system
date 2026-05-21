@@ -237,6 +237,23 @@
         </section>
       </div>
 
+      <!-- AI Analytics Insights -->
+      <section class="glass-card p-6 mb-6">
+        <div class="flex items-center justify-between mb-4">
+          <div>
+            <h2 class="font-display text-lg font-bold" style="color:var(--text-primary)">AI analytics insights</h2>
+            <p class="text-xs mt-0.5" style="color:var(--text-tertiary)">AI-generated summary of platform health and review patterns</p>
+          </div>
+          <button type="button" id="insightsBtn" class="btn btn-sm"
+            style="background:var(--brand-600);color:white;border-color:var(--brand-600)">
+            Generate insights
+          </button>
+        </div>
+        <div id="insightsPanel" class="hidden">
+          <div id="insightsContent" class="text-sm space-y-3"></div>
+        </div>
+      </section>
+
       <!-- AI audit table -->
       <section class="card overflow-hidden">
         <div class="p-5 flex items-center justify-between" style="border-bottom:1px solid var(--border-default)">
@@ -328,6 +345,58 @@ async function testAiApi() {
 }
 // Auto-test on page load
 window.addEventListener('DOMContentLoaded', () => setTimeout(testAiApi, 800));
+
+const escHtmlAdmin = (v) => String(v || '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+
+document.getElementById('insightsBtn').addEventListener('click', async () => {
+  const btn = document.getElementById('insightsBtn');
+  const panel = document.getElementById('insightsPanel');
+  const content = document.getElementById('insightsContent');
+  btn.disabled = true; btn.textContent = 'Generating…';
+  panel.classList.remove('hidden');
+  content.innerHTML = '<p style="color:var(--text-tertiary)">Analysing platform data…</p>';
+  try {
+    const r = await fetch('/api/ai/analytics-insights');
+    if (!r.ok) throw new Error(await r.text());
+    const d = await r.json();
+    const insights = d.insights || [];
+    const recs     = d.recommendations || [];
+    const summary  = d.summary || d.overview || '';
+    let html = '';
+    if (summary) html += '<p class="text-sm" style="color:var(--text-secondary)">' + escHtmlAdmin(summary) + '</p>';
+    if (insights.length) {
+      html += '<div class="grid md:grid-cols-2 gap-3 mt-2">' +
+        insights.map(i => {
+          const item = typeof i === 'string' ? { text: i } : i;
+          const label = item.label || item.title || '';
+          const text  = item.text  || item.description || item.insight || String(i);
+          const sev   = (item.severity || item.type || '').toLowerCase();
+          const color = sev.includes('warn') || sev.includes('risk')
+            ? 'var(--warning-50);border-color:var(--warning-200)'
+            : 'var(--surface-1);border-color:var(--border-default)';
+          const textColor = sev.includes('warn') || sev.includes('risk') ? 'var(--warning-700)' : 'var(--text-secondary)';
+          return '<div class="rounded-lg border p-3" style="background:' + color + '">' +
+            (label ? '<div class="text-xs font-semibold mb-1" style="color:var(--text-primary)">' + escHtmlAdmin(label) + '</div>' : '') +
+            '<div class="text-xs" style="color:' + textColor + '">' + escHtmlAdmin(text) + '</div></div>';
+        }).join('') + '</div>';
+    }
+    if (recs.length) {
+      html += '<div class="mt-3"><div class="text-xs font-semibold mb-2" style="color:var(--brand-600)">Recommendations</div>' +
+        '<ul class="space-y-1">' + recs.map(r2 => {
+          const text = typeof r2 === 'string' ? r2 : r2.text || r2.recommendation || String(r2);
+          return '<li class="text-xs" style="color:var(--text-secondary)">✦ ' + escHtmlAdmin(text) + '</li>';
+        }).join('') + '</ul></div>';
+    }
+    if (!html) html = '<p style="color:var(--text-tertiary)">No insights generated — add more data to the platform.</p>';
+    content.innerHTML = html;
+    btn.textContent = 'Refresh insights';
+  } catch (e) {
+    content.innerHTML = '<p style="color:var(--error-700)">Could not generate insights: ' + escHtmlAdmin(e.message) + '</p>';
+    btn.textContent = 'Retry';
+  } finally {
+    btn.disabled = false;
+  }
+});
 </script>
 </body>
 </html>

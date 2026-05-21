@@ -60,6 +60,18 @@
             </ul>
           </div>
 
+          <!-- AI Rubric -->
+          <div class="glass-card p-5">
+            <div class="flex items-center justify-between mb-2">
+              <div>
+                <h2 class="font-semibold text-sm" style="color:var(--text-primary)">Review rubric</h2>
+                <p class="text-xs mt-0.5" style="color:var(--text-tertiary)">AI-generated criteria for this paper</p>
+              </div>
+              <button type="button" id="rubricBtn" class="btn btn-sm" style="background:var(--surface-1);color:var(--text-secondary);border-color:var(--border-default)">Generate</button>
+            </div>
+            <div id="rubricPanel" class="hidden text-xs space-y-2 mt-2"></div>
+          </div>
+
           <!-- Discussion thread -->
           <div class="glass-card p-5">
             <h2 class="font-semibold text-sm mb-3" style="color:var(--text-primary)">Editor discussion</h2>
@@ -94,9 +106,27 @@
               <p class="eyebrow" style="color:var(--brand-600)">Structured review</p>
               <h2 class="font-display text-3xl font-bold mt-1" style="color:var(--text-primary)">Your assessment</h2>
             </div>
-            <button id="aiDraftBtn"
-              class="btn btn-secondary text-sm"
-              aria-label="Generate AI draft review">Generate AI draft</button>
+            <div class="flex gap-2 flex-wrap">
+              <button id="reviewAssistToggle" class="btn btn-secondary text-sm">Review assist</button>
+              <button id="aiDraftBtn" class="btn btn-secondary text-sm" aria-label="Generate AI draft review">Generate AI draft</button>
+            </div>
+          </div>
+
+          <!-- Review Assist Panel -->
+          <div id="reviewAssistCard" class="hidden glass-card p-5 mb-4 space-y-3">
+            <div>
+              <p class="text-sm font-semibold" style="color:var(--text-primary)">AI Review Assistant</p>
+              <p class="text-xs mt-0.5" style="color:var(--text-tertiary)">Turn rough notes or observations into structured feedback</p>
+            </div>
+            <textarea id="roughNotes" rows="4" placeholder="Paste bullet points, rough observations, or initial thoughts about the paper…"
+              class="block w-full rounded-lg border px-3 py-2 text-sm"
+              style="background:var(--surface-1);border-color:var(--border-default);color:var(--text-primary)"></textarea>
+            <div class="flex gap-2">
+              <button type="button" id="reviewAssistBtn" class="btn btn-sm btn-primary">Generate structured feedback</button>
+              <button type="button" id="reviewAssistApplyBtn" class="btn btn-sm hidden" style="background:var(--success-600);color:white;border-color:var(--success-600)">Apply to form</button>
+            </div>
+            <div id="reviewAssistResult" class="hidden text-xs rounded-lg border p-3 space-y-2"
+                 style="background:var(--surface-0);border-color:var(--border-default)"></div>
           </div>
 
           <form action="/reviewer/reviews/<%= review.id %>" method="post" class="glass-card p-6 space-y-5" id="reviewForm">
@@ -179,8 +209,11 @@
               </div>
             <% } %>
 
-            <div class="flex items-center justify-between pt-2">
-              <button type="button" id="qualityCheckBtn" class="btn btn-secondary text-sm">Check quality</button>
+            <div class="flex items-center justify-between pt-2 flex-wrap gap-2">
+              <div class="flex gap-2">
+                <button type="button" id="qualityCheckBtn" class="btn btn-secondary text-sm">Check quality</button>
+                <button type="button" id="qualityLlmBtn" class="btn btn-secondary text-sm">AI quality check</button>
+              </div>
               <button type="submit" id="submitBtn" class="btn btn-primary px-6" onclick="return confirmSubmit()">
                 Submit review
               </button>
@@ -315,6 +348,124 @@
       if (!rec) { showToast('Please select a recommendation', 'warning'); return false; }
       return true;
     }
+
+    const escHtml = (v) => String(v || '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+
+    // ── Review Assist ─────────────────────────────────────────────────────────
+    let assistDraft = null;
+    document.getElementById('reviewAssistToggle').addEventListener('click', () => {
+      const card = document.getElementById('reviewAssistCard');
+      card.classList.toggle('hidden');
+    });
+
+    document.getElementById('reviewAssistBtn').addEventListener('click', async () => {
+      const notes = document.getElementById('roughNotes').value.trim();
+      if (!notes) { showToast('Enter some rough notes first', 'warning'); return; }
+      const btn = document.getElementById('reviewAssistBtn');
+      btn.disabled = true; btn.textContent = 'Generating…';
+      const resultBox = document.getElementById('reviewAssistResult');
+      resultBox.classList.remove('hidden');
+      resultBox.innerHTML = '<p style="color:var(--text-tertiary)">Structuring feedback…</p>';
+      try {
+        const r = await fetch('/api/ai/review-assist', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ roughNotes: notes, paperId: <%= paper.id %> }),
+        });
+        if (!r.ok) throw new Error(await r.text());
+        assistDraft = await r.json();
+        const confidence = assistDraft.confidence != null ? ' · ' + assistDraft.confidence + '% confidence' : '';
+        resultBox.innerHTML =
+          '<div class="font-semibold mb-1" style="color:var(--text-primary)">Summary</div>' +
+          '<p style="color:var(--text-secondary)">' + escHtml(assistDraft.summary || '') + '</p>' +
+          (assistDraft.strengths ? '<div class="font-semibold mt-2 mb-1" style="color:var(--success-700)">Strengths</div><p style="color:var(--text-secondary)">' + escHtml(assistDraft.strengths) + '</p>' : '') +
+          (assistDraft.weaknesses ? '<div class="font-semibold mt-2 mb-1" style="color:var(--warning-700)">Weaknesses</div><p style="color:var(--text-secondary)">' + escHtml(assistDraft.weaknesses) + '</p>' : '') +
+          '<p class="mt-2" style="color:var(--text-tertiary)">' + escHtml(confidence) + '</p>';
+        document.getElementById('reviewAssistApplyBtn').classList.remove('hidden');
+      } catch (e) {
+        resultBox.innerHTML = '<p style="color:var(--error-700)">Could not generate feedback: ' + escHtml(e.message) + '</p>';
+      } finally {
+        btn.disabled = false; btn.textContent = 'Generate structured feedback';
+      }
+    });
+
+    document.getElementById('reviewAssistApplyBtn').addEventListener('click', () => {
+      if (!assistDraft) return;
+      if (assistDraft.summary)   document.getElementById('summary').value   = assistDraft.summary;
+      if (assistDraft.strengths) document.getElementById('strengths').value = assistDraft.strengths;
+      if (assistDraft.weaknesses) document.getElementById('weaknesses').value = assistDraft.weaknesses;
+      if (assistDraft.recommendation) document.getElementById('recommendation').value = assistDraft.recommendation;
+      document.getElementById('ai_assisted').value = '1';
+      showToast('Draft applied — review and edit before submitting', 'info', 5000);
+      document.getElementById('reviewAssistCard').classList.add('hidden');
+    });
+
+    // ── Rubric Generator ──────────────────────────────────────────────────────
+    document.getElementById('rubricBtn').addEventListener('click', async () => {
+      const btn = document.getElementById('rubricBtn');
+      const panel = document.getElementById('rubricPanel');
+      btn.disabled = true; btn.textContent = 'Generating…';
+      panel.classList.remove('hidden');
+      panel.innerHTML = '<p style="color:var(--text-tertiary)">Generating rubric…</p>';
+      try {
+        const r = await fetch('/api/ai/paper/<%= paper.id %>/rubric');
+        if (!r.ok) throw new Error(await r.text());
+        const d = await r.json();
+        const criteria = d.criteria || d.rubric || [];
+        if (criteria.length) {
+          panel.innerHTML = criteria.map(c =>
+            '<div class="rounded-md p-2" style="background:var(--surface-0);border:1px solid var(--border-default)">' +
+            '<div class="font-semibold mb-0.5" style="color:var(--text-primary)">' + escHtml(c.criterion || c.name || '') + '</div>' +
+            '<div style="color:var(--text-secondary)">' + escHtml(c.description || c.guidance || '') + '</div>' +
+            (c.weight ? '<div class="mt-0.5" style="color:var(--text-tertiary)">Weight: ' + escHtml(String(c.weight)) + '</div>' : '') +
+            '</div>'
+          ).join('');
+        } else if (d.rubric && typeof d.rubric === 'string') {
+          panel.innerHTML = '<p style="color:var(--text-secondary);white-space:pre-wrap">' + escHtml(d.rubric) + '</p>';
+        } else {
+          panel.innerHTML = '<p style="color:var(--text-tertiary)">No rubric generated.</p>';
+        }
+        btn.textContent = 'Regenerate';
+      } catch (e) {
+        panel.innerHTML = '<p style="color:var(--error-700)">Could not generate rubric.</p>';
+        btn.textContent = 'Retry';
+      } finally {
+        btn.disabled = false;
+      }
+    });
+
+    // ── LLM Quality Check ─────────────────────────────────────────────────────
+    document.getElementById('qualityLlmBtn').addEventListener('click', async () => {
+      const btn = document.getElementById('qualityLlmBtn');
+      btn.disabled = true; btn.textContent = 'Checking…';
+      const box = document.getElementById('qualityResult');
+      box.classList.remove('hidden');
+      box.style.cssText = 'background:var(--surface-1);border-color:var(--border-default);color:var(--text-secondary)';
+      box.textContent = 'Running AI quality analysis…';
+      try {
+        const r = await fetch('/api/ai/review/<%= review.id %>/quality-llm');
+        if (!r.ok) throw new Error(await r.text());
+        const d = await r.json();
+        const score = d.score != null ? d.score : '—';
+        const verdict = (d.verdict || d.recommendation || '').replace(/_/g, ' ');
+        const isGood = score >= 70 || verdict.includes('accept') || verdict.includes('good');
+        const isWarn = !isGood && score >= 50;
+        box.style.cssText = isGood
+          ? 'background:var(--success-50);border-color:var(--success-200);color:var(--success-700)'
+          : isWarn
+          ? 'background:var(--warning-50);border-color:var(--warning-200);color:var(--warning-700)'
+          : 'background:var(--error-50);border-color:var(--error-200);color:var(--error-700)';
+        const issues = (d.issues || d.concerns || []).map(i => '• ' + escHtml(typeof i === 'string' ? i : i.message || String(i))).join('<br>');
+        box.innerHTML = '<strong>AI quality — score: ' + score + '/100' + (verdict ? ' — ' + escHtml(verdict) : '') + '</strong>' +
+          (d.summary ? '<br>' + escHtml(d.summary) : '') +
+          (issues ? '<br>' + issues : '<br>No specific concerns raised.');
+      } catch (e) {
+        box.style.cssText = 'background:var(--error-50);border-color:var(--error-200);color:var(--error-700)';
+        box.textContent = 'AI quality check unavailable.';
+      } finally {
+        btn.disabled = false; btn.textContent = 'AI quality check';
+      }
+    });
   </script>
 </body>
 </html>

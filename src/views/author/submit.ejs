@@ -119,6 +119,55 @@
             <p class="text-xs mt-2" style="color:var(--text-tertiary)">PDF, DOC, DOCX, or TXT · max 10 MB</p>
           </div>
 
+          <!-- AI Pre-submission Screening -->
+          <div class="rounded-xl border p-5 space-y-3" style="background:var(--surface-1);border-color:var(--border-default)">
+            <div class="flex items-center justify-between flex-wrap gap-2">
+              <div>
+                <p class="text-sm font-semibold" style="color:var(--text-primary)">AI Pre-submission Checks</p>
+                <p class="text-xs mt-0.5" style="color:var(--text-tertiary)">AI Suggestion — review before submitting</p>
+              </div>
+              <div class="flex flex-wrap gap-2">
+                <button type="button" id="runScreeningBtn" class="btn btn-sm" style="background:var(--brand-600);color:white;border-color:var(--brand-600)">Desk check</button>
+                <button type="button" id="runEthicsBtn" class="btn btn-sm" style="background:var(--surface-0);color:var(--text-secondary);border-color:var(--border-default)">Ethics</button>
+                <button type="button" id="runCitationBtn" class="btn btn-sm" style="background:var(--surface-0);color:var(--text-secondary);border-color:var(--border-default)">Citations</button>
+              </div>
+            </div>
+            <div id="screeningPanel" class="hidden space-y-2"></div>
+            <div id="ethicsPanel" class="hidden space-y-2"></div>
+            <div id="citationPanel" class="hidden space-y-2"></div>
+          </div>
+
+          <!-- Advanced Writing Tools -->
+          <div class="rounded-xl border p-5 space-y-3" style="background:var(--surface-1);border-color:var(--border-default)">
+            <div class="flex items-center justify-between flex-wrap gap-2">
+              <p class="text-sm font-semibold" style="color:var(--text-primary)">Advanced Writing Tools</p>
+              <div class="flex flex-wrap gap-2">
+                <button type="button" id="writingScoreBtn" class="btn btn-sm" style="background:var(--surface-0);color:var(--text-secondary);border-color:var(--border-default)">Score abstract</button>
+                <button type="button" id="toneImproveBtn" class="btn btn-sm" style="background:var(--surface-0);color:var(--text-secondary);border-color:var(--border-default)">Improve tone</button>
+              </div>
+            </div>
+            <div id="writingScorePanel" class="hidden text-sm space-y-1.5"></div>
+            <div id="tonePanel" class="hidden text-sm space-y-2"></div>
+            <div class="border-t pt-3" style="border-color:var(--border-default)">
+              <p class="text-xs font-semibold mb-2" style="color:var(--text-tertiary)">Section-by-section feedback</p>
+              <div class="flex gap-2 mb-2 flex-wrap">
+                <select id="sectionType" class="rounded-md border px-2.5 py-1.5 text-xs" style="background:var(--surface-0);border-color:var(--border-default);color:var(--text-primary)">
+                  <option value="introduction">Introduction</option>
+                  <option value="methods">Methods</option>
+                  <option value="results">Results</option>
+                  <option value="discussion">Discussion</option>
+                  <option value="conclusion">Conclusion</option>
+                  <option value="abstract">Abstract</option>
+                </select>
+                <button type="button" id="sectionFeedbackBtn" class="btn btn-sm" style="background:var(--surface-0);color:var(--text-secondary);border-color:var(--border-default)">Get feedback</button>
+              </div>
+              <textarea id="sectionText" rows="4" placeholder="Paste a manuscript section here for AI feedback…"
+                class="block w-full rounded-lg border px-3 py-2 text-xs"
+                style="background:var(--surface-0);border-color:var(--border-default);color:var(--text-primary)"></textarea>
+              <div id="sectionFeedbackPanel" class="hidden mt-2 space-y-1"></div>
+            </div>
+          </div>
+
           <div class="flex items-center justify-end pt-1">
             <button class="btn-gradient shimmer-btn">
               Submit for review
@@ -251,6 +300,190 @@
         }
       });
     }
+
+    // ── AI Pre-submission Checks ──────────────────────────────────────────────
+    const screeningPanel = $('screeningPanel');
+    const ethicsPanel    = $('ethicsPanel');
+    const citationPanel  = $('citationPanel');
+
+    function verdictBadge(verdict) {
+      const bg = { PASS: '#16a34a', WARN: '#d97706', FAIL: '#dc2626' };
+      const v = (verdict || 'WARN').toUpperCase();
+      return `<span class="text-xs font-bold px-2 py-0.5 rounded-full" style="background:${bg[v] || bg.WARN};color:white">${escapeHtml(v)}</span>`;
+    }
+
+    function renderIssues(items) {
+      if (!items || !items.length) return '';
+      return '<ul class="text-xs space-y-1 mt-1.5 pl-1">' +
+        items.map(i => '<li style="color:var(--text-secondary)">• ' + escapeHtml(typeof i === 'string' ? i : (i.message || i.description || String(i))) + '</li>').join('') +
+        '</ul>';
+    }
+
+    $('runScreeningBtn').addEventListener('click', async () => {
+      const title    = $('title').value.trim();
+      const abstract = $('abstract').value.trim();
+      if (!title || !abstract) {
+        screeningPanel.classList.remove('hidden');
+        screeningPanel.innerHTML = '<p class="text-xs" style="color:var(--warning-700)">Fill in title and abstract first.</p>';
+        return;
+      }
+      screeningPanel.classList.remove('hidden');
+      screeningPanel.innerHTML = '<p class="text-xs" style="color:var(--text-tertiary)">Running desk rejection check…</p>';
+      try {
+        const words = abstract.split(/\s+/).filter(Boolean).length;
+        const out = await callAI('/api/ai/pre-submission-check', {
+          title, abstract, wordCount: words, sections: 1, referenceCount: 0,
+          keywords: $('keywords').value.trim() || null,
+        });
+        const confidence = out.confidence != null ? ' · ' + out.confidence + '% confidence' : '';
+        screeningPanel.innerHTML =
+          '<div class="flex items-center gap-2 flex-wrap">' + verdictBadge(out.verdict) +
+          '<span class="text-xs" style="color:var(--text-tertiary)">' + escapeHtml(out.summary || '') + escapeHtml(confidence) + '</span></div>' +
+          renderIssues(out.issues);
+      } catch {
+        screeningPanel.innerHTML = '<p class="text-xs" style="color:var(--error-700)">Could not contact AI service.</p>';
+      }
+    });
+
+    $('runEthicsBtn').addEventListener('click', async () => {
+      const abstract = $('abstract').value.trim();
+      if (!abstract) {
+        ethicsPanel.classList.remove('hidden');
+        ethicsPanel.innerHTML = '<p class="text-xs" style="color:var(--warning-700)">Write an abstract first.</p>';
+        return;
+      }
+      ethicsPanel.classList.remove('hidden');
+      ethicsPanel.innerHTML = '<p class="text-xs" style="color:var(--text-tertiary)">Checking ethics & compliance…</p>';
+      try {
+        const out = await callAI('/api/ai/ethics-check', {
+          title: $('title').value.trim(), abstract,
+        });
+        ethicsPanel.innerHTML =
+          '<div class="flex items-center gap-2 flex-wrap">' + verdictBadge(out.verdict) +
+          '<span class="text-xs" style="color:var(--text-tertiary)">' + escapeHtml(out.summary || '') + '</span></div>' +
+          renderIssues(out.flags);
+      } catch {
+        ethicsPanel.innerHTML = '<p class="text-xs" style="color:var(--error-700)">Could not contact AI service.</p>';
+      }
+    });
+
+    $('runCitationBtn').addEventListener('click', async () => {
+      const abstract = $('abstract').value.trim();
+      if (!abstract) {
+        citationPanel.classList.remove('hidden');
+        citationPanel.innerHTML = '<p class="text-xs" style="color:var(--warning-700)">Write an abstract first.</p>';
+        return;
+      }
+      citationPanel.classList.remove('hidden');
+      citationPanel.innerHTML = '<p class="text-xs" style="color:var(--text-tertiary)">Checking citations…</p>';
+      try {
+        const out = await callAI('/api/ai/citation-check', { abstract });
+        const hasSuspect = out.suspectCitations && out.suspectCitations.length > 0;
+        citationPanel.innerHTML =
+          '<div class="flex items-center gap-2 flex-wrap">' + verdictBadge(hasSuspect ? 'WARN' : 'PASS') +
+          '<span class="text-xs" style="color:var(--text-tertiary)">' + escapeHtml(out.summary || '') + '</span></div>' +
+          renderIssues(out.suspectCitations);
+      } catch {
+        citationPanel.innerHTML = '<p class="text-xs" style="color:var(--error-700)">Could not contact AI service.</p>';
+      }
+    });
+
+    // ── Advanced Writing Tools ────────────────────────────────────────────────
+    const writingScorePanel   = $('writingScorePanel');
+    const tonePanel           = $('tonePanel');
+    const sectionFeedbackPanel = $('sectionFeedbackPanel');
+
+    $('writingScoreBtn').addEventListener('click', async () => {
+      const text = $('abstract').value.trim();
+      if (!text) {
+        writingScorePanel.classList.remove('hidden');
+        writingScorePanel.innerHTML = '<p class="text-xs" style="color:var(--warning-700)">Write an abstract first.</p>';
+        return;
+      }
+      writingScorePanel.classList.remove('hidden');
+      writingScorePanel.innerHTML = '<p class="text-xs" style="color:var(--text-tertiary)">Scoring…</p>';
+      try {
+        const out = await callAI('/api/ai/writing-score', { text });
+        const score = out.overallScore != null ? out.overallScore : '—';
+        const dims  = out.dimensions || {};
+        const dimHtml = Object.entries(dims).map(([k, v]) =>
+          '<div class="flex justify-between text-xs"><span style="color:var(--text-secondary)">' + escapeHtml(k) + '</span><span class="font-semibold">' + v + '/10</span></div>'
+        ).join('');
+        const improvementsHtml = (out.improvements || []).length
+          ? '<div class="text-xs font-semibold mt-2" style="color:var(--text-tertiary)">Improvements</div><ul class="text-xs space-y-1 mt-1">' +
+            out.improvements.map(i => '<li style="color:var(--text-secondary)">• ' + escapeHtml(i) + '</li>').join('') + '</ul>'
+          : '';
+        writingScorePanel.innerHTML =
+          '<div class="flex items-center gap-3 mb-2"><span class="text-2xl font-bold" style="color:var(--brand-600)">' + score +
+          '<span class="text-sm font-normal">/10</span></span><span class="text-xs" style="color:var(--text-secondary)">' + escapeHtml(out.summary || '') + '</span></div>' +
+          dimHtml + improvementsHtml;
+      } catch {
+        writingScorePanel.innerHTML = '<p class="text-xs" style="color:var(--error-700)">Could not contact AI service.</p>';
+      }
+    });
+
+    $('toneImproveBtn').addEventListener('click', () => {
+      const text = $('abstract').value.trim();
+      if (!text) {
+        tonePanel.classList.remove('hidden');
+        tonePanel.innerHTML = '<p class="text-xs" style="color:var(--warning-700)">Write an abstract first.</p>';
+        return;
+      }
+      tonePanel.classList.remove('hidden');
+      tonePanel.innerHTML = '';
+      const out = document.createElement('div');
+      out.style.cssText = 'font-size:0.75rem;line-height:1.6;color:var(--text-secondary);white-space:pre-wrap;min-height:2rem;';
+      out.textContent = 'Improving tone…';
+      tonePanel.appendChild(out);
+      let improved = '';
+      const url = '/api/ai/stream/tone-improve?text=' + encodeURIComponent(text.slice(0, 2000));
+      const es = new EventSource(url);
+      es.onmessage = (e) => {
+        try {
+          const d = JSON.parse(e.data);
+          if (d.text) { improved += d.text; out.textContent = improved; }
+          if (d.done) {
+            es.close();
+            if (improved) {
+              const apply = document.createElement('button');
+              apply.type = 'button';
+              apply.className = 'btn btn-sm mt-2';
+              apply.style.cssText = 'font-size:0.7rem;display:block;';
+              apply.textContent = 'Apply to abstract';
+              apply.onclick = () => { $('abstract').value = improved; tonePanel.classList.add('hidden'); };
+              tonePanel.appendChild(apply);
+            }
+          }
+          if (d.error) { out.textContent = 'AI service error: ' + d.error; es.close(); }
+        } catch { /* ignore parse errors in partial chunks */ }
+      };
+      es.onerror = () => { if (improved) { es.close(); } else { out.textContent = 'Connection lost.'; es.close(); } };
+    });
+
+    $('sectionFeedbackBtn').addEventListener('click', async () => {
+      const text        = $('sectionText').value.trim();
+      const sectionType = $('sectionType').value;
+      if (!text) {
+        sectionFeedbackPanel.classList.remove('hidden');
+        sectionFeedbackPanel.innerHTML = '<p class="text-xs" style="color:var(--warning-700)">Paste a section first.</p>';
+        return;
+      }
+      sectionFeedbackPanel.classList.remove('hidden');
+      sectionFeedbackPanel.innerHTML = '<p class="text-xs" style="color:var(--text-tertiary)">Analysing ' + escapeHtml(sectionType) + ' section…</p>';
+      try {
+        const out = await callAI('/api/ai/section-feedback', { text, sectionType });
+        const strengths  = (out.strengths  || []).map(s => '<li class="text-xs" style="color:var(--success-700)">✓ ' + escapeHtml(s) + '</li>').join('');
+        const weaknesses = (out.weaknesses || []).map(s => '<li class="text-xs" style="color:var(--warning-700)">⚠ ' + escapeHtml(s) + '</li>').join('');
+        const suggestions = (out.suggestions || []).map(s => '<li class="text-xs" style="color:var(--text-secondary)">✦ ' + escapeHtml(s) + '</li>').join('');
+        sectionFeedbackPanel.innerHTML =
+          '<div class="text-xs font-semibold mb-1" style="color:var(--text-tertiary)">' + escapeHtml(sectionType) + ' section</div>' +
+          (strengths  ? '<ul class="space-y-1 mb-1.5">' + strengths  + '</ul>' : '') +
+          (weaknesses ? '<ul class="space-y-1 mb-1.5">' + weaknesses + '</ul>' : '') +
+          (suggestions ? '<div class="text-xs font-semibold mb-1" style="color:var(--brand-600)">Suggestions</div><ul class="space-y-1">' + suggestions + '</ul>' : '');
+      } catch {
+        sectionFeedbackPanel.innerHTML = '<p class="text-xs" style="color:var(--error-700)">Could not contact AI service.</p>';
+      }
+    });
   </script>
 </body>
 </html>

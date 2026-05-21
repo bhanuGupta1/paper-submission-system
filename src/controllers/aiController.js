@@ -251,8 +251,9 @@ async function preSubmissionCheck(req, res, next) {
     const llm = require('../services/llm');
     const result = await llm.deskRejectionCheck(title, abstract, wordCount, sections, referenceCount, !!kw);
     await run('INSERT INTO ai_audit (user_id, action, provider) VALUES (?,?,?)', [req.user.id, 'desk_rejection_check', llm.providerName]);
-    if (!result) return res.json({ pass_fail: 'WARN', overall_score: 50, issues: [], ready_to_submit: true, confidence: 0, summary: 'AI check unavailable — manual review required.', provider: 'heuristic' });
-    res.json({ ...result, provider: llm.providerName });
+    if (!result) return res.json({ verdict: 'WARN', pass_fail: 'WARN', overall_score: 50, issues: [], ready_to_submit: true, confidence: 0, summary: 'AI check unavailable — manual review required.', provider: 'heuristic' });
+    const verdict = result.verdict || result.pass_fail || (result.ready_to_submit === false ? 'FAIL' : result.overall_score >= 70 ? 'PASS' : 'WARN');
+    res.json({ ...result, verdict, provider: llm.providerName });
   } catch (err) { next(err); }
 }
 
@@ -265,8 +266,11 @@ async function ethicsCheck(req, res, next) {
     const llm = require('../services/llm');
     const result = await llm.ethicsCheck(title, abstract, fullText);
     await run('INSERT INTO ai_audit (user_id, action, provider) VALUES (?,?,?)', [req.user.id, 'ethics_check', llm.providerName]);
-    if (!result) return res.json({ compliance_score: 0, overall_risk: 'UNKNOWN', issues: [], confidence: 0, message: 'Ethics check unavailable.', provider: 'heuristic' });
-    res.json({ ...result, provider: llm.providerName });
+    if (!result) return res.json({ verdict: 'WARN', compliance_score: 0, overall_risk: 'UNKNOWN', flags: [], issues: [], confidence: 0, summary: 'Ethics check unavailable.', provider: 'heuristic' });
+    const verdict = result.verdict || (result.overall_risk === 'LOW' ? 'PASS' : result.overall_risk === 'HIGH' ? 'FAIL' : 'WARN');
+    const flags = result.flags || result.issues || result.concerns || [];
+    const summary = result.summary || result.message || '';
+    res.json({ ...result, verdict, flags, summary, provider: llm.providerName });
   } catch (err) { next(err); }
 }
 
@@ -274,13 +278,15 @@ async function ethicsCheck(req, res, next) {
 
 async function citationCheck(req, res, next) {
   try {
-    const { references } = req.body;
-    if (!references || !references.trim()) return res.status(400).json({ error: 'references required' });
+    const { references, abstract } = req.body;
+    const text = references || abstract;
+    if (!text || !text.trim()) return res.status(400).json({ error: 'references or abstract required' });
     const llm = require('../services/llm');
-    const result = await llm.citationHallucinationCheck(references);
+    const result = await llm.citationHallucinationCheck(text);
     await run('INSERT INTO ai_audit (user_id, action, provider) VALUES (?,?,?)', [req.user.id, 'citation_check', llm.providerName]);
-    if (!result) return res.json({ suspicious_citations: [], overall_risk: 'UNKNOWN', flagged_count: 0, confidence: 0, summary: 'Citation check unavailable.', provider: 'heuristic' });
-    res.json({ ...result, provider: llm.providerName });
+    if (!result) return res.json({ suspectCitations: [], suspicious_citations: [], overall_risk: 'UNKNOWN', flagged_count: 0, confidence: 0, summary: 'Citation check unavailable.', provider: 'heuristic' });
+    const suspectCitations = result.suspicious_citations || result.suspectCitations || result.flagged_citations || [];
+    res.json({ ...result, suspectCitations, provider: llm.providerName });
   } catch (err) { next(err); }
 }
 
@@ -320,8 +326,12 @@ async function writingScore(req, res, next) {
     const llm = require('../services/llm');
     const result = await llm.writingScore(text);
     await run('INSERT INTO ai_audit (user_id, action, provider) VALUES (?,?,?)', [req.user.id, 'writing_score', llm.providerName]);
-    if (!result) return res.json({ clarity: 50, coherence: 50, academic_vocabulary: 50, structure: 50, overall_grade: 'C', suggestions: [], strengths: [], confidence: 0, provider: 'heuristic' });
-    res.json({ ...result, provider: llm.providerName });
+    if (!result) return res.json({ overallScore: 5, dimensions: {}, improvements: [], summary: 'Writing score unavailable.', confidence: 0, provider: 'heuristic' });
+    const overallScore = result.overallScore ?? result.overall_score ?? result.score ?? 5;
+    const dimensions = result.dimensions || {};
+    const improvements = result.improvements || result.suggestions || [];
+    const summary = result.summary || result.overall_grade || '';
+    res.json({ ...result, overallScore, dimensions, improvements, summary, provider: llm.providerName });
   } catch (err) { next(err); }
 }
 
@@ -329,15 +339,19 @@ async function writingScore(req, res, next) {
 
 async function sectionFeedback(req, res, next) {
   try {
-    const { sectionText, sectionType } = req.body;
-    if (!sectionText || !sectionType) return res.status(400).json({ error: 'sectionText and sectionType required' });
+    const { sectionText, text: bodyText, sectionType } = req.body;
+    const content = sectionText || bodyText;
+    if (!content || !sectionType) return res.status(400).json({ error: 'text and sectionType required' });
     const allowed = ['introduction', 'methods', 'results', 'discussion', 'abstract', 'conclusion'];
     if (!allowed.includes(sectionType.toLowerCase())) return res.status(400).json({ error: 'Invalid sectionType' });
     const llm = require('../services/llm');
-    const result = await llm.sectionFeedback(sectionText, sectionType);
+    const result = await llm.sectionFeedback(content, sectionType);
     await run('INSERT INTO ai_audit (user_id, action, provider) VALUES (?,?,?)', [req.user.id, 'section_feedback', llm.providerName]);
-    if (!result) return res.json({ score: 50, feedback: [], strengths: [], improvements: [], pass_fail: 'WARN', confidence: 0, provider: 'heuristic' });
-    res.json({ ...result, provider: llm.providerName });
+    if (!result) return res.json({ strengths: [], weaknesses: [], suggestions: [], summary: 'Section feedback unavailable.', confidence: 0, provider: 'heuristic' });
+    const strengths   = result.strengths   || result.strong_points || [];
+    const weaknesses  = result.weaknesses  || result.weak_points   || result.areas_for_improvement || [];
+    const suggestions = result.suggestions || result.improvements  || result.specific_suggestions  || [];
+    res.json({ ...result, strengths, weaknesses, suggestions, provider: llm.providerName });
   } catch (err) { next(err); }
 }
 
@@ -351,8 +365,12 @@ async function reviewAssist(req, res, next) {
     const llm = require('../services/llm');
     const result = await llm.reviewAssist(roughNotes, paper?.title || '', paper?.abstract || '');
     await run('INSERT INTO ai_audit (user_id, paper_id, action, provider) VALUES (?,?,?,?)', [req.user.id, paperId || null, 'review_assist', llm.providerName]);
-    if (!result) return res.json({ formatted_review: roughNotes, tone_score: 50, completeness_score: 50, flagged_phrases: [], missing_sections: [], confidence: 0, provider: 'heuristic' });
-    res.json({ ...result, provider: llm.providerName });
+    if (!result) return res.json({ summary: '', strengths: '', weaknesses: '', recommendation: '', formatted_review: roughNotes, confidence: 0, provider: 'heuristic' });
+    const summary    = result.summary    || result.structured_summary || result.formatted_review?.split('\n')[0] || '';
+    const strengths  = result.strengths  || result.structured_strengths  || '';
+    const weaknesses = result.weaknesses || result.structured_weaknesses || '';
+    const recommendation = result.recommendation || '';
+    res.json({ ...result, summary, strengths, weaknesses, recommendation, provider: llm.providerName });
   } catch (err) { next(err); }
 }
 
@@ -370,7 +388,12 @@ async function reviewQualityLlm(req, res, next) {
     const llm = require('../services/llm');
     const llmResult = await llm.reviewQualityLlm(review, paper?.title || '');
     await run('INSERT INTO ai_audit (user_id, paper_id, action, provider) VALUES (?,?,?,?)', [user.id, review.paper_id, 'review_quality_llm', llm.providerName]);
-    res.json({ heuristic: heuristicResult, llm: llmResult, provider: llm.providerName });
+    const flatResult = llmResult || {};
+    const score = flatResult.overall_quality_score ?? flatResult.score ?? heuristicResult.score ?? 50;
+    const verdict = flatResult.quality_verdict ?? flatResult.verdict ?? flatResult.recommendation ?? heuristicResult.recommendation ?? 'needs_improvement';
+    const issues = flatResult.issues || flatResult.concerns || heuristicResult.issues || [];
+    const summary = flatResult.summary || flatResult.feedback_summary || '';
+    res.json({ score, verdict, issues, summary, heuristic: heuristicResult, provider: llm.providerName });
   } catch (err) { next(err); }
 }
 
@@ -390,8 +413,10 @@ async function revisionSummary(req, res, next) {
     const llm = require('../services/llm');
     const result = await llm.revisionSummarizer(paper.title, reviewsText);
     await run('INSERT INTO ai_audit (user_id, paper_id, action, provider) VALUES (?,?,?,?)', [req.user.id, paperId, 'revision_summary', llm.providerName]);
-    if (!result) return res.json({ summary: 'Please review the feedback manually.', themes: [], revision_checklist: [], overall_revision_effort: 'MODERATE', provider: 'heuristic' });
-    res.json({ ...result, provider: llm.providerName });
+    if (!result) return res.json({ summary: 'Please review the feedback manually.', mandatoryChanges: [], optionalChanges: [], themes: [], revision_checklist: [], overall_revision_effort: 'MODERATE', provider: 'heuristic' });
+    const mandatoryChanges = result.mandatory_changes || result.mandatoryChanges || result.required_changes || result.revision_checklist || [];
+    const optionalChanges  = result.optional_changes  || result.optionalChanges  || result.suggested_changes || [];
+    res.json({ ...result, mandatoryChanges, optionalChanges, provider: llm.providerName });
   } catch (err) { next(err); }
 }
 
@@ -400,16 +425,20 @@ async function revisionSummary(req, res, next) {
 async function responseToReviewers(req, res, next) {
   try {
     const { paperId } = req.params;
-    const { comment } = req.body;
-    if (!comment) return res.status(400).json({ error: 'comment required' });
+    const { comment, authorNotes } = req.body;
+    const reviewerComment = comment || authorNotes || '';
     const paper = await Paper.findById(paperId);
     if (!paper) return res.status(404).json({ error: 'Paper not found' });
     if (req.user.role === 'author' && paper.author_id !== req.user.id) return res.status(403).json({ error: 'Forbidden' });
+    const reviews = await Review.listByPaper(paperId);
+    const submitted = reviews.filter(r => r.review_date && !r.declined_at);
+    const reviewsText = submitted.map((r, i) => 'Reviewer ' + (i+1) + ':\n' + [r.summary, r.weaknesses].filter(Boolean).join('\n')).join('\n\n');
     const llm = require('../services/llm');
-    const result = await llm.responseToReviewers(paper.title, comment);
+    const result = await llm.responseToReviewers(paper.title, reviewerComment || reviewsText);
     await run('INSERT INTO ai_audit (user_id, paper_id, action, provider) VALUES (?,?,?,?)', [req.user.id, paperId, 'response_to_reviewer', llm.providerName]);
-    if (!result) return res.json({ draft_response: '', action_required: 'REVISED', confidence: 0, provider: 'heuristic' });
-    res.json({ ...result, provider: llm.providerName });
+    if (!result) return res.json({ responseDraft: '', draft_response: '', action_required: 'REVISED', confidence: 0, provider: 'heuristic' });
+    const draft = result.draft_response || result.responseDraft || result.response || '';
+    res.json({ ...result, responseDraft: draft, provider: llm.providerName });
   } catch (err) { next(err); }
 }
 

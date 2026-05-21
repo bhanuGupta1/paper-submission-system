@@ -131,9 +131,36 @@
               </div>
             <% }) %>
           </div>
+          <!-- Response to reviewers -->
+          <% if (reviews && reviews.filter(r => r.review_date).length > 0) { %>
+          <div class="glass-card p-6">
+            <h2 class="font-display text-2xl font-semibold mb-1">Response to reviewers</h2>
+            <p class="text-sm mb-3" style="color:var(--text-secondary)">AI drafts a point-by-point response based on reviewer feedback</p>
+            <textarea id="authorNotes" rows="3" placeholder="Describe your planned changes or key points you want to address (optional)…"
+              class="block w-full rounded-lg border px-3.5 py-2.5 text-sm mb-2"
+              style="background:var(--surface-1);border-color:var(--border-default);color:var(--text-primary)"></textarea>
+            <button type="button" id="responseToReviewersBtn" class="btn btn-sm"
+              style="background:var(--brand-600);color:white;border-color:var(--brand-600)">
+              Generate response draft
+            </button>
+            <div id="responsePanel" class="hidden mt-3 rounded-lg border p-4 text-sm"
+                 style="background:var(--surface-1);border-color:var(--border-default)"></div>
+          </div>
+          <% } %>
         </section>
 
         <aside class="space-y-5">
+          <!-- AI Revision Assistance -->
+          <div class="glass-card p-5">
+            <p class="eyebrow mb-3" style="color:var(--brand-600)">AI assistance</p>
+            <button type="button" id="revisionSummaryBtn" class="btn btn-sm w-full mb-2"
+              style="background:var(--brand-600);color:white;border-color:var(--brand-600)">
+              Summarize reviewer requests
+            </button>
+            <div id="revisionSummaryPanel" class="hidden text-xs space-y-2 mt-1 rounded-lg border p-3"
+                 style="background:var(--surface-1);border-color:var(--border-default)"></div>
+          </div>
+
           <!-- Status timeline -->
           <div class="glass-card p-5">
             <p class="eyebrow mb-3" style="color:var(--brand-600)">Status timeline</p>
@@ -188,5 +215,79 @@
     </div>
   </main>
   <%- include('../partials/footer') %>
+  <script>
+    const escHtml = (v) => String(v || '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+
+    // ── Revision Summary ──────────────────────────────────────────────────────
+    const revPanel = document.getElementById('revisionSummaryPanel');
+    document.getElementById('revisionSummaryBtn').addEventListener('click', async () => {
+      const btn = document.getElementById('revisionSummaryBtn');
+      btn.disabled = true; btn.textContent = 'Summarizing…';
+      revPanel.classList.remove('hidden');
+      revPanel.innerHTML = '<p style="color:var(--text-tertiary)">Analysing reviewer feedback…</p>';
+      try {
+        const r = await fetch('/api/ai/paper/<%= paper.id %>/revision-summary');
+        if (!r.ok) throw new Error(await r.text());
+        const d = await r.json();
+        const mandatory = (d.mandatoryChanges || d.required || []).map(i =>
+          '<li style="color:var(--error-700)">⚑ ' + escHtml(typeof i === 'string' ? i : i.description || String(i)) + '</li>'
+        ).join('');
+        const optional = (d.optionalChanges || d.suggested || []).map(i =>
+          '<li style="color:var(--warning-700)">◦ ' + escHtml(typeof i === 'string' ? i : i.description || String(i)) + '</li>'
+        ).join('');
+        revPanel.innerHTML =
+          (d.summary ? '<p style="color:var(--text-secondary)">' + escHtml(d.summary) + '</p>' : '') +
+          (mandatory ? '<div class="font-semibold mt-2 mb-1" style="color:var(--error-700)">Must address</div><ul class="space-y-1">' + mandatory + '</ul>' : '') +
+          (optional  ? '<div class="font-semibold mt-2 mb-1" style="color:var(--warning-700)">Suggested</div><ul class="space-y-1">' + optional + '</ul>' : '') +
+          (!d.summary && !mandatory && !optional ? '<p style="color:var(--text-tertiary)">No reviewer feedback to summarize yet.</p>' : '');
+        btn.textContent = 'Refresh summary';
+      } catch (e) {
+        revPanel.innerHTML = '<p style="color:var(--error-700)">Could not generate summary.</p>';
+        btn.textContent = 'Summarize reviewer requests';
+      } finally {
+        btn.disabled = false;
+      }
+    });
+
+    // ── Response to Reviewers ─────────────────────────────────────────────────
+    const responseBtn = document.getElementById('responseToReviewersBtn');
+    if (responseBtn) {
+      const responsePanel = document.getElementById('responsePanel');
+      responseBtn.addEventListener('click', async () => {
+        responseBtn.disabled = true; responseBtn.textContent = 'Drafting…';
+        responsePanel.classList.remove('hidden');
+        responsePanel.innerHTML = '<p class="text-sm" style="color:var(--text-tertiary)">Generating response draft…</p>';
+        try {
+          const notes = document.getElementById('authorNotes').value.trim();
+          const r = await fetch('/api/ai/paper/<%= paper.id %>/response-to-reviewers', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ authorNotes: notes || null }),
+          });
+          if (!r.ok) throw new Error(await r.text());
+          const d = await r.json();
+          const draft = d.responseDraft || d.draft || d.response || '';
+          if (draft) {
+            responsePanel.innerHTML =
+              '<div class="font-semibold text-sm mb-2" style="color:var(--text-primary)">Draft response</div>' +
+              '<div class="text-sm whitespace-pre-wrap mb-3" style="color:var(--text-secondary)">' + escHtml(draft) + '</div>' +
+              '<button type="button" id="copyResponseBtn" class="btn btn-sm" style="background:var(--surface-0);color:var(--text-secondary);border-color:var(--border-default)">Copy to clipboard</button>';
+            document.getElementById('copyResponseBtn').addEventListener('click', () => {
+              navigator.clipboard.writeText(draft).then(() => {
+                document.getElementById('copyResponseBtn').textContent = 'Copied!';
+                setTimeout(() => { document.getElementById('copyResponseBtn').textContent = 'Copy to clipboard'; }, 2000);
+              });
+            });
+          } else {
+            responsePanel.innerHTML = '<p class="text-sm" style="color:var(--text-tertiary)">No draft generated. Add reviewer feedback first.</p>';
+          }
+        } catch {
+          responsePanel.innerHTML = '<p class="text-sm" style="color:var(--error-700)">Could not generate response draft.</p>';
+        } finally {
+          responseBtn.disabled = false; responseBtn.textContent = 'Generate response draft';
+        }
+      });
+    }
+  </script>
 </body>
 </html>
