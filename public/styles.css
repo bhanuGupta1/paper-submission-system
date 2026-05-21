@@ -926,7 +926,6 @@ main { animation: page-in 0.3s var(--ease-out) both; }
 }
 
 .auth-canvas,
-.home-hero,
 .author-shell {
   background:
     radial-gradient(circle at top left, rgba(99, 102, 241, 0.12), transparent 32rem),
@@ -934,6 +933,152 @@ main { animation: page-in 0.3s var(--ease-out) both; }
     var(--surface-bg);
 }
 
+/* ── Home hero: architectural photo simulation ───────────────────────────── */
+.home-hero {
+  background:
+    /* Window-light bloom — upper right, warm golden-lavender spill */
+    radial-gradient(ellipse 55% 70% at 88% 0%,
+      rgba(255, 220, 140, 0.12) 0%,
+      rgba(200, 180, 255, 0.09) 30%,
+      transparent 68%),
+    /* Secondary ambient glow — left wall bounce */
+    radial-gradient(ellipse 40% 55% at -4% 40%,
+      rgba(79, 70, 229, 0.20) 0%,
+      transparent 65%),
+    /* Deep floor-level indigo pool */
+    radial-gradient(ellipse 60% 40% at 50% 105%,
+      rgba(30, 27, 75, 0.95) 0%,
+      transparent 72%),
+    /* Central vanishing-point atmospheric haze */
+    radial-gradient(ellipse 38% 48% at 50% 52%,
+      rgba(67, 56, 202, 0.13) 0%,
+      transparent 70%),
+    /* Main dark navy/indigo base */
+    linear-gradient(108deg,
+      #0d1129 0%,
+      #111a3a 18%,
+      #0e1535 38%,
+      #080e26 62%,
+      #060b1f 82%,
+      #040819 100%);
+  color: white;
+}
+
+/* Architectural grid overlay */
+.arch-bg {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+/* Primary perspective grid — large structural lines */
+.arch-bg::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-image:
+    linear-gradient(rgba(165, 180, 252, 0.055) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(165, 180, 252, 0.038) 1px, transparent 1px);
+  background-size: 80px 56px;
+  mask-image: linear-gradient(to bottom, transparent 0%, rgba(0,0,0,0.7) 12%, rgba(0,0,0,0.85) 55%, transparent 100%);
+  -webkit-mask-image: linear-gradient(to bottom, transparent 0%, rgba(0,0,0,0.7) 12%, rgba(0,0,0,0.85) 55%, transparent 100%);
+}
+
+/* Fine detail grid — thinner module lines */
+.arch-bg::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-image:
+    linear-gradient(rgba(99, 102, 241, 0.035) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(34, 211, 238, 0.028) 1px, transparent 1px);
+  background-size: 20px 20px;
+  mask-image: radial-gradient(ellipse 70% 60% at 60% 30%, rgba(0,0,0,0.6), transparent 65%);
+  -webkit-mask-image: radial-gradient(ellipse 70% 60% at 60% 30%, rgba(0,0,0,0.6), transparent 65%);
+}
+
+/* SVG window-light rays and architectural line details */
+.arch-rays {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  overflow: hidden;
+}
+
+/* Window-light shafts from upper right */
+.arch-rays::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 72%;
+  height: 100%;
+  background:
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='800' height='900' viewBox='0 0 800 900'%3E%3Cdefs%3E%3ClinearGradient id='ray1' x1='0' y1='0' x2='1' y2='1'%3E%3Cstop offset='0%25' stop-color='%23ffe8a0' stop-opacity='0.07'/%3E%3Cstop offset='100%25' stop-color='%23ffe8a0' stop-opacity='0'/%3E%3C/linearGradient%3E%3ClinearGradient id='ray2' x1='0' y1='0' x2='1' y2='1'%3E%3Cstop offset='0%25' stop-color='%23c7d2fe' stop-opacity='0.055'/%3E%3Cstop offset='100%25' stop-color='%23c7d2fe' stop-opacity='0'/%3E%3C/linearGradient%3E%3C/defs%3E%3Cpolygon points='800,0 800,160 200,900 520,900' fill='url(%23ray1)'/%3E%3Cpolygon points='800,80 800,240 350,900 680,900' fill='url(%23ray2)'/%3E%3C/svg%3E")
+    no-repeat right top / cover;
+  opacity: 0.9;
+}
+
+/* Diagonal window mullion / grid accent lines */
+.arch-rays::after {
+  content: '';
+  position: absolute;
+  top: -10%;
+  right: -5%;
+  width: 55%;
+  height: 90%;
+  background:
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='560' height='720' viewBox='0 0 560 720'%3E%3Cg fill='none' stroke='%23a5b4fc' stroke-opacity='0.045' stroke-width='1'%3E%3Cline x1='0' y1='0' x2='560' y2='720'/%3E%3Cline x1='56' y1='0' x2='560' y2='620'/%3E%3Cline x1='112' y1='0' x2='560' y2='520'/%3E%3Cline x1='168' y1='0' x2='560' y2='420'/%3E%3Cline x1='224' y1='0' x2='560' y2='320'/%3E%3Cline x1='280' y1='0' x2='560' y2='220'/%3E%3Cline x1='336' y1='0' x2='560' y2='120'/%3E%3Cline x1='0' y1='72' x2='488' y2='720'/%3E%3Cline x1='0' y1='144' x2='416' y2='720'/%3E%3Cline x1='0' y1='216' x2='344' y2='720'/%3E%3Cline x1='0' y1='288' x2='272' y2='720'/%3E%3Cline x1='0' y1='360' x2='200' y2='720'/%3E%3C/g%3E%3Cg fill='none' stroke='%23a5b4fc' stroke-opacity='0.03' stroke-width='0.5'%3E%3Crect x='56' y='0' width='56' height='72'/%3E%3Crect x='168' y='0' width='56' height='72'/%3E%3Crect x='280' y='0' width='56' height='72'/%3E%3Crect x='56' y='144' width='56' height='72'/%3E%3Crect x='168' y='144' width='56' height='72'/%3E%3Crect x='280' y='144' width='56' height='72'/%3E%3C/g%3E%3C/svg%3E")
+    no-repeat right top / auto 100%;
+}
+
+/* Depth vignette — pulls the eye inward */
+.arch-vignette {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background:
+    radial-gradient(ellipse 100% 100% at 50% 50%,
+      transparent 40%,
+      rgba(4, 8, 25, 0.45) 78%,
+      rgba(4, 8, 25, 0.82) 100%);
+}
+
+/* Subtle animated shimmer — very slow, like dust motes in window light */
+@keyframes arch-drift {
+  0%   { opacity: 0.4; transform: translateY(0) scaleX(1); }
+  50%  { opacity: 0.65; transform: translateY(-6px) scaleX(1.01); }
+  100% { opacity: 0.4; transform: translateY(0) scaleX(1); }
+}
+
+.arch-shimmer {
+  position: absolute;
+  pointer-events: none;
+  border-radius: 9999px;
+  filter: blur(64px);
+  animation: arch-drift 14s ease-in-out infinite;
+}
+
+.arch-shimmer-a {
+  width: 42rem;
+  height: 22rem;
+  top: -6rem;
+  right: -4rem;
+  background: radial-gradient(ellipse, rgba(200, 180, 255, 0.08) 0%, transparent 70%);
+  animation-delay: 0s;
+}
+
+.arch-shimmer-b {
+  width: 30rem;
+  height: 16rem;
+  bottom: 10%;
+  left: -3rem;
+  background: radial-gradient(ellipse, rgba(79, 70, 229, 0.11) 0%, transparent 70%);
+  animation-delay: -7s;
+}
+
+/* Legacy blob classes — kept for backward compat */
 .mesh-bg {
   position: absolute;
   inset: 0;
@@ -1266,10 +1411,11 @@ main { animation: page-in 0.3s var(--ease-out) both; }
 
 .hero-grid {
   background-image:
-    linear-gradient(rgba(99, 102, 241, 0.055) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(6, 182, 212, 0.05) 1px, transparent 1px);
+    linear-gradient(rgba(165, 180, 252, 0.07) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(34, 211, 238, 0.055) 1px, transparent 1px);
   background-size: 64px 64px;
-  mask-image: linear-gradient(to bottom, transparent 0%, black 16%, black 76%, transparent 100%);
+  mask-image: linear-gradient(to bottom, transparent 0%, black 14%, black 78%, transparent 100%);
+  /* Brightened slightly so grid reads on the new dark navy base */
 }
 
 .pulse-dot {
@@ -1330,6 +1476,23 @@ main { animation: page-in 0.3s var(--ease-out) both; }
 .dark .stats-glass {
   background: rgba(255, 255, 255, 0.075);
   border-color: rgba(255, 255, 255, 0.14);
+}
+
+/* The home hero is always dark — force dark glass treatment regardless of theme */
+.home-hero .glass-card {
+  background: rgba(255, 255, 255, 0.10);
+  border-color: rgba(255, 255, 255, 0.20);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.32);
+}
+
+.home-hero .glass-card span[style] {
+  color: #e2e8f0 !important;
+}
+
+.home-hero .stats-glass {
+  background: rgba(255, 255, 255, 0.08);
+  border-color: rgba(255, 255, 255, 0.16);
+  box-shadow: 0 18px 50px rgba(0, 0, 0, 0.38);
 }
 
 .marquee-strip {
