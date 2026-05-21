@@ -294,4 +294,17 @@ async function deleteLmsIntegration(req, res, next) {
   } catch (err) { next(err); }
 }
 
-module.exports = { dashboard, listUsers, updateUser, listTracks, createTrack, updateTrack, deleteTrack, exportXlsx, exportCsv, auditLogView, auditLogCsv, backupView, triggerBackup, downloadBackup, lmsView, createLmsIntegration, toggleLmsIntegration, deleteLmsIntegration };
+// ── Manual digest trigger ─────────────────────────────────────────────────────
+const digestEmail = require('../services/digestEmail');
+
+async function triggerDigest(req, res, next) {
+  try {
+    await digestEmail.sendDigests();
+    await audit.log(req.user.id, 'admin.digest.triggered', 'system', null, {}, req);
+    res.redirect('/admin?success=Weekly+digest+sent+to+all+active+editors');
+  } catch (err) {
+    res.redirect('/admin?error=' + encodeURIComponent('Digest failed: ' + err.message));
+  }
+}
+
+module.exports = { dashboard, listUsers, updateUser, listTracks, createTrack, updateTrack, deleteTrack, exportXlsx, exportCsv, auditLogView, auditLogCsv, backupView, triggerBackup, downloadBackup, lmsView, createLmsIntegration, toggleLmsIntegration, deleteLmsIntegration, triggerDigest };

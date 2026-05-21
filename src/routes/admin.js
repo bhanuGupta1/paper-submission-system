@@ -28,4 +28,6 @@ router.post('/lms', ctl.createLmsIntegration);
 router.post('/lms/:id/toggle', ctl.toggleLmsIntegration);
 router.post('/lms/:id/delete', ctl.deleteLmsIntegration);
 
+router.post('/digest', ctl.triggerDigest);
+
 module.exports = router;
