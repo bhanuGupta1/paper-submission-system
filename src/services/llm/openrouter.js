@@ -356,32 +356,17 @@ async function responseToReviewers(paperTitle, reviewerComment) {
 // ── NEW: Analytics insights ───────────────────────────────────────────────
 
 async function analyticsInsights(stats) {
-  const sys = `You are an academic journal analytics expert. Analyze these platform statistics and generate natural language insights. Return ONLY valid JSON:
-{
-  "insights": ["string"],
-  "key_findings": ["string"],
-  "action_items": ["string"],
-  "trend_summary": "string",
-  "confidence": 0-100
-}
-Be specific — reference actual numbers from the stats. Maximum 5 insights.`;
-  try { return safeJson(await complete(sys, JSON.stringify(stats), { maxTokens: 600, taskType: 'summarization' }), null); }
+  const sys = 'You are an academic journal analytics expert. Analyze these platform statistics. Return ONLY valid JSON with exactly these keys: {"insights":["string"],"key_findings":["string"],"action_items":["string"],"trend_summary":"string","confidence":85}. Maximum 4 items per array. Reference actual numbers.';
+  try { return safeJson(await complete(sys, JSON.stringify(stats), { maxTokens: 500, taskType: 'analysis' }), null); }
   catch (err) { logger.error({ err: err.message }, '[openrouter] analyticsInsights failed'); return null; }
 }
 
 // ── NEW: Structured rubric generator ─────────────────────────────────────
 
 async function generateRubric(paperType, domain, abstract) {
-  const sys = `You are an expert peer review coordinator. Generate a structured review rubric for this paper. Return ONLY valid JSON:
-{
-  "rubric_title": "string",
-  "sections": [{"name":"string","weight_pct":0-100,"criteria":["string"],"scoring_guide":"string"}],
-  "overall_guidance": "string",
-  "estimated_review_time_hours": 1-8,
-  "confidence": 0-100
-}`;
-  const user = 'Paper type: ' + sanitize(paperType, 100) + '\nDomain: ' + sanitize(domain, 100) + '\nAbstract: ' + sanitize(abstract, 1000);
-  try { return safeJson(await complete(sys, user, { maxTokens: 800, taskType: 'analysis' }), null); }
+  const sys = 'You are a peer review coordinator. Generate a review rubric. Return ONLY valid JSON: {"rubric_title":"string","criteria":[{"criterion":"string","description":"string","weight":"string"}],"overall_guidance":"string","estimated_review_time_hours":3,"confidence":85}. Include 4-6 criteria.';
+  const user = 'Paper type: ' + sanitize(paperType, 100) + '\nDomain: ' + sanitize(domain, 100) + '\nAbstract: ' + sanitize(abstract, 800);
+  try { return safeJson(await complete(sys, user, { maxTokens: 700, taskType: 'analysis' }), null); }
   catch (err) { logger.error({ err: err.message }, '[openrouter] generateRubric failed'); return null; }
 }
 

@@ -327,8 +327,18 @@ async function writingScore(req, res, next) {
     const result = await llm.writingScore(text);
     await run('INSERT INTO ai_audit (user_id, action, provider) VALUES (?,?,?)', [req.user.id, 'writing_score', llm.providerName]);
     if (!result) return res.json({ overallScore: 5, dimensions: {}, improvements: [], summary: 'Writing score unavailable.', confidence: 0, provider: 'heuristic' });
-    const overallScore = result.overallScore ?? result.overall_score ?? result.score ?? 5;
-    const dimensions = result.dimensions || {};
+    // Detect flat 0-100 dimension fields (clarity, coherence, etc.) and normalise to 0-10 dimensions object
+    const FLAT_DIMS = ['clarity', 'coherence', 'academic_vocabulary', 'structure', 'originality', 'conciseness'];
+    const flatDims = FLAT_DIMS.filter(k => result[k] != null && typeof result[k] === 'number');
+    const dimensions = result.dimensions && Object.keys(result.dimensions).length
+      ? result.dimensions
+      : flatDims.length
+        ? Object.fromEntries(flatDims.map(k => [k.replace(/_/g, ' '), Math.round(result[k] / 10)]))
+        : {};
+    const rawScores = flatDims.map(k => result[k]);
+    const avgRaw = rawScores.length ? rawScores.reduce((a, b) => a + b, 0) / rawScores.length : null;
+    const overallScore = result.overallScore ?? result.overall_score ?? result.score
+      ?? (avgRaw != null ? parseFloat((avgRaw / 10).toFixed(1)) : 5);
     const improvements = result.improvements || result.suggestions || [];
     const summary = result.summary || result.overall_grade || '';
     res.json({ ...result, overallScore, dimensions, improvements, summary, provider: llm.providerName });
@@ -478,8 +488,10 @@ async function generateRubric(req, res, next) {
     const llm = require('../services/llm');
     const result = await llm.generateRubric(paperType, domain, paper.abstract || '');
     await run('INSERT INTO ai_audit (user_id, paper_id, action, provider) VALUES (?,?,?,?)', [req.user.id, paperId, 'generate_rubric', llm.providerName]);
-    if (!result) return res.json({ rubric_title: 'Standard Review Rubric', sections: [], overall_guidance: '', estimated_review_time_hours: 3, confidence: 0, provider: 'heuristic' });
-    res.json({ ...result, provider: llm.providerName });
+    if (!result) return res.json({ rubric_title: 'Standard Review Rubric', criteria: [], sections: [], overall_guidance: '', estimated_review_time_hours: 3, confidence: 0, provider: 'heuristic' });
+    // normalise: support both old 'sections' and new 'criteria' schema from LLM
+    const criteria = result.criteria || result.sections?.map(s => ({ criterion: s.name, description: s.scoring_guide || '', weight: s.weight_pct ? s.weight_pct + '%' : null })) || [];
+    res.json({ ...result, criteria, provider: llm.providerName });
   } catch (err) { next(err); }
 }
 
