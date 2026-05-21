@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="en">
+<head><%- include('../partials/head') %></head>
+<body class="min-h-screen flex flex-col" style="background:var(--surface-0);color:var(--text-primary)">
+  <%- include('../partials/nav') %>
+  <main class="flex-1">
+
+    <!-- Hero -->
+    <section class="relative overflow-hidden" style="min-height:14rem">
+      <div class="page-photo-bg" style="background-image:url('https://images.unsplash.com/photo-1524995997946-a1c2e315a42f?auto=format&fit=crop&w=1920&q=80')" aria-hidden="true"></div>
+      <div class="relative z-10 max-w-4xl mx-auto px-6 py-16">
+        <a href="/reader" class="text-sm text-indigo-200 hover:text-white transition mb-4 inline-block">← Back to library</a>
+        <span class="status-pill" style="background:rgba(5,150,105,0.20);color:#34d399;border:1px solid rgba(52,211,153,0.3)">Published</span>
+        <h1 class="font-display text-3xl sm:text-4xl font-extrabold text-white mt-3 leading-snug"><%= paper.title %></h1>
+        <p class="text-slate-300 mt-3 text-sm">
+          <strong>Authors:</strong> <%= paper.authors %>
+          <% if (paper.author_affiliation) { %> &mdash; <%= paper.author_affiliation %><% } %>
+        </p>
+        <p class="text-slate-400 text-xs mt-1">Published <%= new Date(paper.submission_date).toLocaleDateString('en', {year:'numeric',month:'long',day:'numeric'}) %></p>
+      </div>
+    </section>
+
+    <div class="max-w-4xl mx-auto px-6 py-10">
+      <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+
+        <!-- Main content -->
+        <div class="lg:col-span-2 space-y-6">
+
+          <!-- Abstract -->
+          <div class="glass-card p-6">
+            <h2 class="font-display font-bold text-lg mb-3" style="color:var(--text-primary)">Abstract</h2>
+            <p class="text-sm leading-relaxed" style="color:var(--text-secondary)"><%= paper.abstract %></p>
+          </div>
+
+          <!-- AI summary -->
+          <% if (paper.ai_summary) { %>
+            <div class="glass-card p-6" style="border-left:3px solid var(--brand-500)">
+              <p class="text-xs font-bold uppercase tracking-wider mb-2" style="color:var(--brand-500)">AI-generated summary</p>
+              <p class="text-sm leading-relaxed" style="color:var(--text-secondary)"><%= paper.ai_summary %></p>
+            </div>
+          <% } %>
+
+          <!-- Keywords -->
+          <% if (paper.keywords) { %>
+            <div class="glass-card p-6">
+              <h2 class="font-display font-bold text-base mb-3" style="color:var(--text-primary)">Keywords</h2>
+              <div class="flex flex-wrap gap-2">
+                <% paper.keywords.split(',').forEach(k => { %>
+                  <a href="/reader?q=<%= encodeURIComponent(k.trim()) %>" class="score-chip text-xs hover:opacity-80 transition"><%= k.trim() %></a>
+                <% }) %>
+              </div>
+            </div>
+          <% } %>
+        </div>
+
+        <!-- Sidebar -->
+        <div class="space-y-4">
+
+          <!-- Download -->
+          <% if (paper.file_path) { %>
+            <div class="glass-card p-5">
+              <h2 class="font-display font-bold text-base mb-3" style="color:var(--text-primary)">Full text</h2>
+              <a href="/reader/papers/<%= paper.id %>/download" class="btn-gradient shimmer-btn w-full justify-center text-sm">
+                <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
+                Download manuscript
+              </a>
+            </div>
+          <% } %>
+
+          <!-- Cite this article -->
+          <div class="glass-card p-5">
+            <h2 class="font-display font-bold text-base mb-3" style="color:var(--text-primary)">Cite this article</h2>
+            <div class="space-y-2">
+              <a href="/reader/papers/<%= paper.id %>/cite?format=bibtex" class="btn btn-secondary btn-sm w-full justify-center text-xs">
+                BibTeX (.bib)
+              </a>
+              <button onclick="copyApa()" class="btn btn-secondary btn-sm w-full justify-center text-xs">Copy APA</button>
+            </div>
+            <div id="apa-toast" class="hidden text-xs mt-2 rounded px-2 py-1" style="background:rgba(5,150,105,0.12);color:#059669">APA citation copied!</div>
+          </div>
+
+          <!-- Share -->
+          <div class="glass-card p-5">
+            <h2 class="font-display font-bold text-base mb-3" style="color:var(--text-primary)">Share</h2>
+            <button onclick="navigator.clipboard.writeText(location.href).then(()=>showToast('Link copied','success'))"
+              class="btn btn-secondary btn-sm w-full justify-center text-xs">Copy link</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </main>
+  <%- include('../partials/footer') %>
+
+  <script>
+    async function copyApa() {
+      try {
+        const r = await fetch('/reader/papers/<%= paper.id %>/cite?format=apa');
+        const d = await r.json();
+        await navigator.clipboard.writeText(d.citation);
+        const toast = document.getElementById('apa-toast');
+        toast.classList.remove('hidden');
+        setTimeout(() => toast.classList.add('hidden'), 2500);
+      } catch { showToast('Could not copy citation', 'error'); }
+    }
+  </script>
+</body>
+</html>

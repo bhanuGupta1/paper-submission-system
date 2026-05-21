@@ -20,20 +20,45 @@ function getTransport() {
   return _transport;
 }
 
-async function send({ to, subject, html, text }) {
+async function send({ to, subject, html, text, attachments }) {
   const transport = getTransport();
   if (!transport) {
     logger.info({ to, subject }, '[email] Email disabled — would have sent');
     return { simulated: true };
   }
   try {
-    const info = await transport.sendMail({ from: config.email.from, to, subject, html, text });
+    const info = await transport.sendMail({ from: config.email.from, to, subject, html, text, attachments });
     logger.info({ to, subject, messageId: info.messageId }, '[email] Sent');
     return info;
   } catch (err) {
     logger.error({ err, to, subject }, '[email] Send failed');
     throw err;
   }
+}
+
+function buildIcsAttachment(summary, description, dtstart, dtend, uid) {
+  const fmt = (d) => d.toISOString().replace(/[-:]/g, '').replace(/\.\d{3}/, '');
+  const now = fmt(new Date());
+  const start = fmt(new Date(dtstart));
+  const end = dtend ? fmt(new Date(dtend)) : start;
+  const ics = [
+    'BEGIN:VCALENDAR',
+    'VERSION:2.0',
+    'PRODID:-//PaperSub.AI//EN',
+    'CALSCALE:GREGORIAN',
+    'METHOD:REQUEST',
+    'BEGIN:VEVENT',
+    `UID:${uid}@papersub.ai`,
+    `DTSTAMP:${now}Z`,
+    `DTSTART;VALUE=DATE:${start.slice(0, 8)}`,
+    `DTEND;VALUE=DATE:${end.slice(0, 8)}`,
+    `SUMMARY:${summary}`,
+    `DESCRIPTION:${description.replace(/\n/g, '\\n')}`,
+    'STATUS:CONFIRMED',
+    'END:VEVENT',
+    'END:VCALENDAR',
+  ].join('\r\n');
+  return { filename: 'review-deadline.ics', content: ics, contentType: 'text/calendar' };
 }
 
 function verificationEmail(username, token) {
@@ -83,13 +108,29 @@ function reviewReminderEmail(username, paperTitle, deadline) {
 function reviewAssignmentEmail(username, paperTitle, paperId, deadline) {
   const link = `${config.appUrl}/reviewer/papers/${paperId}`;
   const dueLine = deadline ? `\n<p>Review due: <strong>${deadline}</strong></p>` : '';
+  const attachments = [];
+  if (deadline) {
+    try {
+      const uid = `review-${paperId}-${Date.now()}`;
+      const ics = buildIcsAttachment(
+        `Review deadline: ${paperTitle}`,
+        `You are assigned to review "${paperTitle}". Open: ${link}`,
+        deadline,
+        deadline,
+        uid,
+      );
+      attachments.push(ics);
+    } catch (_) { /* ics generation is best-effort */ }
+  }
   return {
     subject: `Review assignment: "${paperTitle}"`,
     html: `<p>Hi ${username},</p>
 <p>You have been assigned to review the manuscript "<strong>${paperTitle}</strong>".</p>${dueLine}
 <p><a href="${link}">Open the manuscript</a></p>
+${deadline ? '<p style="color:#64748b;font-size:0.875rem">A calendar event (.ics) is attached — open it to add the deadline to Outlook, Google Calendar, or Apple Calendar.</p>' : ''}
 <p style="color:#64748b;font-size:0.875rem">If you have a conflict of interest or are unable to complete this review, please decline via the review dashboard.</p>`,
     text: `Hi ${username},\n\nYou have been assigned to review "${paperTitle}".${deadline ? `\nDue: ${deadline}` : ''}\n\n${link}`,
+    attachments,
   };
 }
 
@@ -114,4 +155,4 @@ function reviewerInvitationEmail(inviterUsername, paperTitle, inviteUrl) {
   };
 }
 
-module.exports = { send, verificationEmail, passwordResetEmail, submissionStatusEmail, reviewReminderEmail, reviewAssignmentEmail, submissionConfirmedEmail, reviewerInvitationEmail };
+module.exports = { send, verificationEmail, passwordResetEmail, submissionStatusEmail, reviewReminderEmail, reviewAssignmentEmail, submissionConfirmedEmail, reviewerInvitationEmail, buildIcsAttachment };

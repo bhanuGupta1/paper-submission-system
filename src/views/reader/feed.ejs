@@ -106,13 +106,29 @@
                 <div class="text-xs" style="color:var(--text-tertiary)">
                   <% if (p.tags) { %><span class="score-chip"><%= p.tags.split(',')[0].trim() %></span><% } %>
                 </div>
-                <a href="/reader/papers/<%= p.id %>/download" class="btn-gradient shimmer-btn text-xs px-4 py-2">
-                  <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
-                  Download
-                </a>
+                <div class="flex items-center gap-2">
+                  <a href="/reader/papers/<%= p.id %>" class="btn btn-sm btn-secondary text-xs">Details</a>
+                  <a href="/reader/papers/<%= p.id %>/download" class="btn-gradient shimmer-btn text-xs px-4 py-2">
+                    <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
+                    Download
+                  </a>
+                </div>
               </div>
             </article>
           <% }) %>
+        </div>
+      <% } %>
+
+      <!-- Pagination -->
+      <% if (pageCount > 1) { %>
+        <div class="flex items-center justify-center gap-2 mt-10">
+          <% if (page > 1) { %>
+            <a href="?q=<%= encodeURIComponent(q) %>&page=<%= page - 1 %>" class="btn btn-sm btn-secondary">Previous</a>
+          <% } %>
+          <span class="text-sm" style="color:var(--text-secondary)">Page <%= page %> of <%= pageCount %></span>
+          <% if (page < pageCount) { %>
+            <a href="?q=<%= encodeURIComponent(q) %>&page=<%= page + 1 %>" class="btn btn-sm btn-secondary">Next</a>
+          <% } %>
         </div>
       <% } %>
     </div>

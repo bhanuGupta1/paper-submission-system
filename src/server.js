@@ -8,6 +8,7 @@ const deadlineReminder = require('./services/deadlineReminder');
 const jwtService = require('./services/jwt');
 const cron = require('node-cron');
 const backup = require('./db/backup');
+const digest = require('./services/digestEmail');
 
 const app = createApp();
 
@@ -21,6 +22,12 @@ async function start() {
     backup.run().catch((err) => logger.error({ err }, 'Scheduled backup failed'));
   });
   logger.info('Daily backup cron scheduled (02:00)');
+
+  // Weekly editorial digest every Monday at 08:00
+  cron.schedule('0 8 * * 1', () => {
+    digest.sendDigests().catch((err) => logger.error({ err }, 'Weekly digest failed'));
+  });
+  logger.info('Weekly digest cron scheduled (Mon 08:00)');
 }
 
 start().catch((err) => { logger.error({ err }, 'Startup failed'); process.exit(1); });
