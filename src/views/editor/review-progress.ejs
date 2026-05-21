@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="en">
+<head><%- include('../partials/head') %></head>
+<body class="min-h-screen flex flex-col" style="background:var(--surface-0);color:var(--text-primary)">
+  <%- include('../partials/nav') %>
+  <main class="flex-1">
+    <div class="max-w-7xl mx-auto px-6 py-8">
+      <div class="flex items-center justify-between mb-6">
+        <div>
+          <a href="/editor" class="text-sm link-line" style="color:var(--brand-600)">← Dashboard</a>
+          <h1 class="font-display text-3xl font-bold mt-2" style="color:var(--text-primary)">Review progress</h1>
+          <p class="text-sm mt-1" style="color:var(--text-secondary)"><%= active.length %> active · <%= decided.length %> decided</p>
+        </div>
+      </div>
+
+      <!-- Active papers -->
+      <% if (active.length > 0) { %>
+        <h2 class="font-display text-xl font-semibold mb-3" style="color:var(--text-primary)">Active (<%= active.length %>)</h2>
+        <div class="grid gap-3 mb-8">
+          <% active.forEach(p => { %>
+            <% const s = p.reviewStats; %>
+            <div class="card p-5">
+              <div class="flex items-start justify-between gap-4">
+                <div class="flex-1 min-w-0">
+                  <div class="flex items-center gap-3 flex-wrap">
+                    <span class="font-semibold text-sm truncate" style="color:var(--text-primary)"><%= p.title %></span>
+                    <%- include('../partials/status', { status: p.review_status }) %>
+                  </div>
+                  <p class="text-xs mt-1" style="color:var(--text-tertiary)">by <%= p.author_username %> · submitted <%= new Date(p.submission_date).toLocaleDateString() %></p>
+                </div>
+                <a href="/editor" class="btn btn-secondary btn-sm shrink-0 text-xs">Manage</a>
+              </div>
+
+              <!-- Review progress bar -->
+              <div class="mt-4">
+                <div class="flex items-center justify-between text-xs mb-1.5" style="color:var(--text-secondary)">
+                  <span>Reviews: <strong style="color:var(--text-primary)"><%= s.submitted %>/<%= s.total %></strong> submitted</span>
+                  <% if (s.overdue > 0) { %>
+                    <span style="color:var(--error-600)">⚠ <%= s.overdue %> overdue</span>
+                  <% } %>
+                  <% if (s.declined > 0) { %>
+                    <span style="color:var(--text-tertiary)"><%= s.declined %> declined</span>
+                  <% } %>
+                </div>
+                <div class="h-2 rounded-full overflow-hidden" style="background:var(--surface-2)">
+                  <% if (s.total > 0) { %>
+                    <div class="h-full rounded-full transition-all" style="width:<%= Math.round((s.submitted/s.total)*100) %>%;background:var(--brand-500)"></div>
+                  <% } %>
+                </div>
+              </div>
+
+              <!-- Reviewer status pills -->
+              <% if (s.total === 0) { %>
+                <p class="text-xs mt-3 italic" style="color:var(--text-tertiary)">No reviewers assigned yet.</p>
+              <% } else { %>
+                <div class="flex flex-wrap gap-2 mt-3">
+                  <% if (s.submitted > 0) { %>
+                    <span class="inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-full font-medium" style="background:var(--success-50);color:var(--success-700);border:1px solid var(--success-200)">
+                      <svg class="w-3 h-3" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/></svg>
+                      <%= s.submitted %> submitted
+                    </span>
+                  <% } %>
+                  <% if (s.pending > 0) { %>
+                    <span class="inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-full font-medium" style="background:var(--warning-50);color:var(--warning-700);border:1px solid var(--warning-200)">
+                      <svg class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                      <%= s.pending %> pending
+                    </span>
+                  <% } %>
+                  <% if (s.overdue > 0) { %>
+                    <span class="inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-full font-medium" style="background:var(--error-50);color:var(--error-700);border:1px solid var(--error-200)">
+                      <svg class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                      <%= s.overdue %> overdue
+                    </span>
+                  <% } %>
+                  <% if (s.declined > 0) { %>
+                    <span class="inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-full font-medium" style="background:var(--surface-2);color:var(--text-tertiary);border:1px solid var(--border-default)">
+                      <%= s.declined %> declined
+                    </span>
+                  <% } %>
+                </div>
+              <% } %>
+            </div>
+          <% }) %>
+        </div>
+      <% } else { %>
+        <div class="card p-10 text-center mb-8">
+          <p class="text-sm" style="color:var(--text-tertiary)">No active papers in review.</p>
+        </div>
+      <% } %>
+
+      <!-- Decided papers -->
+      <% if (decided.length > 0) { %>
+        <h2 class="font-display text-xl font-semibold mb-3" style="color:var(--text-primary)">Decided (<%= decided.length %>)</h2>
+        <div class="rounded-xl border overflow-hidden" style="border-color:var(--border-default)">
+          <table class="w-full text-sm">
+            <thead>
+              <tr style="background:var(--surface-1)">
+                <th class="px-4 py-3 text-left text-xs font-semibold" style="color:var(--text-tertiary)">Title</th>
+                <th class="px-4 py-3 text-left text-xs font-semibold" style="color:var(--text-tertiary)">Status</th>
+                <th class="px-4 py-3 text-left text-xs font-semibold" style="color:var(--text-tertiary)">Reviews</th>
+                <th class="px-4 py-3 text-left text-xs font-semibold" style="color:var(--text-tertiary)">Submitted</th>
+              </tr>
+            </thead>
+            <tbody>
+              <% decided.forEach(p => { %>
+                <tr style="border-top:1px solid var(--border-subtle)">
+                  <td class="px-4 py-3 font-medium max-w-xs truncate" style="color:var(--text-primary)"><%= p.title %></td>
+                  <td class="px-4 py-3"><%- include('../partials/status', { status: p.review_status }) %></td>
+                  <td class="px-4 py-3 text-xs" style="color:var(--text-secondary)"><%= p.reviewStats.submitted %>/<%= p.reviewStats.total %></td>
+                  <td class="px-4 py-3 text-xs" style="color:var(--text-tertiary)"><%= new Date(p.submission_date).toLocaleDateString() %></td>
+                </tr>
+              <% }) %>
+            </tbody>
+          </table>
+        </div>
+      <% } %>
+    </div>
+  </main>
+  <%- include('../partials/footer') %>
+</body>
+</html>

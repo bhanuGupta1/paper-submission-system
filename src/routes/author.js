@@ -58,6 +58,7 @@ router.post('/papers/:id/revise', function (req, res, next) {
   });
 }, ctl.submitRevision);
 router.get('/papers/:id/download', ctl.downloadPaper);
+router.get('/papers/:id/view', ctl.viewPaper);
 router.get('/profile', ctl.profile);
 router.post('/profile', ctl.updateProfile);
 

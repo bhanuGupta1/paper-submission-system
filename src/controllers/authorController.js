@@ -124,7 +124,12 @@ async function showRevise(req, res, next) {
     if (paper.review_status !== 'revisions') {
       return res.redirect(`/author/papers/${paper.id}?error=` + encodeURIComponent('This paper is not awaiting revision'));
     }
-    res.render('author/revise', { title: `Revise: ${paper.title}`, paper, error: req.query.error || null });
+    const allReviews = await Review.listByPaper(paper.id);
+    const reviewsWithFeedback = allReviews.filter((r) => r.recommendation && !r.declined_at).map(({ reviewer_id, reviewer_username, ...rest }) => ({
+      ...rest,
+      reviewer_username: '[Anonymous Reviewer]',
+    }));
+    res.render('author/revise', { title: `Revise: ${paper.title}`, paper, reviews: reviewsWithFeedback, error: req.query.error || null });
   } catch (err) { next(err); }
 }
 
@@ -166,6 +171,18 @@ async function downloadPaper(req, res, next) {
   } catch (err) { next(err); }
 }
 
+async function viewPaper(req, res, next) {
+  try {
+    const paper = await Paper.findById(req.params.id);
+    if (!paper || paper.author_id !== req.user.id || !paper.file_path) {
+      return res.status(404).render('error', { title: 'Not Found', message: 'File not found.' });
+    }
+    res.set('Content-Type', 'application/pdf');
+    res.set('Content-Disposition', 'inline');
+    res.sendFile(path.resolve(paper.file_path));
+  } catch (err) { next(err); }
+}
+
 async function profile(req, res, next) {
   try {
     const user = await User.findById(req.user.id);
@@ -186,4 +203,4 @@ async function updateProfile(req, res, next) {
   } catch (err) { next(err); }
 }
 
-module.exports = { dashboard, showSubmit, submit, paperDetail, showRevise, submitRevision, downloadPaper, profile, updateProfile };
+module.exports = { dashboard, showSubmit, submit, paperDetail, showRevise, submitRevision, downloadPaper, viewPaper, profile, updateProfile };

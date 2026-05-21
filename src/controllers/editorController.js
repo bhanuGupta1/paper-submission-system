@@ -193,6 +193,34 @@ async function downloadManuscript(req, res, next) {
   } catch (err) { next(err); }
 }
 
+async function viewManuscript(req, res, next) {
+  try {
+    const paper = await Paper.findById(req.params.id);
+    if (!paper || !paper.file_path) return res.status(404).render('error', { title: 'Not Found', message: 'Manuscript not found.' });
+    res.set('Content-Type', 'application/pdf');
+    res.set('Content-Disposition', 'inline');
+    res.sendFile(path.resolve(paper.file_path));
+  } catch (err) { next(err); }
+}
+
+async function reviewProgress(req, res, next) {
+  try {
+    const papers = await Paper.listAll({ limit: 200, offset: 0, status: null, q: null });
+    const enriched = await Promise.all(papers.map(async (p) => {
+      const reviews = await Review.listByPaper(p.id);
+      const total = reviews.filter((r) => !r.declined_at).length;
+      const submitted = reviews.filter((r) => r.recommendation && !r.declined_at).length;
+      const declined = reviews.filter((r) => r.declined_at).length;
+      const overdue = reviews.filter((r) => !r.recommendation && !r.declined_at && r.deadline && new Date(r.deadline) < new Date()).length;
+      const pending = total - submitted;
+      return { ...p, reviewStats: { total, submitted, pending, declined, overdue } };
+    }));
+    const active = enriched.filter((p) => ['pending', 'under_review'].includes(p.review_status));
+    const decided = enriched.filter((p) => ['accepted', 'rejected', 'revisions'].includes(p.review_status));
+    res.render('editor/review-progress', { title: 'Review progress', active, decided });
+  } catch (err) { next(err); }
+}
+
 async function auditTrail(req, res, next) {
   try {
     const paper = await Paper.findById(req.params.id);
@@ -240,6 +268,6 @@ async function postDiscussion(req, res, next) {
 
 module.exports = {
   dashboard, assignReviewer, bulkAssign, decide, viewDecisionLetter,
-  updateTags, downloadManuscript, auditTrail,
+  updateTags, downloadManuscript, viewManuscript, reviewProgress, auditTrail,
   getDiscussion, postDiscussion,
 };

@@ -14,6 +14,8 @@ router.post('/bulk-assign', ctl.bulkAssign);
 router.post('/decide', ctl.decide);
 router.post('/papers/:id/tags', ctl.updateTags);
 router.get('/papers/:id/download', ctl.downloadManuscript);
+router.get('/papers/:id/view', ctl.viewManuscript);
+router.get('/review-progress', ctl.reviewProgress);
 router.get('/papers/:id/audit', ctl.auditTrail);
 router.get('/papers/:id/letters', ctl.viewDecisionLetter);
 router.get('/papers/:id/discussion', ctl.getDiscussion);

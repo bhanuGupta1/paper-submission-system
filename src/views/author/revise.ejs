@@ -23,9 +23,35 @@
         <% if (paper.revision_note) { %>
           <p class="text-sm mt-1" style="color:var(--warning-700)"><%= paper.revision_note %></p>
         <% } else { %>
-          <p class="text-sm mt-1" style="color:var(--warning-700)">Please address reviewer feedback and provide a response note describing your changes.</p>
+          <p class="text-sm mt-1" style="color:var(--warning-700)">Please address reviewer feedback and provide a detailed author response letter.</p>
         <% } %>
       </div>
+
+      <!-- Reviewer feedback (collapsed by default) -->
+      <% if (reviews && reviews.length > 0) { %>
+        <div class="mb-6">
+          <button type="button" onclick="document.getElementById('reviewer-feedback').classList.toggle('hidden')"
+            class="flex items-center gap-2 text-sm font-semibold mb-3" style="color:var(--brand-600)">
+            <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+            Show reviewer feedback (<%= reviews.length %> review<%= reviews.length !== 1 ? 's' : '' %>)
+          </button>
+          <div id="reviewer-feedback" class="hidden space-y-3">
+            <% reviews.forEach((r, i) => { %>
+              <div class="card p-4 text-sm">
+                <div class="flex items-center gap-2 mb-3">
+                  <span class="font-semibold" style="color:var(--text-secondary)">Reviewer <%= i + 1 %></span>
+                  <% if (r.recommendation) { %>
+                    <span class="score-chip text-xs"><%= r.recommendation.replace(/_/g, ' ') %></span>
+                  <% } %>
+                </div>
+                <% if (r.summary) { %><div class="mb-2"><strong style="color:var(--text-primary)">Summary</strong><p style="color:var(--text-secondary)" class="mt-1"><%= r.summary %></p></div><% } %>
+                <% if (r.strengths) { %><div class="mb-2"><strong style="color:var(--text-primary)">Strengths</strong><p style="color:var(--text-secondary)" class="mt-1 whitespace-pre-line"><%= r.strengths %></p></div><% } %>
+                <% if (r.weaknesses) { %><div><strong style="color:var(--text-primary)">Weaknesses / required changes</strong><p style="color:var(--text-secondary)" class="mt-1 whitespace-pre-line"><%= r.weaknesses %></p></div><% } %>
+              </div>
+            <% }) %>
+          </div>
+        </div>
+      <% } %>
 
       <form action="/author/papers/<%= paper.id %>/revise" method="post" enctype="multipart/form-data" class="card p-8 space-y-5" id="reviseForm">
 
@@ -79,14 +105,17 @@
         </div>
 
         <div>
-          <label for="changeNote" class="block text-sm font-semibold mb-1.5" style="color:var(--text-secondary)">
-            Response to reviewers <span style="color:var(--error-600)">*</span>
-          </label>
-          <textarea id="changeNote" name="changeNote" rows="5" required minlength="10"
-            placeholder="Describe the changes you made and how you addressed reviewer comments…"
-            class="block w-full rounded-lg border px-3.5 py-2.5 text-sm"
+          <div class="flex items-center justify-between mb-1.5">
+            <label for="changeNote" class="block text-sm font-semibold" style="color:var(--text-secondary)">
+              Author response letter <span style="color:var(--error-600)">*</span>
+            </label>
+            <button type="button" onclick="insertTemplate()" class="text-xs font-medium" style="color:var(--brand-600)">Insert template</button>
+          </div>
+          <textarea id="changeNote" name="changeNote" rows="10" required minlength="10"
+            placeholder="Dear Reviewers,&#10;&#10;Thank you for your thoughtful comments. We have addressed each point below:&#10;&#10;Reviewer 1:&#10;Comment: …&#10;Response: …"
+            class="block w-full rounded-lg border px-3.5 py-2.5 text-sm font-mono"
             style="background:var(--surface-1);border-color:var(--border-default);color:var(--text-primary)"></textarea>
-          <p class="text-xs mt-1.5" style="color:var(--text-tertiary)">Visible to editors when reviewing your revision.</p>
+          <p class="text-xs mt-1.5" style="color:var(--text-tertiary)">Visible to editors. Address each reviewer point systematically.</p>
         </div>
 
         <div class="flex gap-3 pt-2">
@@ -113,6 +142,32 @@
       btn.disabled = true;
       btn.textContent = 'Submitting…';
     });
+    function insertTemplate() {
+      const ta = document.getElementById('changeNote');
+      if (ta.value.trim()) return; // don't overwrite existing content
+      ta.value = `Dear Editors and Reviewers,
+
+Thank you for your careful evaluation of our manuscript and the constructive feedback provided. We have carefully considered all comments and revised the manuscript accordingly. Our point-by-point responses are below.
+
+Reviewer 1:
+
+Comment 1: [Paste reviewer comment here]
+Response: [Your response — describe changes made and where to find them in the manuscript]
+
+Comment 2: [Paste reviewer comment here]
+Response: [Your response]
+
+Reviewer 2:
+
+Comment 1: [Paste reviewer comment here]
+Response: [Your response]
+
+We believe these revisions substantially improve the manuscript and hope the changes address the reviewers' concerns. We look forward to your further feedback.
+
+Sincerely,
+The Authors`;
+      ta.focus();
+    }
   </script>
 </body>
 </html>

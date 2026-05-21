@@ -1,5 +1,6 @@
 'use strict';
 
+const path = require('path');
 const Paper = require('../models/Paper');
 const Review = require('../models/Review');
 const Discussion = require('../models/Discussion');
@@ -202,4 +203,16 @@ async function postDiscussion(req, res, next) {
   } catch (err) { next(err); }
 }
 
-module.exports = { dashboard, showReview, aiDraft, submit, declineAssignment, declareCoi, postDiscussion };
+async function viewManuscript(req, res, next) {
+  try {
+    const paper = await Paper.findById(req.params.paperId);
+    if (!paper || !paper.file_path) return res.status(404).render('error', { title: 'Not Found', message: 'File not found.' });
+    const review = await Review.findByPaperReviewer(req.params.paperId, req.user.id);
+    if (!review) return res.status(403).render('error', { title: 'Forbidden', message: 'Not assigned to this paper.' });
+    res.set('Content-Type', 'application/pdf');
+    res.set('Content-Disposition', 'inline');
+    res.sendFile(path.resolve(paper.file_path));
+  } catch (err) { next(err); }
+}
+
+module.exports = { dashboard, showReview, aiDraft, submit, declineAssignment, declareCoi, postDiscussion, viewManuscript };

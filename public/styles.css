@@ -713,6 +713,8 @@ label { color: var(--text-secondary); }
 .dark .bg-slate-100 { background-color: var(--surface-1) !important; }
 .dark .bg-slate-200 { background-color: var(--surface-2) !important; }
 .dark .bg-white\/70 { background-color: rgba(17, 24, 39, 0.9) !important; }
+.dark .bg-white\/10 { background-color: rgba(255, 255, 255, 0.06) !important; }
+.dark .bg-white\/5  { background-color: rgba(255, 255, 255, 0.03) !important; }
 
 /* Semantic background overrides */
 .dark .bg-amber-50  { background-color: rgba(161, 98, 7, 0.12)  !important; }

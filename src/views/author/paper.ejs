@@ -5,7 +5,7 @@
   <%- include('../partials/nav') %>
   <main class="flex-1">
     <div class="max-w-7xl mx-auto px-6 py-8">
-      <a href="/author" class="text-sm text-indigo-600 hover:text-indigo-500 link-line">← All submissions</a>
+      <a href="/author" class="text-sm link-line" style="color:var(--brand-600)">← All submissions</a>
       <div class="dashboard-hero mt-4 mb-6">
         <div class="flex-1">
           <p class="eyebrow text-indigo-200">Submission record · v<%= paper.current_version || 1 %></p>
@@ -59,7 +59,7 @@
           <!-- Abstract & paper info -->
           <div class="card p-6">
             <h2 class="font-display text-2xl font-semibold">Abstract</h2>
-            <p class="text-slate-700 mt-3 leading-relaxed whitespace-pre-line"><%= paper.abstract %></p>
+            <p class="mt-3 leading-relaxed whitespace-pre-line" style="color:var(--text-secondary)"><%= paper.abstract %></p>
             <% if (paper.tags) { %>
               <div class="mt-5 flex flex-wrap gap-1.5">
                 <% paper.tags.split(',').forEach(t => { %>
@@ -68,21 +68,35 @@
               </div>
             <% } %>
             <% if (paper.ai_keywords) { %>
-              <div class="mt-4 rounded-md border border-slate-200 bg-slate-50 p-3 text-xs text-slate-600">
-                <strong class="text-slate-800">AI keywords:</strong> <%= paper.ai_keywords %>
+              <div class="mt-4 rounded-md border p-3 text-xs" style="border-color:var(--border-default);background:var(--surface-1);color:var(--text-secondary)">
+                <strong style="color:var(--text-primary)">AI keywords:</strong> <%= paper.ai_keywords %>
               </div>
             <% } %>
             <% if (paper.file_path) { %>
-              <a class="btn btn-secondary btn-sm mt-5" href="/author/papers/<%= paper.id %>/download">
-                Download manuscript
-              </a>
+              <div class="mt-5 flex flex-wrap gap-2">
+                <% if (paper.file_path.toLowerCase().endsWith('.pdf')) { %>
+                  <button onclick="document.getElementById('pdf-viewer-<%= paper.id %>').classList.toggle('hidden')" class="btn btn-secondary btn-sm">
+                    <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
+                    View PDF
+                  </button>
+                <% } %>
+                <a class="btn btn-secondary btn-sm" href="/author/papers/<%= paper.id %>/download">
+                  <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
+                  Download
+                </a>
+              </div>
+              <% if (paper.file_path.toLowerCase().endsWith('.pdf')) { %>
+                <div id="pdf-viewer-<%= paper.id %>" class="hidden mt-4 rounded-xl overflow-hidden border" style="border-color:var(--border-default)">
+                  <iframe src="/author/papers/<%= paper.id %>/view" class="w-full" style="height:600px;border:none;display:block"></iframe>
+                </div>
+              <% } %>
             <% } %>
           </div>
 
           <!-- Reviews (double-blind — no reviewer names) -->
           <div>
             <h2 class="font-display text-2xl font-semibold mb-3">Reviewer feedback (<%= reviews.length %>)</h2>
-            <p class="text-xs text-slate-500 mb-3">This system uses double-blind review. Reviewer identities are not disclosed.</p>
+            <p class="text-xs mb-3" style="color:var(--text-tertiary)">This system uses double-blind review. Reviewer identities are not disclosed.</p>
             <% if (reviews.length === 0) { %>
               <div class="card p-8 text-center">
                 <div class="skeleton w-full mb-3" style="height:12px; width:60%; margin:0 auto"></div>
@@ -93,8 +107,8 @@
             <% reviews.forEach((r, i) => { %>
               <div class="card p-5 mb-3">
                 <div class="flex items-center justify-between gap-3 text-sm mb-3">
-                  <span class="font-semibold text-slate-600"><%= r.reviewer_username %></span>
-                  <span class="text-slate-500 text-xs"><%= r.review_date ? new Date(r.review_date).toLocaleDateString() : 'Pending' %></span>
+                  <span class="font-semibold" style="color:var(--text-secondary)"><%= r.reviewer_username %></span>
+                  <span class="text-xs" style="color:var(--text-tertiary)"><%= r.review_date ? new Date(r.review_date).toLocaleDateString() : 'Pending' %></span>
                 </div>
                 <% if (r.recommendation) { %>
                   <div class="flex flex-wrap gap-2 mb-3">
@@ -108,11 +122,11 @@
                     <% if (r.significance_score) { %><span class="score-chip text-xs">Significance: <%= r.significance_score %>/5</span><% } %>
                     <% if (r.ai_assisted) { %><span class="score-chip text-xs text-indigo-600">AI-assisted</span><% } %>
                   </div>
-                  <% if (r.summary) { %><div class="text-sm mb-2"><strong>Summary</strong><p class="text-slate-600 mt-1"><%= r.summary %></p></div><% } %>
-                  <% if (r.strengths) { %><div class="text-sm mb-2"><strong>Strengths</strong><p class="text-slate-600 mt-1 whitespace-pre-line"><%= r.strengths %></p></div><% } %>
-                  <% if (r.weaknesses) { %><div class="text-sm"><strong>Weaknesses</strong><p class="text-slate-600 mt-1 whitespace-pre-line"><%= r.weaknesses %></p></div><% } %>
+                  <% if (r.summary) { %><div class="text-sm mb-2"><strong style="color:var(--text-primary)">Summary</strong><p style="color:var(--text-secondary)" class="mt-1"><%= r.summary %></p></div><% } %>
+                  <% if (r.strengths) { %><div class="text-sm mb-2"><strong style="color:var(--text-primary)">Strengths</strong><p style="color:var(--text-secondary)" class="mt-1 whitespace-pre-line"><%= r.strengths %></p></div><% } %>
+                  <% if (r.weaknesses) { %><div class="text-sm"><strong style="color:var(--text-primary)">Weaknesses</strong><p style="color:var(--text-secondary)" class="mt-1 whitespace-pre-line"><%= r.weaknesses %></p></div><% } %>
                 <% } else { %>
-                  <p class="text-sm text-slate-500 italic">Review in progress…</p>
+                  <p class="text-sm italic" style="color:var(--text-tertiary)">Review in progress…</p>
                 <% } %>
               </div>
             <% }) %>
@@ -122,11 +136,11 @@
         <aside class="space-y-5">
           <!-- Status timeline -->
           <div class="card p-5">
-            <p class="eyebrow text-indigo-700 mb-3">Status timeline</p>
+            <p class="eyebrow mb-3" style="color:var(--brand-600)">Status timeline</p>
             <div class="space-y-3">
-              <div class="process-step"><h3 class="font-semibold text-sm">Submitted</h3><p class="text-xs text-slate-500 mt-0.5"><%= new Date(paper.submission_date).toLocaleDateString() %></p></div>
-              <div class="process-step"><h3 class="font-semibold text-sm">AI screening</h3><p class="text-xs text-slate-500 mt-0.5">Plagiarism + keyword analysis complete.</p></div>
-              <div class="process-step"><h3 class="font-semibold text-sm">Current status</h3><p class="text-xs text-slate-500 mt-0.5 capitalize"><%= paper.review_status.replace('_', ' ') %></p></div>
+              <div class="process-step"><h3 class="font-semibold text-sm" style="color:var(--text-primary)">Submitted</h3><p class="text-xs mt-0.5" style="color:var(--text-tertiary)"><%= new Date(paper.submission_date).toLocaleDateString() %></p></div>
+              <div class="process-step"><h3 class="font-semibold text-sm" style="color:var(--text-primary)">AI screening</h3><p class="text-xs mt-0.5" style="color:var(--text-tertiary)">Plagiarism + keyword analysis complete.</p></div>
+              <div class="process-step"><h3 class="font-semibold text-sm" style="color:var(--text-primary)">Current status</h3><p class="text-xs mt-0.5 capitalize" style="color:var(--text-tertiary)"><%= paper.review_status.replace('_', ' ') %></p></div>
             </div>
           </div>
 
@@ -136,10 +150,10 @@
               <h2 class="font-display text-xl font-semibold mb-3">Decisions</h2>
               <div class="space-y-3">
                 <% decisions.forEach(d => { %>
-                  <div class="rounded-md border border-slate-200 bg-slate-50 p-3">
-                    <div class="text-sm font-medium capitalize"><%= d.to_status.replace('_',' ') %></div>
-                    <% if (d.note) { %><div class="text-sm text-slate-600 mt-1"><%= d.note %></div><% } %>
-                    <div class="text-xs text-slate-400 mt-1"><%= new Date(d.created_at).toLocaleString() %></div>
+                  <div class="rounded-md border p-3" style="border-color:var(--border-default);background:var(--surface-1)">
+                    <div class="text-sm font-medium capitalize" style="color:var(--text-primary)"><%= d.to_status.replace('_',' ') %></div>
+                    <% if (d.note) { %><div class="text-sm mt-1" style="color:var(--text-secondary)"><%= d.note %></div><% } %>
+                    <div class="text-xs mt-1" style="color:var(--text-tertiary)"><%= new Date(d.created_at).toLocaleString() %></div>
                   </div>
                 <% }) %>
               </div>
@@ -152,12 +166,18 @@
               <h2 class="font-display text-xl font-semibold mb-3">Revision history</h2>
               <div class="space-y-3">
                 <% versions.forEach(v => { %>
-                  <div class="rounded-md border border-slate-200 p-3 text-sm">
+                  <div class="rounded-md border p-3 text-sm" style="border-color:var(--border-default);background:var(--surface-1)">
                     <div class="flex items-center justify-between">
-                      <span class="font-semibold text-slate-700">Version <%= v.version_number %></span>
-                      <span class="text-xs text-slate-400"><%= new Date(v.submitted_at).toLocaleDateString() %></span>
+                      <span class="font-semibold" style="color:var(--text-primary)">Version <%= v.version_number %></span>
+                      <span class="text-xs" style="color:var(--text-tertiary)"><%= new Date(v.submitted_at).toLocaleDateString() %></span>
                     </div>
-                    <% if (v.change_note) { %><p class="text-slate-600 text-xs mt-1 line-clamp-2"><%= v.change_note %></p><% } %>
+                    <% if (v.change_note) { %>
+                      <p class="text-xs mt-2 line-clamp-3 whitespace-pre-line" style="color:var(--text-secondary)"><%= v.change_note %></p>
+                      <% if (v.change_note.length > 200) { %>
+                        <button type="button" onclick="this.previousElementSibling.classList.toggle('line-clamp-3');this.textContent=this.textContent==='Read more'?'Show less':'Read more'"
+                          class="text-xs mt-1 font-medium" style="color:var(--brand-600)">Read more</button>
+                      <% } %>
+                    <% } %>
                   </div>
                 <% }) %>
               </div>
