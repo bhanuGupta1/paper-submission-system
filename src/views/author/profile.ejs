@@ -1,60 +1,149 @@
 <!DOCTYPE html>
 <html lang="en">
 <head><%- include('../partials/head') %></head>
-<body class="min-h-screen bg-slate-50 text-slate-900 flex flex-col">
+<body class="min-h-screen flex flex-col" style="background:var(--surface-0);color:var(--text-primary)">
   <%- include('../partials/nav') %>
   <main class="flex-1">
-    <div class="max-w-4xl mx-auto px-6 py-8">
-      <h1 class="font-display text-3xl font-bold">Profile</h1>
-      <p class="text-sm text-slate-600 mt-1">Public profile info and your AI usage on this account.</p>
+    <div class="max-w-5xl mx-auto px-6 py-8">
+
+      <div class="dashboard-hero mb-8">
+        <div class="flex-1">
+          <p class="eyebrow text-indigo-200">Your account</p>
+          <h1 class="font-display text-4xl font-bold text-white mt-2">Profile</h1>
+          <p class="text-sm text-slate-300 mt-2">Affiliation and expertise feed conflict-of-interest detection and reviewer matching.</p>
+        </div>
+        <div class="shrink-0 h-14 w-14 rounded-2xl flex items-center justify-center text-xl font-black text-white" style="background:rgba(255,255,255,0.15)">
+          <%= user.username.slice(0,1).toUpperCase() %>
+        </div>
+      </div>
+
       <% if (error) { %>
-        <div class="mt-4 bg-red-50 border border-red-200 text-red-800 text-sm p-3 rounded-md" role="alert"><%= error %></div>
+        <div class="alert alert-warning mb-5" role="alert">
+          <svg class="w-4 h-4 shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
+          <span><%= error %></span>
+        </div>
       <% } %>
       <% if (success) { %>
-        <div class="mt-4 bg-emerald-50 border border-emerald-200 text-emerald-800 text-sm p-3 rounded-md" role="alert"><%= success %></div>
+        <div class="alert alert-success mb-5" role="alert">
+          <svg class="w-4 h-4 shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+          <span><%= success %></span>
+        </div>
       <% } %>
 
-      <div class="grid md:grid-cols-2 gap-6 mt-6">
+      <div class="grid md:grid-cols-[1fr_0.85fr] gap-6">
+
+        <!-- Edit form -->
         <div class="card p-6">
-          <h2 class="font-display text-lg font-semibold">Account details</h2>
-          <form action="/author/profile" method="post" class="mt-4 space-y-3">
-            <div><label class="block text-sm font-medium text-slate-700">Username</label>
-              <input value="<%= user.username %>" disabled class="mt-1 block w-full rounded-md border border-slate-300 bg-slate-50 px-3 py-2 text-slate-500"></div>
-            <div><label class="block text-sm font-medium text-slate-700">Email</label>
-              <input type="email" name="email" value="<%= user.email || '' %>" class="mt-1 block w-full rounded-md border border-slate-300 px-3 py-2 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 focus:outline-none"></div>
-            <div><label class="block text-sm font-medium text-slate-700">Affiliation</label>
-              <input name="affiliation" value="<%= user.affiliation || '' %>" class="mt-1 block w-full rounded-md border border-slate-300 px-3 py-2 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 focus:outline-none">
-              <p class="text-xs text-slate-500 mt-1">Used for conflict-of-interest detection.</p></div>
-            <div><label class="block text-sm font-medium text-slate-700">Expertise</label>
-              <input name="expertise" value="<%= user.expertise || '' %>" placeholder="comma-separated" class="mt-1 block w-full rounded-md border border-slate-300 px-3 py-2 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 focus:outline-none"></div>
-            <button class="bg-indigo-600 hover:bg-indigo-500 text-white px-4 py-2 rounded-md font-medium transition">Save</button>
+          <h2 class="font-display text-lg font-semibold mb-5" style="color:var(--text-primary)">Account details</h2>
+          <form action="/author/profile" method="post" class="space-y-4">
+
+            <div>
+              <label class="block text-sm font-semibold mb-1.5" style="color:var(--text-secondary)">Username</label>
+              <input value="<%= user.username %>" disabled
+                class="block w-full rounded-lg border px-3.5 py-2.5 text-sm cursor-not-allowed"
+                style="background:var(--surface-2);border-color:var(--border-default);color:var(--text-tertiary)">
+            </div>
+
+            <div>
+              <label class="block text-sm font-semibold mb-1.5" style="color:var(--text-secondary)">
+                Email
+                <% if (user.email_verified) { %>
+                  <span class="ml-2 text-xs font-normal px-1.5 py-0.5 rounded-full" style="background:var(--success-50);color:var(--success-700);border:1px solid var(--success-100)">verified</span>
+                <% } %>
+              </label>
+              <input type="email" name="email" value="<%= user.email || '' %>"
+                class="block w-full rounded-lg border px-3.5 py-2.5 text-sm"
+                style="background:var(--surface-1);border-color:var(--border-default);color:var(--text-primary)">
+            </div>
+
+            <div>
+              <label class="block text-sm font-semibold mb-1.5" style="color:var(--text-secondary)">Affiliation</label>
+              <input name="affiliation" value="<%= user.affiliation || '' %>" placeholder="University of Auckland"
+                class="block w-full rounded-lg border px-3.5 py-2.5 text-sm"
+                style="background:var(--surface-1);border-color:var(--border-default);color:var(--text-primary)">
+              <p class="text-xs mt-1.5" style="color:var(--text-tertiary)">Used for conflict-of-interest detection.</p>
+            </div>
+
+            <div>
+              <label class="block text-sm font-semibold mb-1.5" style="color:var(--text-secondary)">Expertise tags</label>
+              <input name="expertise" value="<%= user.expertise || '' %>" placeholder="NLP, transformers, machine learning"
+                class="block w-full rounded-lg border px-3.5 py-2.5 text-sm"
+                style="background:var(--surface-1);border-color:var(--border-default);color:var(--text-primary)">
+              <p class="text-xs mt-1.5" style="color:var(--text-tertiary)">Comma-separated. Improves reviewer–paper matching.</p>
+            </div>
+
+            <div class="pt-1">
+              <button class="btn btn-primary">Save changes</button>
+            </div>
           </form>
         </div>
 
-        <div class="space-y-4">
-          <div class="card p-6">
-            <h2 class="font-display text-lg font-semibold">Submission stats</h2>
-            <div class="grid grid-cols-2 gap-3 mt-3">
-              <div><div class="stat-num text-2xl"><%= stats && stats.total || 0 %></div><div class="text-xs text-slate-500 uppercase tracking-wider">Total</div></div>
-              <div><div class="stat-num text-2xl text-emerald-600"><%= stats && stats.accepted || 0 %></div><div class="text-xs text-slate-500 uppercase tracking-wider">Accepted</div></div>
-              <div><div class="stat-num text-2xl text-amber-600"><%= stats && stats.in_review || 0 %></div><div class="text-xs text-slate-500 uppercase tracking-wider">In review</div></div>
-              <div><div class="stat-num text-2xl text-indigo-600"><%= stats && stats.revisions || 0 %></div><div class="text-xs text-slate-500 uppercase tracking-wider">Revisions</div></div>
+        <!-- Right column -->
+        <div class="space-y-5">
+
+          <!-- Submission stats -->
+          <div class="card p-5">
+            <p class="eyebrow mb-4" style="color:var(--brand-600)">Submission stats</p>
+            <div class="grid grid-cols-2 gap-3">
+              <div class="rounded-lg p-3" style="background:var(--surface-1)">
+                <div class="stat-num text-2xl" style="color:var(--text-primary)"><%= stats && stats.total || 0 %></div>
+                <div class="text-xs mt-0.5 uppercase tracking-wider font-semibold" style="color:var(--text-tertiary)">Total</div>
+              </div>
+              <div class="rounded-lg p-3" style="background:var(--surface-1)">
+                <div class="stat-num text-2xl" style="color:var(--success-700)"><%= stats && stats.accepted || 0 %></div>
+                <div class="text-xs mt-0.5 uppercase tracking-wider font-semibold" style="color:var(--text-tertiary)">Accepted</div>
+              </div>
+              <div class="rounded-lg p-3" style="background:var(--surface-1)">
+                <div class="stat-num text-2xl" style="color:var(--warning-700)"><%= stats && stats.in_review || 0 %></div>
+                <div class="text-xs mt-0.5 uppercase tracking-wider font-semibold" style="color:var(--text-tertiary)">In review</div>
+              </div>
+              <div class="rounded-lg p-3" style="background:var(--surface-1)">
+                <div class="stat-num text-2xl" style="color:var(--brand-600)"><%= stats && stats.revisions || 0 %></div>
+                <div class="text-xs mt-0.5 uppercase tracking-wider font-semibold" style="color:var(--text-tertiary)">Revisions</div>
+              </div>
             </div>
           </div>
 
-          <div class="card p-6">
-            <h2 class="font-display text-lg font-semibold">AI usage on this account</h2>
+          <!-- AI usage -->
+          <div class="card p-5">
+            <p class="eyebrow mb-4" style="color:var(--brand-600)">AI usage</p>
             <% if (aiUsage.length === 0) { %>
-              <p class="text-sm text-slate-500 mt-2">No AI calls recorded yet.</p>
+              <p class="text-sm" style="color:var(--text-tertiary)">No AI calls recorded yet.</p>
             <% } else { %>
-              <ul class="mt-3 space-y-1.5 text-sm">
+              <ul class="space-y-2">
+                <% const total = aiUsage.reduce((sum, u) => sum + Number(u.n), 0); %>
                 <% aiUsage.forEach(u => { %>
-                  <li class="flex items-center justify-between">
-                    <span class="text-slate-700"><%= u.action.replace(/_/g, ' ') %></span>
-                    <span class="font-semibold"><%= u.n %></span>
+                  <li>
+                    <div class="flex items-center justify-between text-sm mb-1">
+                      <span style="color:var(--text-secondary)"><%= u.action.replace(/_/g, ' ') %></span>
+                      <span class="font-semibold tabular-nums" style="color:var(--text-primary)"><%= u.n %></span>
+                    </div>
+                    <div class="h-1.5 rounded-full" style="background:var(--surface-2)">
+                      <div class="h-1.5 rounded-full" style="width:<%= Math.round((u.n/total)*100) %>%;background:var(--brand-500)"></div>
+                    </div>
                   </li>
                 <% }) %>
+                <li class="pt-1 border-t text-xs" style="border-color:var(--border-default);color:var(--text-tertiary)"><%= total %> total AI calls</li>
               </ul>
+            <% } %>
+          </div>
+
+          <!-- Account info -->
+          <div class="card p-5 text-sm space-y-2.5">
+            <p class="eyebrow mb-3" style="color:var(--brand-600)">Account info</p>
+            <div class="flex justify-between">
+              <span style="color:var(--text-secondary)">Role</span>
+              <span class="font-medium capitalize" style="color:var(--text-primary)"><%= user.role %></span>
+            </div>
+            <div class="flex justify-between">
+              <span style="color:var(--text-secondary)">Member since</span>
+              <span class="font-medium" style="color:var(--text-primary)"><%= new Date(user.created_at || Date.now()).toLocaleDateString('en-US', { year:'numeric', month:'short' }) %></span>
+            </div>
+            <% if (user.oauth_provider) { %>
+            <div class="flex justify-between">
+              <span style="color:var(--text-secondary)">Sign-in</span>
+              <span class="font-medium capitalize" style="color:var(--text-primary)"><%= user.oauth_provider %> OAuth</span>
+            </div>
             <% } %>
           </div>
         </div>

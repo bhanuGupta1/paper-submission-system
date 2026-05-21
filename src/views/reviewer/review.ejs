@@ -1,20 +1,23 @@
 <!DOCTYPE html>
 <html lang="en">
 <head><%- include('../partials/head') %></head>
-<body class="min-h-screen bg-slate-50 text-slate-900 flex flex-col">
+<body class="min-h-screen flex flex-col" style="background:var(--surface-0);color:var(--text-primary)">
   <%- include('../partials/nav') %>
   <main class="flex-1">
     <div class="max-w-7xl mx-auto px-6 py-8">
       <div class="flex items-center justify-between mb-4">
-        <a href="/reviewer" class="text-sm text-indigo-600 hover:text-indigo-500 link-line">← Assignments</a>
+        <a href="/reviewer" class="text-sm link-line" style="color:var(--brand-600)">← Assignments</a>
         <% if (!review.review_date) { %>
-          <button onclick="openDeclineModal()" class="text-sm text-red-600 hover:text-red-700 font-medium px-3 py-1.5 border border-red-200 rounded-md">Decline assignment</button>
+          <button onclick="openDeclineModal()"
+            class="text-sm font-medium px-3 py-1.5 border rounded-md transition"
+            style="color:var(--error-700);border-color:var(--error-200);background:var(--error-50)">Decline assignment</button>
         <% } %>
       </div>
 
       <% if (review.deadline) { %>
         <% const isOverdue = new Date(review.deadline) < new Date(); %>
-        <div class="mb-4 p-3 rounded-lg border <%= isOverdue ? 'bg-red-50 border-red-200 text-red-700' : 'bg-amber-50 border-amber-200 text-amber-700' %> text-sm">
+        <div class="mb-4 p-3 rounded-lg border text-sm"
+             style="background:<%= isOverdue ? 'var(--error-50)' : 'var(--warning-50)' %>;border-color:<%= isOverdue ? 'var(--error-200)' : 'var(--warning-200)' %>;color:<%= isOverdue ? 'var(--error-700)' : 'var(--warning-700)' %>">
           <%= isOverdue ? '⚠ Review overdue.' : 'Review due:' %> <strong><%= new Date(review.deadline).toLocaleString() %></strong>
         </div>
       <% } %>
@@ -22,21 +25,23 @@
       <div class="grid lg:grid-cols-[0.38fr_0.62fr] gap-6">
         <aside class="space-y-4">
           <div class="card p-6">
-            <p class="eyebrow text-indigo-700 mb-2">Double-blind manuscript</p>
-            <h1 class="font-display text-2xl font-bold leading-tight"><%= paper.title %></h1>
-            <p class="text-xs text-slate-400 mt-1 italic"><%= paper.authors %></p>
-            <div class="mt-3 flex flex-wrap gap-2 text-xs text-slate-600">
+            <p class="eyebrow mb-2" style="color:var(--brand-600)">Double-blind manuscript</p>
+            <h1 class="font-display text-2xl font-bold leading-tight" style="color:var(--text-primary)"><%= paper.title %></h1>
+            <p class="text-xs mt-1 italic" style="color:var(--text-tertiary)"><%= paper.authors %></p>
+            <div class="mt-3 flex flex-wrap gap-2 text-xs">
               <span class="score-chip">Similarity <strong><%= paper.similarity_score != null ? (paper.similarity_score * 100).toFixed(0) + '%' : '—' %></strong></span>
               <span class="score-chip">AI signal <strong><%= paper.ai_text_likelihood != null ? (paper.ai_text_likelihood * 100).toFixed(0) + '%' : '—' %></strong></span>
             </div>
           </div>
+
           <div class="card p-6">
-            <h2 class="font-semibold text-slate-800 mb-2">Abstract</h2>
-            <p class="text-slate-700 text-sm leading-relaxed whitespace-pre-line"><%= paper.abstract %></p>
+            <h2 class="font-semibold text-sm mb-2" style="color:var(--text-primary)">Abstract</h2>
+            <p class="text-sm leading-relaxed whitespace-pre-line" style="color:var(--text-secondary)"><%= paper.abstract %></p>
           </div>
-          <div class="card p-4 bg-indigo-50 border-indigo-100">
-            <p class="text-xs font-semibold text-indigo-700 mb-1">Review standards</p>
-            <ul class="text-xs text-indigo-600 space-y-1">
+
+          <div class="card p-4" style="background:var(--info-50);border-color:var(--info-100)">
+            <p class="text-xs font-semibold mb-1.5" style="color:var(--info-700)">Review standards</p>
+            <ul class="text-xs space-y-1" style="color:var(--info-700)">
               <li>• Be constructive, specific, and evidence-based</li>
               <li>• Score each dimension independently (1–5)</li>
               <li>• AI drafts are starting points — edit before submitting</li>
@@ -46,26 +51,28 @@
 
           <!-- Discussion thread -->
           <div class="card p-5">
-            <h2 class="font-semibold text-slate-800 mb-3">Editor discussion</h2>
-            <div id="discussionList" class="space-y-3 max-h-64 overflow-y-auto mb-3">
+            <h2 class="font-semibold text-sm mb-3" style="color:var(--text-primary)">Editor discussion</h2>
+            <div id="discussionList" class="space-y-2 max-h-64 overflow-y-auto mb-3">
               <% if (!discussion || discussion.length === 0) { %>
-                <p class="text-xs text-slate-400 italic">No messages yet.</p>
+                <p class="text-xs italic" style="color:var(--text-tertiary)">No messages yet.</p>
               <% } else { %>
                 <% discussion.forEach(msg => { %>
-                  <div class="rounded-md p-2.5 <%= msg.role === 'reviewer' ? 'bg-indigo-50 border border-indigo-100' : 'bg-slate-50 border border-slate-200' %>">
-                    <div class="flex justify-between text-xs text-slate-500 mb-1">
-                      <span class="font-semibold <%= msg.role === 'reviewer' ? 'text-indigo-700' : 'text-slate-700' %>"><%= msg.username %></span>
+                  <div class="rounded-md p-2.5 text-xs"
+                       style="background:var(--surface-1);border:1px solid var(--border-default)">
+                    <div class="flex justify-between mb-1" style="color:var(--text-tertiary)">
+                      <span class="font-semibold" style="color:var(--text-secondary)"><%= msg.username %></span>
                       <span><%= new Date(msg.created_at).toLocaleDateString() %></span>
                     </div>
-                    <p class="text-xs text-slate-700"><%= msg.message %></p>
+                    <p style="color:var(--text-secondary)"><%= msg.message %></p>
                   </div>
                 <% }) %>
               <% } %>
             </div>
             <div class="flex gap-2">
               <input type="text" id="discussionInput" placeholder="Message editor…" maxlength="500"
-                class="flex-1 text-xs border border-slate-300 rounded-md px-2 py-1.5 focus:outline-none focus:border-indigo-500">
-              <button onclick="postMessage()" class="bg-indigo-600 text-white text-xs px-3 py-1.5 rounded-md font-medium hover:bg-indigo-700">Send</button>
+                class="flex-1 text-xs rounded-md border px-2.5 py-1.5"
+                style="background:var(--surface-1);border-color:var(--border-default);color:var(--text-primary)">
+              <button onclick="postMessage()" class="btn btn-sm btn-primary text-xs">Send</button>
             </div>
           </div>
         </aside>
@@ -73,38 +80,43 @@
         <section>
           <div class="flex flex-wrap justify-between items-center gap-3 mb-4">
             <div>
-              <p class="eyebrow text-indigo-700">Structured review</p>
-              <h2 class="font-display text-3xl font-bold mt-1">Your assessment</h2>
+              <p class="eyebrow" style="color:var(--brand-600)">Structured review</p>
+              <h2 class="font-display text-3xl font-bold mt-1" style="color:var(--text-primary)">Your assessment</h2>
             </div>
-            <div class="flex gap-2">
-              <button id="aiDraftBtn"
-                class="text-sm bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 px-3 py-2 rounded-md font-semibold transition"
-                aria-label="Generate AI draft review">
-                Generate AI draft
-              </button>
-            </div>
+            <button id="aiDraftBtn"
+              class="btn btn-secondary text-sm"
+              aria-label="Generate AI draft review">Generate AI draft</button>
           </div>
 
           <form action="/reviewer/reviews/<%= review.id %>" method="post" class="card p-6 space-y-5" id="reviewForm">
             <input type="hidden" name="ai_assisted" id="ai_assisted" value="<%= review.ai_assisted ? '1' : '0' %>">
 
             <div>
-              <label for="summary" class="block text-sm font-semibold text-slate-700">Summary <span class="text-red-500">*</span></label>
-              <p class="text-xs text-slate-500 mb-1">Briefly summarize the paper and your overall assessment</p>
+              <label for="summary" class="block text-sm font-semibold mb-1" style="color:var(--text-secondary)">
+                Summary <span style="color:var(--error-600)">*</span>
+              </label>
+              <p class="text-xs mb-1.5" style="color:var(--text-tertiary)">Briefly summarize the paper and your overall assessment</p>
               <textarea name="summary" id="summary" rows="3" required
-                class="mt-1 block w-full rounded-md border border-slate-300 px-3 py-2.5 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 focus:outline-none"><%= review.summary || '' %></textarea>
+                class="block w-full rounded-lg border px-3.5 py-2.5 text-sm"
+                style="background:var(--surface-1);border-color:var(--border-default);color:var(--text-primary)"><%= review.summary || '' %></textarea>
             </div>
 
             <div class="grid md:grid-cols-2 gap-4">
               <div>
-                <label for="strengths" class="block text-sm font-semibold text-slate-700">Strengths <span class="text-red-500">*</span></label>
+                <label for="strengths" class="block text-sm font-semibold mb-1" style="color:var(--text-secondary)">
+                  Strengths <span style="color:var(--error-600)">*</span>
+                </label>
                 <textarea name="strengths" id="strengths" rows="4" required
-                  class="mt-1 block w-full rounded-md border border-slate-300 px-3 py-2.5 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 focus:outline-none"><%= review.strengths || '' %></textarea>
+                  class="block w-full rounded-lg border px-3.5 py-2.5 text-sm"
+                  style="background:var(--surface-1);border-color:var(--border-default);color:var(--text-primary)"><%= review.strengths || '' %></textarea>
               </div>
               <div>
-                <label for="weaknesses" class="block text-sm font-semibold text-slate-700">Weaknesses <span class="text-red-500">*</span></label>
+                <label for="weaknesses" class="block text-sm font-semibold mb-1" style="color:var(--text-secondary)">
+                  Weaknesses <span style="color:var(--error-600)">*</span>
+                </label>
                 <textarea name="weaknesses" id="weaknesses" rows="4" required
-                  class="mt-1 block w-full rounded-md border border-slate-300 px-3 py-2.5 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 focus:outline-none"><%= review.weaknesses || '' %></textarea>
+                  class="block w-full rounded-lg border px-3.5 py-2.5 text-sm"
+                  style="background:var(--surface-1);border-color:var(--border-default);color:var(--text-primary)"><%= review.weaknesses || '' %></textarea>
               </div>
             </div>
 
@@ -112,20 +124,25 @@
             <div class="grid grid-cols-3 gap-4">
               <% [['novelty_score','Novelty'],['clarity_score','Clarity'],['significance_score','Significance']].forEach(([name, label]) => { %>
               <div>
-                <label class="block text-sm font-semibold text-slate-700 mb-1"><%= label %> <span id="<%= name %>_display" class="text-indigo-600 font-bold"><%= review[name] || 3 %></span>/5</label>
+                <label class="block text-sm font-semibold mb-1" style="color:var(--text-secondary)">
+                  <%= label %> <span id="<%= name %>_display" style="color:var(--brand-600)" class="font-bold"><%= review[name] || 3 %></span>/5
+                </label>
                 <input type="range" min="1" max="5" step="1" name="<%= name %>" id="<%= name %>"
                   value="<%= review[name] || 3 %>"
                   class="w-full accent-indigo-600"
                   oninput="document.getElementById('<%= name %>_display').textContent = this.value">
-                <div class="flex justify-between text-xs text-slate-400 mt-0.5"><span>Poor</span><span>Excellent</span></div>
+                <div class="flex justify-between text-xs mt-0.5" style="color:var(--text-tertiary)"><span>Poor</span><span>Excellent</span></div>
               </div>
               <% }) %>
             </div>
 
             <div>
-              <label for="recommendation" class="block text-sm font-semibold text-slate-700">Recommendation <span class="text-red-500">*</span></label>
+              <label for="recommendation" class="block text-sm font-semibold mb-1" style="color:var(--text-secondary)">
+                Recommendation <span style="color:var(--error-600)">*</span>
+              </label>
               <select name="recommendation" id="recommendation" required
-                class="mt-1 block w-full rounded-md border border-slate-300 px-3 py-2.5 bg-white focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 focus:outline-none">
+                class="block w-full rounded-lg border px-3.5 py-2.5 text-sm"
+                style="background:var(--surface-1);border-color:var(--border-default);color:var(--text-primary)">
                 <option value="">— Select —</option>
                 <option value="accept" <%= review.recommendation === 'accept' ? 'selected' : '' %>>Accept</option>
                 <option value="minor_revisions" <%= review.recommendation === 'minor_revisions' ? 'selected' : '' %>>Minor revisions</option>
@@ -135,23 +152,24 @@
             </div>
 
             <div>
-              <label for="review_text" class="block text-sm font-semibold text-slate-700">Additional notes <span class="text-slate-400 font-normal">(optional)</span></label>
+              <label for="review_text" class="block text-sm font-semibold mb-1" style="color:var(--text-secondary)">
+                Additional notes <span class="font-normal text-xs" style="color:var(--text-tertiary)">(optional)</span>
+              </label>
               <textarea name="review_text" id="review_text" rows="3"
-                class="mt-1 block w-full rounded-md border border-slate-300 px-3 py-2.5 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 focus:outline-none"><%= review.review_text || '' %></textarea>
+                class="block w-full rounded-lg border px-3.5 py-2.5 text-sm"
+                style="background:var(--surface-1);border-color:var(--border-default);color:var(--text-primary)"><%= review.review_text || '' %></textarea>
             </div>
 
             <% if (review.ai_assisted) { %>
-              <div class="flex items-center gap-2 text-xs text-indigo-600 bg-indigo-50 border border-indigo-100 rounded-md px-3 py-2">
+              <div class="flex items-center gap-2 text-xs rounded-md px-3 py-2"
+                   style="color:var(--info-700);background:var(--info-50);border:1px solid var(--info-100)">
                 <svg class="w-4 h-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
                 AI draft was used for this review.
               </div>
             <% } %>
 
             <div class="flex items-center justify-between pt-2">
-              <button type="button" id="qualityCheckBtn"
-                class="text-sm text-slate-600 hover:text-slate-800 border border-slate-300 px-3 py-2 rounded-md font-medium transition">
-                Check quality
-              </button>
+              <button type="button" id="qualityCheckBtn" class="btn btn-secondary text-sm">Check quality</button>
               <button type="submit" id="submitBtn" class="btn btn-primary px-6" onclick="return confirmSubmit()">
                 Submit review
               </button>
@@ -166,10 +184,11 @@
   <!-- Decline modal -->
   <div id="declineModal" class="hidden confirm-overlay">
     <div class="confirm-box">
-      <h2 class="font-display font-bold text-lg mb-1">Decline review assignment</h2>
+      <h2 class="font-display font-bold text-lg mb-1" style="color:var(--text-primary)">Decline review assignment</h2>
       <p class="text-sm mb-4" style="color:var(--text-secondary)">Please provide a reason. The editor will be notified.</p>
-      <textarea id="declineReason" rows="3" placeholder="e.g., Outside my area of expertise, workload constraints..."
-        class="w-full border border-slate-300 rounded-md px-3 py-2 text-sm mb-4"></textarea>
+      <textarea id="declineReason" rows="3" placeholder="e.g., Outside my area of expertise, workload constraints…"
+        class="w-full rounded-md border px-3 py-2 text-sm mb-4"
+        style="background:var(--surface-1);border-color:var(--border-default);color:var(--text-primary)"></textarea>
       <div class="flex gap-3">
         <button onclick="submitDecline()" class="btn btn-sm btn-danger">Decline</button>
         <button onclick="document.getElementById('declineModal').classList.add('hidden')" class="btn btn-sm btn-secondary">Cancel</button>
@@ -180,7 +199,6 @@
   <%- include('../partials/footer') %>
 
   <script>
-    // AI draft
     document.getElementById('aiDraftBtn').addEventListener('click', async () => {
       const btn = document.getElementById('aiDraftBtn');
       btn.disabled = true; btn.textContent = 'Generating…';
@@ -206,7 +224,6 @@
       }
     });
 
-    // Quality check
     document.getElementById('qualityCheckBtn').addEventListener('click', async () => {
       const btn = document.getElementById('qualityCheckBtn');
       btn.disabled = true; btn.textContent = 'Checking…';
@@ -215,14 +232,18 @@
         const d = await r.json();
         const box = document.getElementById('qualityResult');
         box.classList.remove('hidden');
-        const color = d.recommendation === 'acceptable' ? 'border-emerald-200 bg-emerald-50 text-emerald-700' : d.recommendation === 'needs_improvement' ? 'border-amber-200 bg-amber-50 text-amber-700' : 'border-red-200 bg-red-50 text-red-700';
-        box.className = `p-3 rounded-md border text-xs ${color}`;
+        const isOk = d.recommendation === 'acceptable';
+        const isWarn = d.recommendation === 'needs_improvement';
+        box.style.cssText = isOk
+          ? 'background:var(--success-50);border-color:var(--success-200);color:var(--success-700)'
+          : isWarn
+          ? 'background:var(--warning-50);border-color:var(--warning-200);color:var(--warning-700)'
+          : 'background:var(--error-50);border-color:var(--error-200);color:var(--error-700)';
         box.innerHTML = `<strong>Quality score: ${d.score}/100 — ${d.recommendation.replace('_', ' ')}</strong><br>${(d.issues || []).map(i => `• ${i}`).join('<br>') || 'No issues found.'}`;
       } catch { showToast('Quality check unavailable', 'warning'); }
       finally { btn.disabled = false; btn.textContent = 'Check quality'; }
     });
 
-    // Decline
     function openDeclineModal() { document.getElementById('declineModal').classList.remove('hidden'); }
     async function submitDecline() {
       const reason = document.getElementById('declineReason').value.trim();
@@ -237,7 +258,6 @@
       } catch { showToast('Network error', 'error'); }
     }
 
-    // Discussion
     async function postMessage() {
       const input = document.getElementById('discussionInput');
       const msg = input.value.trim();
@@ -251,8 +271,9 @@
           input.value = '';
           const list = document.getElementById('discussionList');
           const el = document.createElement('div');
-          el.className = 'rounded-md p-2.5 bg-indigo-50 border border-indigo-100';
-          el.innerHTML = `<div class="flex justify-between text-xs text-indigo-700 mb-1"><span class="font-semibold">You</span><span>now</span></div><p class="text-xs text-slate-700">${msg}</p>`;
+          el.className = 'rounded-md p-2.5 text-xs';
+          el.style.cssText = 'background:var(--surface-1);border:1px solid var(--border-default)';
+          el.innerHTML = `<div class="flex justify-between mb-1" style="color:var(--text-tertiary)"><span class="font-semibold" style="color:var(--text-secondary)">You</span><span>now</span></div><p style="color:var(--text-secondary)">${msg}</p>`;
           list.appendChild(el);
           list.scrollTop = list.scrollHeight;
           showToast('Message sent', 'success');
@@ -261,7 +282,6 @@
     }
     document.getElementById('discussionInput').addEventListener('keypress', (e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); postMessage(); } });
 
-    // Confirm before submit
     function confirmSubmit() {
       const rec = document.getElementById('recommendation').value;
       if (!rec) { showToast('Please select a recommendation', 'warning'); return false; }

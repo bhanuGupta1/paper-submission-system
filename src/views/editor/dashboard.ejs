@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head><%- include('../partials/head') %></head>
-<body class="min-h-screen bg-slate-50 text-slate-900 flex flex-col">
+<body class="min-h-screen flex flex-col" style="background:var(--surface-0);color:var(--text-primary)">
   <%- include('../partials/nav') %>
   <main class="flex-1">
     <div class="max-w-7xl mx-auto px-6 py-8">
@@ -28,13 +28,16 @@
 
       <!-- Smart search panel -->
       <div id="smart-search-panel" class="hidden card p-5 mb-6">
-        <h3 class="font-semibold text-slate-800 mb-3">Semantic smart search</h3>
+        <h3 class="font-semibold mb-3" style="color:var(--text-primary)">Semantic smart search</h3>
         <div class="flex gap-3">
-          <input id="smart-search-input" type="text" placeholder="Search by topic, concept, method…" class="flex-1 rounded-md border border-slate-300 px-3 py-2 text-sm focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 focus:outline-none" aria-label="Smart search query">
-          <button id="btn-smart-search-run" class="bg-indigo-600 hover:bg-indigo-500 text-white px-4 py-2 rounded-md text-sm font-semibold transition">Search</button>
+          <input id="smart-search-input" type="text" placeholder="Search by topic, concept, method…"
+            class="flex-1 rounded-lg border px-3 py-2 text-sm"
+            style="background:var(--surface-1);border-color:var(--border-default);color:var(--text-primary)"
+            aria-label="Smart search query">
+          <button id="btn-smart-search-run" class="btn btn-primary text-sm">Search</button>
         </div>
         <div id="smart-search-results" class="mt-4 hidden">
-          <p class="text-xs text-slate-500 mb-2" id="smart-search-meta"></p>
+          <p class="text-xs mb-2" id="smart-search-meta" style="color:var(--text-tertiary)"></p>
           <div id="smart-search-list" class="space-y-2"></div>
         </div>
       </div>
@@ -62,16 +65,20 @@
       <!-- Filter bar -->
       <form method="get" action="/editor" class="card p-4 mb-5 flex flex-wrap gap-3 items-center">
         <div class="flex-1 min-w-[200px]">
-          <input name="q" value="<%= filter.q || '' %>" placeholder="Search title, abstract, tags…" aria-label="Filter by keyword" class="block w-full rounded-md border border-slate-300 px-3 py-2 text-sm focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 focus:outline-none">
+          <input name="q" value="<%= filter.q || '' %>" placeholder="Search title, abstract, tags…" aria-label="Filter by keyword"
+            class="block w-full rounded-lg border px-3 py-2 text-sm"
+            style="background:var(--surface-1);border-color:var(--border-default);color:var(--text-primary)">
         </div>
-        <select name="status" aria-label="Filter by status" class="rounded-md border border-slate-300 px-3 py-2 text-sm bg-white focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 focus:outline-none">
+        <select name="status" aria-label="Filter by status"
+          class="rounded-lg border px-3 py-2 text-sm"
+          style="background:var(--surface-1);border-color:var(--border-default);color:var(--text-primary)">
           <option value="">All statuses</option>
           <% ['pending','under_review','accepted','rejected','revisions'].forEach(s => { %>
             <option value="<%= s %>" <%= filter.status === s ? 'selected' : '' %>><%= s.replace('_', ' ') %></option>
           <% }) %>
         </select>
         <button class="btn btn-sm btn-secondary">Filter</button>
-        <div class="text-xs text-slate-500 ml-auto"><%= filter.total %> matching — page <%= filter.page %> of <%= filter.pageCount %></div>
+        <div class="text-xs ml-auto" style="color:var(--text-tertiary)"><%= filter.total %> matching — page <%= filter.page %> of <%= filter.pageCount %></div>
       </form>
 
       <!-- Bulk-assign toolbar (shown when any paper is checked) -->
@@ -140,14 +147,16 @@
           </div>
 
           <!-- Discussion panel (hidden by default, loaded on demand) -->
-          <div id="discussion-panel-<%= p.id %>" class="hidden mt-4 border-t border-slate-200 pt-4">
-            <div class="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">Editor-Reviewer Discussion</div>
+          <div id="discussion-panel-<%= p.id %>" class="hidden mt-4 pt-4" style="border-top:1px solid var(--border-default)">
+            <div class="text-xs font-semibold uppercase tracking-wider mb-2" style="color:var(--text-tertiary)">Editor-Reviewer Discussion</div>
             <div id="discussion-messages-<%= p.id %>" class="space-y-2 mb-3 max-h-48 overflow-y-auto pr-1">
-              <p class="text-xs text-slate-400 italic">Loading…</p>
+              <p class="text-xs italic" style="color:var(--text-tertiary)">Loading…</p>
             </div>
             <div class="flex gap-2">
-              <input id="discussion-input-<%= p.id %>" type="text" placeholder="Write a message…" maxlength="2000" aria-label="Discussion message" class="flex-1 text-sm border border-slate-300 rounded-md px-2 py-1.5 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 focus:outline-none">
-              <button class="btn-discussion-send text-xs bg-indigo-600 hover:bg-indigo-500 text-white px-3 py-1.5 rounded font-medium transition" data-paper-id="<%= p.id %>">Send</button>
+              <input id="discussion-input-<%= p.id %>" type="text" placeholder="Write a message…" maxlength="2000" aria-label="Discussion message"
+                class="flex-1 text-sm rounded-md border px-2 py-1.5"
+                style="background:var(--surface-1);border-color:var(--border-default);color:var(--text-primary)">
+              <button class="btn-discussion-send text-xs btn btn-sm btn-primary" data-paper-id="<%= p.id %>">Send</button>
             </div>
           </div>
 
@@ -155,45 +164,50 @@
           <div class="grid md:grid-cols-2 gap-4 mt-4">
 
             <!-- AI-suggested reviewers -->
-            <div class="rounded-lg border border-slate-200 bg-slate-50 p-4">
-              <div class="text-xs uppercase tracking-wider font-semibold text-slate-500 mb-3">AI-suggested reviewers</div>
+            <div class="rounded-lg border p-4" style="background:var(--surface-1);border-color:var(--border-default)">
+              <div class="text-xs uppercase tracking-wider font-semibold mb-3" style="color:var(--text-tertiary)">AI-suggested reviewers</div>
               <% if (p.suggestions.length === 0) { %>
-                <div class="text-xs text-slate-500 italic">No suggestions — no reviewers with matching expertise tags found.</div>
+                <div class="text-xs italic" style="color:var(--text-tertiary)">No suggestions — no reviewers with matching expertise tags found.</div>
               <% } %>
               <% p.suggestions.forEach(s => { %>
-                <div class="py-1.5 border-t border-slate-200 first:border-t-0">
+                <div class="py-1.5" style="border-top:1px solid var(--border-default)">
                   <div class="flex items-center justify-between text-sm">
                     <div class="flex items-center gap-1.5">
-                      <span class="font-medium"><%= s.username %></span>
-                      <span class="text-xs text-slate-500">match <strong><%= (s.score * 100).toFixed(0) %>%</strong></span>
+                      <span class="font-medium" style="color:var(--text-primary)"><%= s.username %></span>
+                      <span class="text-xs" style="color:var(--text-tertiary)">match <strong><%= (s.score * 100).toFixed(0) %>%</strong></span>
                       <% if (s.conflict && s.conflict.hasConflict) { %>
-                        <span class="inline-block text-[10px] bg-rose-50 text-rose-700 border border-rose-200 px-1.5 py-0.5 rounded font-semibold">COI</span>
+                        <span class="inline-block text-[10px] px-1.5 py-0.5 rounded font-semibold" style="background:var(--error-50);color:var(--error-700);border:1px solid var(--error-200)">COI</span>
                       <% } %>
                     </div>
                     <form action="/editor/assign-reviewer" method="post" class="inline flex items-center gap-1">
                       <input type="hidden" name="paperId" value="<%= p.id %>">
                       <input type="hidden" name="reviewerId" value="<%= s.id %>">
-                      <input type="date" name="deadline" class="text-xs border border-slate-300 rounded px-1.5 py-1 focus:border-indigo-500 focus:outline-none" aria-label="Review deadline for <%= s.username %>">
-                      <button class="text-xs bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 px-2 py-1 rounded font-medium transition">Assign</button>
+                      <input type="date" name="deadline"
+                        class="text-xs rounded px-1.5 py-1 border"
+                        style="background:var(--surface-0);border-color:var(--border-default);color:var(--text-primary)"
+                        aria-label="Review deadline for <%= s.username %>">
+                      <button class="btn btn-sm text-xs" style="background:var(--brand-50);color:var(--brand-700);border:1px solid var(--brand-200)">Assign</button>
                     </form>
                   </div>
                   <% if (s.expertise) { %>
-                    <div class="text-xs text-slate-500 truncate mt-0.5"><%= s.expertise %></div>
+                    <div class="text-xs truncate mt-0.5" style="color:var(--text-tertiary)"><%= s.expertise %></div>
                   <% } %>
                 </div>
               <% }) %>
             </div>
 
             <!-- Manual override + decision -->
-            <div class="rounded-lg border border-slate-200 bg-slate-50 p-4 space-y-4">
+            <div class="rounded-lg border p-4 space-y-4" style="background:var(--surface-1);border-color:var(--border-default)">
 
               <!-- Manual assign -->
               <div>
-                <div class="text-xs uppercase tracking-wider font-semibold text-slate-500 mb-2">Manual assignment</div>
+                <div class="text-xs uppercase tracking-wider font-semibold mb-2" style="color:var(--text-tertiary)">Manual assignment</div>
                 <form action="/editor/assign-reviewer" method="post" class="space-y-2">
                   <input type="hidden" name="paperId" value="<%= p.id %>">
                   <div class="flex items-center gap-2">
-                    <select name="reviewerId" required aria-label="Select reviewer" class="text-sm border border-slate-300 rounded-md px-2 py-1.5 bg-white flex-1 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 focus:outline-none">
+                    <select name="reviewerId" required aria-label="Select reviewer"
+                      class="text-sm rounded-md border px-2 py-1.5 flex-1"
+                      style="background:var(--surface-0);border-color:var(--border-default);color:var(--text-primary)">
                       <option value="">Pick a reviewer…</option>
                       <% (p.annotatedReviewers || []).forEach(r => { %>
                         <option value="<%= r.id %>"><%= r.username %><%= r.expertise ? ' – ' + r.expertise.slice(0, 28) : '' %><%= r.conflict && r.conflict.hasConflict ? ' ⚠ COI' : '' %></option>
@@ -201,34 +215,40 @@
                     </select>
                     <button class="btn btn-sm btn-primary shrink-0">Assign</button>
                   </div>
-                  <input type="date" name="deadline" aria-label="Review deadline" class="text-xs w-full border border-slate-300 rounded-md px-2 py-1.5 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 focus:outline-none">
+                  <input type="date" name="deadline" aria-label="Review deadline"
+                    class="text-xs w-full rounded-md border px-2 py-1.5"
+                    style="background:var(--surface-0);border-color:var(--border-default);color:var(--text-primary)">
                 </form>
               </div>
 
               <!-- Final decision + AI draft -->
               <div>
-                <div class="text-xs uppercase tracking-wider font-semibold text-slate-500 mb-2">Final decision</div>
+                <div class="text-xs uppercase tracking-wider font-semibold mb-2" style="color:var(--text-tertiary)">Final decision</div>
                 <div class="mb-2">
-                  <button class="btn-ai-draft text-xs inline-flex items-center gap-1 text-purple-600 hover:text-purple-700 font-medium transition" data-paper-id="<%= p.id %>" aria-label="Generate AI decision draft for this paper">
+                  <button class="btn-ai-draft text-xs inline-flex items-center gap-1 font-medium transition" data-paper-id="<%= p.id %>" aria-label="Generate AI decision draft for this paper" style="color:var(--brand-600)">
                     <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
                     AI decision draft
                   </button>
-                  <div id="ai-draft-<%= p.id %>" class="hidden mt-2 rounded-md bg-purple-50 border border-purple-200 p-3 text-xs text-purple-900 space-y-1"></div>
+                  <div id="ai-draft-<%= p.id %>" class="hidden mt-2 rounded-md p-3 text-xs space-y-1" style="background:var(--brand-50);border:1px solid var(--brand-200);color:var(--brand-950)"></div>
                 </div>
                 <form action="/editor/decide" method="post" class="space-y-2">
                   <input type="hidden" name="paperId" value="<%= p.id %>">
                   <div class="flex items-center gap-2">
-                    <select name="decision" required id="decision-select-<%= p.id %>" aria-label="Final decision" class="text-sm border border-slate-300 rounded-md px-2 py-1.5 bg-white flex-1 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 focus:outline-none">
+                    <select name="decision" required id="decision-select-<%= p.id %>" aria-label="Final decision"
+                      class="text-sm rounded-md border px-2 py-1.5 flex-1"
+                      style="background:var(--surface-0);border-color:var(--border-default);color:var(--text-primary)">
                       <option value="">Decide…</option>
                       <option value="accepted">Accept</option>
                       <option value="revisions">Revisions</option>
                       <option value="rejected">Reject</option>
                     </select>
-                    <button class="btn-decide-submit text-xs bg-emerald-600 hover:bg-emerald-500 text-white px-3 py-1.5 rounded font-medium transition shrink-0" data-title="<%= p.title %>">Apply</button>
+                    <button class="btn-decide-submit btn btn-sm text-xs shrink-0" style="background:var(--success-600);color:white;border-color:var(--success-600)" data-title="<%= p.title %>">Apply</button>
                   </div>
-                  <input name="note" placeholder="Optional decision note for the author…" aria-label="Decision note" class="text-xs w-full border border-slate-300 rounded-md px-2 py-1.5 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 focus:outline-none">
-                  <label class="flex items-center gap-2 text-xs text-slate-600 cursor-pointer select-none">
-                    <input type="checkbox" name="generateLetter" value="1" class="rounded border-slate-300 text-indigo-600 focus:ring-indigo-500">
+                  <input name="note" placeholder="Optional decision note for the author…" aria-label="Decision note"
+                    class="text-xs w-full rounded-md border px-2 py-1.5"
+                    style="background:var(--surface-0);border-color:var(--border-default);color:var(--text-primary)">
+                  <label class="flex items-center gap-2 text-xs cursor-pointer select-none" style="color:var(--text-secondary)">
+                    <input type="checkbox" name="generateLetter" value="1" class="rounded" style="accent-color:var(--brand-600)">
                     Generate decision letter
                   </label>
                 </form>
@@ -237,8 +257,10 @@
               <!-- Tags -->
               <div>
                 <form action="/editor/papers/<%= p.id %>/tags" method="post" class="flex items-center gap-2">
-                  <input name="tags" value="<%= p.tags || '' %>" placeholder="tags, comma-separated" aria-label="Paper tags" class="text-xs flex-1 border border-slate-300 rounded-md px-2 py-1.5 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 focus:outline-none">
-                  <button class="text-xs bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-300 px-3 py-1.5 rounded font-medium transition shrink-0">Save tags</button>
+                  <input name="tags" value="<%= p.tags || '' %>" placeholder="tags, comma-separated" aria-label="Paper tags"
+                    class="text-xs flex-1 rounded-md border px-2 py-1.5"
+                    style="background:var(--surface-0);border-color:var(--border-default);color:var(--text-primary)">
+                  <button class="btn btn-sm btn-secondary text-xs shrink-0">Save tags</button>
                 </form>
               </div>
             </div>
@@ -246,20 +268,21 @@
 
           <!-- Assigned reviewers -->
           <% if (p.assigned.length > 0) { %>
-            <div class="mt-4 pt-3 border-t border-slate-200">
-              <div class="text-xs font-semibold text-slate-500 mb-1">Assigned reviewers</div>
+            <div class="mt-4 pt-3" style="border-top:1px solid var(--border-default)">
+              <div class="text-xs font-semibold mb-1.5" style="color:var(--text-tertiary)">Assigned reviewers</div>
               <div class="flex flex-wrap gap-2">
                 <% p.assigned.forEach(a => { %>
-                  <span class="inline-flex items-center gap-1 text-xs bg-white border border-slate-200 rounded-full px-2.5 py-1">
+                  <span class="inline-flex items-center gap-1 text-xs rounded-full px-2.5 py-1"
+                        style="background:var(--surface-1);border:1px solid var(--border-default);color:var(--text-primary)">
                     <span class="font-medium"><%= a.reviewer_username %></span>
                     <% if (a.recommendation) { %>
-                      <span class="text-slate-500"><%= a.recommendation.replace('_', ' ') %></span>
+                      <span style="color:var(--text-secondary)"><%= a.recommendation.replace('_', ' ') %></span>
                     <% } else if (a.deadline) { %>
-                      <span class="text-slate-400">due <%= new Date(a.deadline).toLocaleDateString() %></span>
+                      <span style="color:var(--text-tertiary)">due <%= new Date(a.deadline).toLocaleDateString() %></span>
                     <% } else { %>
-                      <span class="text-slate-400">pending</span>
+                      <span style="color:var(--text-tertiary)">pending</span>
                     <% } %>
-                    <% if (a.declined_at) { %><span class="text-rose-500">declined</span><% } %>
+                    <% if (a.declined_at) { %><span style="color:var(--error-600)">declined</span><% } %>
                   </span>
                 <% }) %>
               </div>
@@ -272,11 +295,15 @@
       <% if (filter.pageCount > 1) { %>
         <nav class="flex items-center justify-center gap-2 mt-6" aria-label="Pagination">
           <% if (filter.page > 1) { %>
-            <a href="?page=<%= filter.page - 1 %><%= filter.status ? '&status=' + filter.status : '' %><%= filter.q ? '&q=' + encodeURIComponent(filter.q) : '' %>" class="px-3 py-1.5 rounded-md border border-slate-300 text-sm hover:bg-slate-100 transition">Previous</a>
+            <a href="?page=<%= filter.page - 1 %><%= filter.status ? '&status=' + filter.status : '' %><%= filter.q ? '&q=' + encodeURIComponent(filter.q) : '' %>"
+               class="px-3 py-1.5 rounded-md border text-sm transition"
+               style="border-color:var(--border-default);color:var(--text-secondary)">Previous</a>
           <% } %>
-          <span class="text-sm text-slate-500">Page <%= filter.page %> of <%= filter.pageCount %></span>
+          <span class="text-sm" style="color:var(--text-tertiary)">Page <%= filter.page %> of <%= filter.pageCount %></span>
           <% if (filter.page < filter.pageCount) { %>
-            <a href="?page=<%= filter.page + 1 %><%= filter.status ? '&status=' + filter.status : '' %><%= filter.q ? '&q=' + encodeURIComponent(filter.q) : '' %>" class="px-3 py-1.5 rounded-md border border-slate-300 text-sm hover:bg-slate-100 transition">Next</a>
+            <a href="?page=<%= filter.page + 1 %><%= filter.status ? '&status=' + filter.status : '' %><%= filter.q ? '&q=' + encodeURIComponent(filter.q) : '' %>"
+               class="px-3 py-1.5 rounded-md border text-sm transition"
+               style="border-color:var(--border-default);color:var(--text-secondary)">Next</a>
           <% } %>
         </nav>
       <% } %>
