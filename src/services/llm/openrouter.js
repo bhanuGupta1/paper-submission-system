@@ -83,18 +83,30 @@ async function callModel(model, systemPrompt, userPrompt, maxTokens, stream = fa
   return (data.choices[0].message.content || '').trim();
 }
 
+function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
+
 async function complete(systemPrompt, userPrompt, { maxTokens = 800, taskType = 'default' } = {}) {
   const primary = MODELS[taskType] || MODELS.default;
   const chain = [primary, ...FALLBACK_MODELS.filter(m => m !== primary)];
   let lastErr;
+  let delay = 0;
   for (const model of chain) {
+    if (delay > 0) await sleep(delay);
     try {
       const result = await callModel(model, systemPrompt, userPrompt, maxTokens);
       if (model !== primary) logger.info({ model, taskType }, '[openrouter] fallback model used');
       return result;
     } catch (err) {
       lastErr = err;
-      if (err.status === 429 || err.status === 404) { logger.warn({ model, taskType }, '[openrouter] model unavailable, trying next'); continue; }
+      if (err.status === 429) {
+        // Parse Retry-After from OpenRouter error body if present
+        let wait = 4000;
+        try { const parsed = JSON.parse(err.message.split(': ').slice(1).join(': ')); wait = ((parsed.error?.metadata?.retry_after_seconds || 4) * 1000); } catch (_) {}
+        delay = Math.min(wait, 8000); // cap at 8s between retries
+        logger.warn({ model, taskType, delayMs: delay }, '[openrouter] 429 rate-limited, waiting before next fallback');
+        continue;
+      }
+      if (err.status === 404) { logger.warn({ model, taskType }, '[openrouter] model not found, trying next'); continue; }
       throw err;
     }
   }
