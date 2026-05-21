@@ -38,13 +38,13 @@
             <span class="notif-badge absolute -top-1 -right-1 inline-flex items-center justify-center min-w-[18px] h-[18px] px-1 rounded-full bg-rose-500 text-white text-[10px] font-bold" aria-hidden="true"><%= unreadCount %></span>
           <% } %>
         </a>
-        <button onclick="toggleDark()" id="darkToggle" class="dark-toggle" title="Toggle dark mode" aria-label="Toggle dark mode" role="switch" aria-checked="false">
+        <button id="darkToggle" class="dark-toggle" title="Toggle dark mode" aria-label="Toggle dark mode" role="switch" aria-checked="false">
           <span class="dark-toggle-thumb"></span>
         </button>
         <span class="ml-2 text-xs text-slate-400 hidden sm:inline" aria-label="Logged in as <%= currentUser.username %>">@<%= currentUser.username %></span>
         <a class="nav-link text-rose-200 hover:text-rose-100 hover:bg-rose-500/10" href="/logout">Sign out</a>
       <% } else { %>
-        <button onclick="toggleDark()" id="darkToggle" class="dark-toggle" title="Toggle dark mode" aria-label="Toggle dark mode" role="switch" aria-checked="false">
+        <button id="darkToggle" class="dark-toggle" title="Toggle dark mode" aria-label="Toggle dark mode" role="switch" aria-checked="false">
           <span class="dark-toggle-thumb"></span>
         </button>
         <a class="nav-link" href="/login">Sign in</a>
@@ -74,24 +74,30 @@ window.showToast = function(message, type = 'info', duration = 4000) {
 };
 
 // ── Dark mode ─────────────────────────────────────────────────────────────────
-function toggleDark() {
-  const isDark = document.documentElement.classList.contains('dark');
-  const next = !isDark;
-  if (next) {
-    document.documentElement.classList.add('dark');
-  } else {
-    document.documentElement.classList.remove('dark');
-  }
-  localStorage.setItem('theme', next ? 'dark' : 'light');
-  const toggle = document.getElementById('darkToggle');
-  if (toggle) toggle.setAttribute('aria-checked', next ? 'true' : 'false');
-}
-// Sync aria-checked with whatever the <head> IIFE already applied (FOUC prevention)
 (function() {
-  const toggle = document.getElementById('darkToggle');
-  if (toggle) {
-    const isDark = document.documentElement.classList.contains('dark');
-    toggle.setAttribute('aria-checked', isDark ? 'true' : 'false');
+  function applyTheme(dark) {
+    if (dark) {
+      document.documentElement.classList.add('dark');
+      localStorage.setItem('theme', 'dark');
+    } else {
+      document.documentElement.classList.remove('dark');
+      localStorage.setItem('theme', 'light');
+    }
+    var btn = document.getElementById('darkToggle');
+    if (btn) btn.setAttribute('aria-checked', dark ? 'true' : 'false');
+  }
+
+  // Expose globally so onclick attrs still work as fallback
+  window.toggleDark = function() {
+    applyTheme(!document.documentElement.classList.contains('dark'));
+  };
+
+  // Wire via addEventListener (works even when onclick attr is CSP-blocked)
+  var btn = document.getElementById('darkToggle');
+  if (btn) {
+    btn.addEventListener('click', window.toggleDark);
+    // Sync initial visual state
+    btn.setAttribute('aria-checked', document.documentElement.classList.contains('dark') ? 'true' : 'false');
   }
 })();
 

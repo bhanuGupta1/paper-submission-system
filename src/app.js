@@ -26,6 +26,7 @@ function createApp() {
       directives: {
         defaultSrc: ["'self'"],
         scriptSrc: ["'self'", 'https://cdn.tailwindcss.com', "'unsafe-inline'"],
+        scriptSrcAttr: ["'unsafe-inline'"],
         styleSrc: ["'self'", 'https://cdn.tailwindcss.com', 'https://fonts.googleapis.com', "'unsafe-inline'"],
         fontSrc: ["'self'", 'https://fonts.gstatic.com'],
         imgSrc: ["'self'", 'data:', 'https://images.unsplash.com'],
