@@ -67,3 +67,62 @@ Auth and hosted deployment hardening completed:
 - Verified the full Jest suite passes: 8 suites, 29 tests.
 
 Not pushed to GitHub.
+
+---
+
+## Phase 2–7 Upgrades: Enterprise-Grade Academic Platform
+
+All features below are committed and pushed to GitHub; Render auto-deploys from main.
+
+### Phase 1 — Integrations & GDPR
+- **Microsoft Teams webhooks**: `POST /api/teams/...` with AdaptiveCard notifications on submission, review assignment, and editorial decisions
+- **Notification preferences UI**: per-user Slack/Teams webhook URLs, email toggles, digest frequency in author profile
+- **ORCID identity**: OAuth2 link to researcher ORCID iD stored on user record
+- **GDPR compliance**: data export (JSON download of user record + submissions), account deletion request workflow, `account_deletion_requested_at` tracking
+- **Audit log**: paginated view at `/admin/audit-log` with CSV export; every editorial action logged with user, action, resource, and IP
+
+### Phase 2 — Reviewer Invitations, FTS5, Calendar, LMS
+- **Reviewer invitation system**: editor sends tokenised invitation email; reviewer creates account, gets auto-assigned to paper; invitation tokens expire in 7 days
+- **Email notifications wired to preferences**: assignment/decision emails check `notification_prefs` before sending
+- **FTS5 full-text search**: `papers_fts` virtual table with porter tokeniser + 3 sync triggers; graceful LIKE fallback on first boot
+- **Calendar export (.ics)**: reviewer dashboard exports pending deadlines as RFC 5545 VCALENDAR at `/reviewer/calendar.ics`
+- **LMS webhooks**: Canvas (HMAC-SHA256) and Moodle (bearer token) event receivers at `/api/lms/:provider/webhook`; event normalisation and audit logging
+- **DB migration v7**: `reviewer_invitations`, `papers_fts`, `lms_integrations` tables
+
+### Phase 3 — LMS Admin UI & Editorial Analytics
+- **LMS integration manager** at `/admin/lms`: create/toggle/delete Canvas, Moodle, generic integrations; webhook endpoint reference panel
+- **Editorial analytics** at `/editor/analytics`: Chart.js bar charts (submission trend, accepted vs rejected per month), status donut chart, reviewer performance table, KPI strip (total submissions, acceptance rate, avg turnaround days)
+- **operationsAnalytics**: `getSubmissionTrends`, `getDecisionTrends`, `getReviewerPerformance`, `getTurnaroundStats`, `getEditorAnalytics` added
+
+### Phase 4 — Email Attachments, Reader, Citations, Weekly Digest
+- **Calendar (.ics) email attachments**: review assignment emails now include a `.ics` attachment for Outlook/Google Calendar direct import
+- **Reader paper detail page** at `/reader/papers/:id`: abstract, AI summary, keyword cloud, download + citation buttons
+- **FTS5-powered reader search** with pagination (18/page)
+- **Citation export**: BibTeX download at `?format=bibtex`, APA copy button with clipboard API
+- **Weekly editorial digest**: Monday 08:00 cron sends editors an HTML email with pending papers, overdue reviews, papers ready for decision, and submission count
+
+### Phase 5 — API Keys & REST API v1
+- **API key management**: generate/revoke/delete at `/author/api-keys`; SHA-256 hashed storage, prefix display, scope selection, optional expiry; displayed in profile
+- **REST API v1** at `/api/v1/`: `GET /papers` (FTS5 search, pagination), `GET /papers/:id`, `GET /papers/:id/cite`, `GET /status` — all authenticated with Bearer token
+- **Rate limiting**: 100 req/15 min per API key; `X-RateLimit-*` headers on all responses
+- **DB migration v8**: `api_keys` table
+
+### Phase 6 — API Docs & OpenRouter AI
+- **Swagger/OpenAPI docs** at `/api/docs`: interactive Swagger UI with full OpenAPI 3.0.3 spec; raw JSON at `/api/docs/openapi.json`
+- **OpenRouter LLM backend**: `LLM_PROVIDER=openrouter` uses OpenRouter's free-tier models (llama-3.3-70b, gemma-4-31b, hermes-3-llama-405b) with automatic fallback chain on 429/404; heuristic fallback if all fail
+- **Manuscript version diff** at `/editor/papers/:id/versions`: side-by-side field comparison with word-level LCS diff (insertions highlighted green, deletions red), version selector, revision timeline
+
+### Phase 7 — Leaderboard & Guidelines
+- **Reviewer leaderboard** on review-progress page: ranked table with completion rate, avg turnaround, avg quality score per reviewer; gold/silver/bronze rank highlights
+- **Submission guidelines** at `/guidelines`: required fields table, review process timeline (6 steps), AI tools disclosure, track-specific sidebar, quick-links
+- **Guidelines in nav**: globally accessible including for unauthenticated users
+
+### Summary statistics
+| Metric | Value |
+|---|---|
+| New routes added | 30+ |
+| New DB tables | 4 (`reviewer_invitations`, `papers_fts`, `lms_integrations`, `api_keys`) |
+| New services | `teams.js`, `invitation.js`, `lms.js`, `backup.js`, `digestEmail.js`, `apiKeys.js`, `llm/openrouter.js` |
+| Git commits (Phase 1–7) | 13 commits on main |
+| Live URL | https://paper-submission-system.onrender.com |
+
