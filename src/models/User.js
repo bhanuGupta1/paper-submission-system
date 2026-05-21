@@ -16,7 +16,7 @@ async function create({ username, email, password, role, expertise = '', affilia
 }
 
 function findById(id) {
-  return get('SELECT id, username, email, role, expertise, affiliation, email_verified, is_active, last_login, created_at FROM users WHERE id = ?', [id]);
+  return get('SELECT id, username, email, role, expertise, affiliation, email_verified, is_active, last_login, created_at, orcid_id, notification_prefs, oauth_provider FROM users WHERE id = ?', [id]);
 }
 
 function findByUsername(username) {
@@ -90,9 +90,21 @@ function touchLastLogin(id) {
   return run('UPDATE users SET last_login = datetime(\'now\') WHERE id = ?', [id]);
 }
 
+function saveNotificationPrefs(id, prefs) {
+  return run('UPDATE users SET notification_prefs = ? WHERE id = ?', [JSON.stringify(prefs), id]);
+}
+
+function getNotificationPrefs(id) {
+  return get('SELECT notification_prefs FROM users WHERE id = ?', [id]).then((row) => {
+    if (!row || !row.notification_prefs) return {};
+    try { return JSON.parse(row.notification_prefs); } catch { return {}; }
+  });
+}
+
 module.exports = {
   ROLES, create, findById, findByUsername, findByEmail,
   listReviewers, listByRole, listAll, countAll,
   verifyPassword, updateProfile,
   markEmailVerified, setPassword, setActive, setRole, touchLastLogin,
+  saveNotificationPrefs, getNotificationPrefs,
 };

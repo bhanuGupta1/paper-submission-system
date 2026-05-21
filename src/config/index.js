@@ -88,6 +88,11 @@ const config = {
       clientId: process.env.GITHUB_CLIENT_ID || '',
       clientSecret: process.env.GITHUB_CLIENT_SECRET || '',
     },
+    orcid: {
+      clientId: process.env.ORCID_CLIENT_ID || '',
+      clientSecret: process.env.ORCID_CLIENT_SECRET || '',
+      sandbox: boolFromEnv(process.env.ORCID_SANDBOX, false),
+    },
   },
   paths: { root },
 };

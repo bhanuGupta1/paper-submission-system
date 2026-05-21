@@ -10,9 +10,11 @@ const writingAssistant = require('../services/writingAssistant');
 const textExtract = require('../utils/textExtract');
 const N = require('../services/notifications');
 const slack = require('../services/slack');
+const teams = require('../services/teams');
 const webhooks = require('../services/webhooks');
+const audit = require('../services/auditLog');
 const logger = require('../utils/logger');
-const { all } = require('../db/connection');
+const { all, run } = require('../db/connection');
 const path = require('path');
 
 async function dashboard(req, res, next) {
@@ -53,7 +55,9 @@ async function submit(req, res, next) {
     // Run AI pipeline asynchronously — never block submission
     runAiPipeline(paper, req.user.id).catch((err) => logger.warn({ err: err.message, paperId: paper.id }, 'AI pipeline failed'));
     slack.notifyNewSubmission({ paperId: paper.id, title: paper.title, author: req.user.username, submittedAt: new Date() }).catch(() => {});
+    teams.notifyNewSubmission({ paperId: paper.id, title: paper.title, author: req.user.username, submittedAt: new Date() }).catch(() => {});
     webhooks.fire('submission', { paperId: paper.id, title: paper.title, author: req.user.username, status: 'pending' }).catch(() => {});
+    audit.log(req.user.id, 'paper.submit', 'paper', paper.id, { title: paper.title }, req).catch(() => {});
 
     res.redirect(`/author/papers/${paper.id}`);
   } catch (err) { next(err); }
@@ -86,6 +90,8 @@ async function runAiPipeline(paper, userId) {
         link: `/reviewer/papers/${paper.id}`,
       });
     }
+    slack.notifyReviewAssigned({ paperId: paper.id, paperTitle: paper.title, reviewerUsername: picked.map((r) => r.username).join(', ') }).catch(() => {});
+    teams.notifyReviewAssigned({ paperId: paper.id, paperTitle: paper.title, reviewerUsername: picked.map((r) => r.username).join(', ') }).catch(() => {});
   }
 
   await N.notify(userId, {
@@ -188,7 +194,9 @@ async function profile(req, res, next) {
     const user = await User.findById(req.user.id);
     const stats = await Paper.authorStats(req.user.id);
     const aiUsage = await all('SELECT action, COUNT(*) AS n FROM ai_audit WHERE user_id = ? GROUP BY action ORDER BY n DESC', [req.user.id]);
-    res.render('author/profile', { title: 'Profile', user, stats, aiUsage, error: req.query.error || null, success: req.query.success || null });
+    let notificationPrefs = {};
+    try { notificationPrefs = user.notification_prefs ? JSON.parse(user.notification_prefs) : {}; } catch {}
+    res.render('author/profile', { title: 'Profile', user, stats, aiUsage, notificationPrefs, error: req.query.error || null, success: req.query.success || null });
   } catch (err) { next(err); }
 }
 
@@ -203,4 +211,70 @@ async function updateProfile(req, res, next) {
   } catch (err) { next(err); }
 }
 
-module.exports = { dashboard, showSubmit, submit, paperDetail, showRevise, submitRevision, downloadPaper, viewPaper, profile, updateProfile };
+// ── Notification preferences ──────────────────────────────────────────────────
+
+async function updateNotificationPrefs(req, res, next) {
+  try {
+    const { slack_webhook, teams_webhook, email_on_assignment, email_on_decision, digest } = req.body;
+
+    // Basic URL validation for webhook fields
+    const validUrl = (u) => !u || u.startsWith('https://');
+    if (!validUrl(slack_webhook) || !validUrl(teams_webhook)) {
+      return res.redirect('/author/profile?error=' + encodeURIComponent('Webhook URLs must start with https://'));
+    }
+
+    const prefs = {
+      slack_webhook: slack_webhook ? slack_webhook.trim() : '',
+      teams_webhook: teams_webhook ? teams_webhook.trim() : '',
+      email_on_assignment: email_on_assignment === 'on',
+      email_on_decision: email_on_decision === 'on',
+      digest: ['immediate', 'daily'].includes(digest) ? digest : 'immediate',
+    };
+    await User.saveNotificationPrefs(req.user.id, prefs);
+    await audit.log(req.user.id, 'profile.notification_prefs_updated', 'user', req.user.id, null, req);
+    res.redirect('/author/profile?success=Notification preferences saved#notification-prefs');
+  } catch (err) { next(err); }
+}
+
+// ── GDPR/FERPA ────────────────────────────────────────────────────────────────
+
+async function exportMyData(req, res, next) {
+  try {
+    const user = await User.findById(req.user.id);
+    const papers = await Paper.listByAuthor(req.user.id);
+    const reviews = await all('SELECT * FROM reviews WHERE reviewer_id = ?', [req.user.id]);
+    const notifications = await all('SELECT kind, title, body, link, read_at, created_at FROM notifications WHERE user_id = ? ORDER BY created_at DESC', [req.user.id]);
+    const decisions = await all('SELECT d.*, p.title AS paper_title FROM decisions d JOIN papers p ON p.id = d.paper_id WHERE p.author_id = ?', [req.user.id]);
+
+    const payload = {
+      exportedAt: new Date().toISOString(),
+      profile: {
+        id: user.id, username: user.username, email: user.email,
+        role: user.role, expertise: user.expertise, affiliation: user.affiliation,
+        orcid_id: user.orcid_id, created_at: user.created_at, last_login: user.last_login,
+      },
+      papers, reviews, decisions, notifications,
+    };
+
+    await audit.log(req.user.id, 'gdpr.export', 'user', req.user.id, null, req);
+    res.setHeader('Content-Type', 'application/json');
+    res.setHeader('Content-Disposition', `attachment; filename="papersub-data-${user.username}-${new Date().toISOString().slice(0,10)}.json"`);
+    res.send(JSON.stringify(payload, null, 2));
+  } catch (err) { next(err); }
+}
+
+async function requestDeletion(req, res, next) {
+  try {
+    const { confirmation } = req.body;
+    if (confirmation !== 'DELETE MY ACCOUNT') {
+      return res.redirect('/author/profile?error=' + encodeURIComponent('Please type DELETE MY ACCOUNT exactly to confirm'));
+    }
+    await run('UPDATE users SET is_active = 0, account_deletion_requested_at = datetime(\'now\') WHERE id = ?', [req.user.id]);
+    await audit.log(req.user.id, 'gdpr.deletion_requested', 'user', req.user.id, null, req);
+    req.session.destroy(() => {
+      res.render('auth/deletion-requested', { title: 'Account deletion requested' });
+    });
+  } catch (err) { next(err); }
+}
+
+module.exports = { dashboard, showSubmit, submit, paperDetail, showRevise, submitRevision, downloadPaper, viewPaper, profile, updateProfile, updateNotificationPrefs, exportMyData, requestDeletion };

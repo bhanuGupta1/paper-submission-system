@@ -5,6 +5,7 @@ const User = require('../models/User');
 const EmailToken = require('../models/EmailToken');
 const jwtService = require('../services/jwt');
 const emailService = require('../services/email');
+const audit = require('../services/auditLog');
 const config = require('../config');
 const logger = require('../utils/logger');
 
@@ -56,12 +57,15 @@ async function login(req, res, next) {
     const ok = user && (await User.verifyPassword(user, password));
     if (!ok) {
       logger.info({ username }, 'Failed login');
+      await audit.log(user ? user.id : null, 'login.failed', 'user', null, { username }, req);
       return redirectWithError(res, '/login', 'Invalid username or password');
     }
     if (user.is_active === 0) {
+      await audit.log(user.id, 'login.deactivated', 'user', user.id, null, req);
       return redirectWithError(res, '/login', 'Your account has been deactivated. Contact an administrator.');
     }
     await User.touchLastLogin(user.id);
+    await audit.log(user.id, 'login.success', 'user', user.id, null, req);
     await setSession(req, user);
     if (user.role === 'admin') return res.redirect('/admin');
     if (user.role === 'editor') return res.redirect('/editor');
@@ -114,6 +118,7 @@ async function register(req, res, next) {
     }
 
     const user = await User.create({ username, email, password, role, expertise, affiliation });
+    await audit.log(user.id, 'register', 'user', user.id, { role }, req);
 
     if (email && config.email.enabled) {
       const token = await EmailToken.create(user.id, 'verify');
@@ -188,6 +193,7 @@ async function resetPassword(req, res, next) {
 
 function logout(req, res) {
   const userId = req.session.userId;
+  audit.log(userId, 'logout', 'user', userId, null, req).catch(() => {});
   req.session.destroy(async () => {
     res.clearCookie(config.session.name);
     if (userId) {

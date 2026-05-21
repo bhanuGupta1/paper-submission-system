@@ -298,7 +298,37 @@ async function migrate() {
   `);
   await run('CREATE INDEX IF NOT EXISTS idx_webhooks_owner ON webhooks(owner_id)');
 
-  logger.info('Migration complete (v5)');
+  // ── v6: Phase 1 university features ────────────────────────────────────────
+
+  // Immutable audit log — every significant action is recorded
+  await run(`
+    CREATE TABLE IF NOT EXISTS audit_log (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      user_id INTEGER,
+      action TEXT NOT NULL,
+      resource_type TEXT,
+      resource_id INTEGER,
+      details TEXT,
+      ip TEXT,
+      user_agent TEXT,
+      created_at TEXT NOT NULL DEFAULT (datetime('now')),
+      FOREIGN KEY(user_id) REFERENCES users(id) ON DELETE SET NULL
+    )
+  `);
+  await run('CREATE INDEX IF NOT EXISTS idx_audit_log_user ON audit_log(user_id, created_at)');
+  await run('CREATE INDEX IF NOT EXISTS idx_audit_log_action ON audit_log(action, created_at)');
+  await run('CREATE INDEX IF NOT EXISTS idx_audit_log_resource ON audit_log(resource_type, resource_id)');
+
+  // ORCID researcher identity
+  await run(`ALTER TABLE users ADD COLUMN orcid_id TEXT`).catch(() => {});
+
+  // Per-user notification preferences (JSON blob)
+  await run(`ALTER TABLE users ADD COLUMN notification_prefs TEXT`).catch(() => {});
+
+  // GDPR/FERPA — soft-delete & account deletion request tracking
+  await run(`ALTER TABLE users ADD COLUMN account_deletion_requested_at TEXT`).catch(() => {});
+
+  logger.info('Migration complete (v6)');
 }
 
 if (require.main === module) {

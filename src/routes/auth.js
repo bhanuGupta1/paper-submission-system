@@ -5,7 +5,9 @@ const rateLimit = require('express-rate-limit');
 const passport = require('passport');
 const ctl = require('../controllers/authController');
 const { requireJwt } = require('../middleware/auth');
-const { GOOGLE_ENABLED, GITHUB_ENABLED } = require('../services/oauth');
+const { GOOGLE_ENABLED, GITHUB_ENABLED, ORCID_ENABLED } = require('../services/oauth');
+const { run, get } = require('../db/connection');
+const audit = require('../services/auditLog');
 
 const router = express.Router();
 
@@ -97,5 +99,56 @@ if (GITHUB_ENABLED) {
     }
   );
 }
+
+// ── ORCID OAuth ───────────────────────────────────────────────────────────────
+if (ORCID_ENABLED) {
+  router.get('/auth/orcid',
+    passport.authenticate('orcid')
+  );
+  router.get('/auth/orcid/callback',
+    passport.authenticate('orcid', { failureRedirect: '/login?error=ORCID+authentication+failed', session: false }),
+    async (req, res) => {
+      try {
+        const profile = req.user; // synthetic profile from strategy
+        const orcidId = profile.orcidId || profile.id;
+        // If user is already logged in, link ORCID to their account
+        if (req.session && req.session.userId) {
+          await run('UPDATE users SET orcid_id = ? WHERE id = ?', [orcidId, req.session.userId]);
+          await audit.log(req.session.userId, 'orcid.link', 'user', req.session.userId, { orcidId }, req);
+          return res.redirect('/author/profile?success=ORCID+iD+connected+successfully');
+        }
+        // Otherwise find user by ORCID and log them in
+        const user = await get('SELECT * FROM users WHERE orcid_id = ?', [orcidId]);
+        if (!user) {
+          return res.redirect(`/register?orcid=${encodeURIComponent(orcidId)}&name=${encodeURIComponent(profile.displayName || '')}&info=${encodeURIComponent('ORCID verified — complete your account setup below')}`);
+        }
+        if (user.is_active === 0) return res.redirect('/login?error=Account+deactivated');
+        req.session.regenerate((err) => {
+          if (err) return res.redirect('/login?error=Session+error');
+          req.session.userId = user.id;
+          req.session.role = user.role;
+          req.session.username = user.username;
+          req.session.save(async () => {
+            await audit.log(user.id, 'login.orcid', 'user', user.id, { orcidId }, req);
+            if (user.role === 'admin') return res.redirect('/admin');
+            if (user.role === 'editor') return res.redirect('/editor');
+            if (user.role === 'reviewer') return res.redirect('/reviewer');
+            return res.redirect('/author');
+          });
+        });
+      } catch (err) {
+        res.redirect('/login?error=ORCID+error');
+      }
+    }
+  );
+}
+
+// ── ORCID disconnect (POST, requires login) ───────────────────────────────────
+router.post('/auth/orcid/disconnect', async (req, res) => {
+  if (!req.session || !req.session.userId) return res.redirect('/login');
+  await run('UPDATE users SET orcid_id = NULL WHERE id = ?', [req.session.userId]).catch(() => {});
+  await audit.log(req.session.userId, 'orcid.unlink', 'user', req.session.userId, null, req);
+  res.redirect('/author/profile?success=ORCID+iD+disconnected');
+});
 
 module.exports = router;

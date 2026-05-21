@@ -48,10 +48,11 @@ function createApp() {
   }));
 
   // Make user info + unread-notifications count available to every view.
-  const { GOOGLE_ENABLED, GITHUB_ENABLED } = require('./services/oauth');
+  const { GOOGLE_ENABLED, GITHUB_ENABLED, ORCID_ENABLED } = require('./services/oauth');
   app.use(async (req, res, next) => {
     res.locals.googleOAuthEnabled = GOOGLE_ENABLED;
     res.locals.githubOAuthEnabled = GITHUB_ENABLED;
+    res.locals.orcidOAuthEnabled  = ORCID_ENABLED;
     if (req.session.userId) {
       res.locals.currentUser = { id: req.session.userId, role: req.session.role, username: req.session.username };
       try { res.locals.unreadCount = await N.unreadCount(req.session.userId); }

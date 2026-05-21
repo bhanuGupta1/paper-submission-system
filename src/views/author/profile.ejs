@@ -148,6 +148,106 @@
           </div>
         </div>
       </div>
+
+      <!-- Notification preferences -->
+      <section id="notification-prefs" class="glass-card gradient-border-card p-6 sm:p-8 mt-6">
+        <h2 class="font-display text-2xl font-extrabold mb-1 gradient-text">Notification preferences</h2>
+        <p class="text-sm mb-6" style="color:var(--text-tertiary)">Connect Slack or Microsoft Teams to receive platform events wherever your team works.</p>
+        <form action="/author/profile/notification-prefs" method="post" class="space-y-6">
+
+          <!-- Webhook URLs -->
+          <div class="grid sm:grid-cols-2 gap-4">
+            <div>
+              <label class="block text-sm font-semibold mb-1.5" style="color:var(--text-secondary)">
+                <span class="inline-flex items-center gap-1.5">
+                  <svg class="w-4 h-4" viewBox="0 0 24 24" fill="currentColor" style="color:#611f69"><path d="M5.042 15.165a2.528 2.528 0 01-2.52 2.523A2.528 2.528 0 010 15.165a2.527 2.527 0 012.522-2.52h2.52v2.52zM6.313 15.165a2.527 2.527 0 012.521-2.52 2.527 2.527 0 012.521 2.52v6.313A2.528 2.528 0 018.834 24a2.528 2.528 0 01-2.521-2.522v-6.313zM8.834 5.042a2.528 2.528 0 01-2.521-2.52A2.528 2.528 0 018.834 0a2.528 2.528 0 012.521 2.522v2.52H8.834zM8.834 6.313a2.528 2.528 0 012.521 2.521 2.528 2.528 0 01-2.521 2.521H2.522A2.528 2.528 0 010 8.834a2.528 2.528 0 012.522-2.521h6.312zM18.956 8.834a2.528 2.528 0 012.522-2.521A2.528 2.528 0 0124 8.834a2.528 2.528 0 01-2.522 2.521h-2.522V8.834zM17.688 8.834a2.528 2.528 0 01-2.523 2.521 2.527 2.527 0 01-2.52-2.521V2.522A2.527 2.527 0 0115.165 0a2.528 2.528 0 012.523 2.522v6.312zM15.165 18.956a2.528 2.528 0 012.523 2.522A2.528 2.528 0 0115.165 24a2.527 2.527 0 01-2.52-2.522v-2.522h2.52zM15.165 17.688a2.527 2.527 0 01-2.52-2.523 2.526 2.526 0 012.52-2.52h6.313A2.527 2.527 0 0124 15.165a2.528 2.528 0 01-2.522 2.523h-6.313z"/></svg>
+                  Slack incoming webhook URL
+                </span>
+              </label>
+              <input type="url" name="slack_webhook" value="<%= notificationPrefs.slack_webhook || '' %>"
+                placeholder="https://hooks.slack.com/services/..."
+                class="block w-full rounded-lg border px-3.5 py-2.5 text-sm"
+                style="background:var(--surface-1);border-color:var(--border-default);color:var(--text-primary)">
+              <p class="text-xs mt-1.5" style="color:var(--text-tertiary)">From Slack → Apps → Incoming Webhooks → Add.</p>
+            </div>
+            <div>
+              <label class="block text-sm font-semibold mb-1.5" style="color:var(--text-secondary)">
+                <span class="inline-flex items-center gap-1.5">
+                  <svg class="w-4 h-4" viewBox="0 0 24 24" fill="currentColor" style="color:#6264a7"><path d="M24 12.004C24 5.374 18.628 0 12 0 5.374 0 0 5.374 0 12.004 0 17.98 4.388 22.954 10.126 23.854V15.47H7.078v-3.466h3.048v-2.642c0-3.007 1.792-4.669 4.532-4.669 1.313 0 2.686.234 2.686.234v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.466h-2.796v8.384C19.612 22.954 24 17.98 24 12.004z"/></svg>
+                  Microsoft Teams webhook URL
+                </span>
+              </label>
+              <input type="url" name="teams_webhook" value="<%= notificationPrefs.teams_webhook || '' %>"
+                placeholder="https://outlook.office.com/webhook/..."
+                class="block w-full rounded-lg border px-3.5 py-2.5 text-sm"
+                style="background:var(--surface-1);border-color:var(--border-default);color:var(--text-primary)">
+              <p class="text-xs mt-1.5" style="color:var(--text-tertiary)">From Teams → channel → Connectors → Incoming Webhook.</p>
+            </div>
+          </div>
+
+          <!-- Email toggles -->
+          <div>
+            <p class="text-sm font-semibold mb-3" style="color:var(--text-secondary)">Email notifications</p>
+            <div class="flex flex-wrap gap-4">
+              <label class="flex items-center gap-2.5 cursor-pointer">
+                <input type="checkbox" name="email_on_assignment" class="w-4 h-4 rounded" style="accent-color:var(--brand-500)"
+                  <%= notificationPrefs.email_on_assignment !== false ? 'checked' : '' %>>
+                <span class="text-sm" style="color:var(--text-secondary)">When assigned as reviewer</span>
+              </label>
+              <label class="flex items-center gap-2.5 cursor-pointer">
+                <input type="checkbox" name="email_on_decision" class="w-4 h-4 rounded" style="accent-color:var(--brand-500)"
+                  <%= notificationPrefs.email_on_decision !== false ? 'checked' : '' %>>
+                <span class="text-sm" style="color:var(--text-secondary)">When an editorial decision is made on my paper</span>
+              </label>
+            </div>
+          </div>
+
+          <!-- Digest frequency -->
+          <div>
+            <p class="text-sm font-semibold mb-3" style="color:var(--text-secondary)">In-app notification digest</p>
+            <div class="flex gap-3">
+              <label class="flex items-center gap-2 cursor-pointer">
+                <input type="radio" name="digest" value="immediate" class="w-4 h-4" style="accent-color:var(--brand-500)"
+                  <%= (notificationPrefs.digest || 'immediate') === 'immediate' ? 'checked' : '' %>>
+                <span class="text-sm" style="color:var(--text-secondary)">Immediate</span>
+              </label>
+              <label class="flex items-center gap-2 cursor-pointer">
+                <input type="radio" name="digest" value="daily" class="w-4 h-4" style="accent-color:var(--brand-500)"
+                  <%= notificationPrefs.digest === 'daily' ? 'checked' : '' %>>
+                <span class="text-sm" style="color:var(--text-secondary)">Daily digest</span>
+              </label>
+            </div>
+          </div>
+
+          <div>
+            <button class="btn-gradient shimmer-btn">Save preferences</button>
+          </div>
+        </form>
+      </section>
+
+      <!-- GDPR / Account deletion -->
+      <section id="delete-account" class="glass-card p-6 sm:p-8 mt-6" style="border-color:rgba(220,38,38,0.2)">
+        <h2 class="font-display text-xl font-extrabold mb-1" style="color:#dc2626">Data &amp; account</h2>
+        <p class="text-sm mb-5" style="color:var(--text-tertiary)">Download your data or permanently delete your account in compliance with GDPR.</p>
+        <div class="flex flex-wrap gap-3 mb-6">
+          <a href="/author/profile/export" class="btn btn-secondary text-sm">Download my data (JSON)</a>
+          <a href="/privacy" class="btn btn-secondary text-sm">Privacy policy</a>
+        </div>
+        <details class="group">
+          <summary class="cursor-pointer text-sm font-semibold select-none" style="color:#dc2626">Delete account permanently&hellip;</summary>
+          <form action="/author/profile/request-deletion" method="post" class="mt-4 space-y-3 max-w-sm">
+            <p class="text-xs leading-6" style="color:var(--text-tertiary)">Your account will be deactivated immediately and hard-deleted within 30 days. This cannot be undone.</p>
+            <div>
+              <label class="block text-sm font-semibold mb-1.5" style="color:var(--text-secondary)">Type <code class="px-1 rounded text-xs" style="background:var(--surface-2)">DELETE MY ACCOUNT</code> to confirm</label>
+              <input type="text" name="confirmation" autocomplete="off" required
+                class="block w-full rounded-lg border px-3.5 py-2.5 text-sm"
+                style="background:var(--surface-1);border-color:rgba(220,38,38,0.4);color:var(--text-primary)">
+            </div>
+            <button class="btn text-sm px-4 py-2" style="background:#dc2626;color:#fff;border:none">Delete my account</button>
+          </form>
+        </details>
+      </section>
+
     </div>
   </main>
   <%- include('../partials/footer') %>

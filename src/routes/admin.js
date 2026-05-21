@@ -17,5 +17,7 @@ router.post('/tracks/:id', ctl.updateTrack);
 router.post('/tracks/:id/delete', ctl.deleteTrack);
 router.get('/export.xlsx', ctl.exportXlsx);
 router.get('/export.csv', ctl.exportCsv);
+router.get('/audit-log', ctl.auditLogView);
+router.get('/audit-log.csv', ctl.auditLogCsv);
 
 module.exports = router;

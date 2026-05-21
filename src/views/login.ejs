@@ -66,7 +66,7 @@
           </button>
         </form>
 
-        <% if (googleOAuthEnabled || githubOAuthEnabled) { %>
+        <% if (googleOAuthEnabled || githubOAuthEnabled || orcidOAuthEnabled) { %>
           <div class="relative my-6">
             <div class="absolute inset-0 flex items-center"><div class="w-full border-t" style="border-color:var(--border-default)"></div></div>
             <div class="relative flex justify-center text-xs"><span class="px-3 rounded-full glass-chip" style="color:var(--text-tertiary)">or continue with</span></div>
@@ -77,6 +77,12 @@
             <% } %>
             <% if (githubOAuthEnabled) { %>
               <a href="/auth/github" class="btn btn-secondary w-full py-3 text-sm flex items-center justify-center gap-2.5">Continue with GitHub</a>
+            <% } %>
+            <% if (orcidOAuthEnabled) { %>
+              <a href="/auth/orcid" class="btn btn-secondary w-full py-3 text-sm flex items-center justify-center gap-2.5" style="border-color:rgba(166,206,57,0.4)">
+                <svg class="w-4 h-4" viewBox="0 0 24 24" fill="currentColor" style="color:#a6ce39"><circle cx="12" cy="12" r="12" fill="#a6ce39"/><text x="12" y="16.5" text-anchor="middle" font-size="10" font-weight="bold" fill="white">iD</text></svg>
+                Sign in with ORCID
+              </a>
             <% } %>
           </div>
         <% } %>

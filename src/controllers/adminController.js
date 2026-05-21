@@ -8,6 +8,7 @@ const Review = require('../models/Review');
 const User = require('../models/User');
 const Track = require('../models/Track');
 const analytics = require('../services/operationsAnalytics');
+const audit = require('../services/auditLog');
 const { all } = require('../db/connection');
 const config = require('../config');
 const logger = require('../utils/logger');
@@ -59,15 +60,18 @@ async function updateUser(req, res, next) {
     if (action === 'activate') {
       await User.setActive(userId, true);
       logger.info({ adminId: req.user.id, userId, action: 'activate_user' }, 'Admin activated user');
+      await audit.log(req.user.id, 'admin.user.activate', 'user', userId, { target: user.username }, req);
     } else if (action === 'deactivate') {
       if (user.id === req.user.id) return res.status(400).json({ error: 'Cannot deactivate your own account' });
       await User.setActive(userId, false);
       logger.info({ adminId: req.user.id, userId, action: 'deactivate_user' }, 'Admin deactivated user');
+      await audit.log(req.user.id, 'admin.user.deactivate', 'user', userId, { target: user.username }, req);
     } else if (action === 'set-role') {
       if (!role || !User.ROLES.includes(role)) return res.status(400).json({ error: 'Invalid role' });
       if (user.id === req.user.id && role !== 'admin') return res.status(400).json({ error: 'Cannot remove admin role from yourself' });
       await User.setRole(userId, role);
       logger.info({ adminId: req.user.id, userId, newRole: role }, 'Admin changed user role');
+      await audit.log(req.user.id, 'admin.user.set_role', 'user', userId, { target: user.username, role }, req);
     } else {
       return res.status(400).json({ error: 'Unknown action' });
     }
@@ -173,4 +177,40 @@ async function exportCsv(req, res, next) {
   } catch (err) { next(err); }
 }
 
-module.exports = { dashboard, listUsers, updateUser, listTracks, createTrack, updateTrack, deleteTrack, exportXlsx, exportCsv };
+// ── Audit log ─────────────────────────────────────────────────────────────────
+
+async function auditLogView(req, res, next) {
+  try {
+    const page = Math.max(1, parseInt(req.query.page, 10) || 1);
+    const pageSize = 50;
+    const offset = (page - 1) * pageSize;
+    const filters = {
+      userId: req.query.userId ? parseInt(req.query.userId, 10) : undefined,
+      action: req.query.action || undefined,
+      resourceType: req.query.resourceType || undefined,
+    };
+    const [entries, total] = await Promise.all([
+      audit.list({ ...filters, limit: pageSize, offset }),
+      audit.count(filters),
+    ]);
+    res.render('admin/audit-log', {
+      title: 'Audit log',
+      entries, filters,
+      filter: { page, pageSize, total, pageCount: Math.max(1, Math.ceil(total / pageSize)) },
+    });
+  } catch (err) { next(err); }
+}
+
+async function auditLogCsv(req, res, next) {
+  try {
+    const entries = await audit.list({ limit: 5000, offset: 0 });
+    const headers = ['id', 'created_at', 'username', 'action', 'resource_type', 'resource_id', 'details', 'ip'];
+    const escape = (v) => `"${String(v ?? '').replace(/"/g, '""')}"`;
+    const csv = [headers.join(','), ...entries.map((r) => headers.map((h) => escape(r[h])).join(','))].join('\n');
+    res.setHeader('Content-Type', 'text/csv');
+    res.setHeader('Content-Disposition', 'attachment; filename="audit-log.csv"');
+    res.send(csv);
+  } catch (err) { next(err); }
+}
+
+module.exports = { dashboard, listUsers, updateUser, listTracks, createTrack, updateTrack, deleteTrack, exportXlsx, exportCsv, auditLogView, auditLogCsv };

@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="en">
+<head><%- include('partials/head') %></head>
+<body class="min-h-screen flex flex-col" style="background:var(--surface-0);color:var(--text-primary)">
+  <%- include('partials/nav') %>
+  <main class="flex-1">
+    <div class="max-w-3xl mx-auto px-6 py-16">
+      <p class="eyebrow" style="color:var(--brand-500)">Legal</p>
+      <h1 class="font-display text-4xl font-extrabold mt-3 gradient-text">Privacy policy</h1>
+      <p class="mt-3 text-sm" style="color:var(--text-tertiary)">Last updated: May 2026 · GDPR &amp; FERPA compliant</p>
+
+      <div class="mt-10 space-y-8 text-sm leading-7" style="color:var(--text-secondary)">
+
+        <section>
+          <h2 class="font-display text-lg font-bold mb-3" style="color:var(--text-primary)">1. Who we are</h2>
+          <p>PaperSub.AI is an academic manuscript submission and peer-review platform. The data controller is the institution that has deployed this instance. Contact your institution's research office or system administrator for data-controller details.</p>
+        </section>
+
+        <section>
+          <h2 class="font-display text-lg font-bold mb-3" style="color:var(--text-primary)">2. Data we collect</h2>
+          <ul class="list-disc ml-5 space-y-1">
+            <li><strong>Account data</strong> — username, email address, institutional affiliation, area of expertise, role, ORCID iD (if connected)</li>
+            <li><strong>Manuscript data</strong> — submitted papers, abstracts, author lists, revision history, uploaded files</li>
+            <li><strong>Review data</strong> — review text, scores, recommendations, conflict-of-interest declarations</li>
+            <li><strong>Usage data</strong> — login timestamps, IP addresses (audit log), browser user agent, notification read status</li>
+            <li><strong>AI processing data</strong> — text similarity scores, AI-text likelihood estimates, AI-assisted review scaffolds (all advisory; no automated decisions)</li>
+          </ul>
+        </section>
+
+        <section>
+          <h2 class="font-display text-lg font-bold mb-3" style="color:var(--text-primary)">3. Legal basis (GDPR)</h2>
+          <ul class="list-disc ml-5 space-y-1">
+            <li><strong>Contract performance</strong> — processing your submissions and reviews as part of the academic publishing workflow</li>
+            <li><strong>Legitimate interest</strong> — platform security, fraud prevention, audit logging</li>
+            <li><strong>Legal obligation</strong> — retaining scholarly records in accordance with institutional policy</li>
+          </ul>
+        </section>
+
+        <section>
+          <h2 class="font-display text-lg font-bold mb-3" style="color:var(--text-primary)">4. FERPA (US institutions)</h2>
+          <p>Where student records are involved, access is limited to authorised school officials with a legitimate educational interest. Student-identifiable information is not disclosed to third parties without written consent, except as permitted by FERPA.</p>
+        </section>
+
+        <section>
+          <h2 class="font-display text-lg font-bold mb-3" style="color:var(--text-primary)">5. Data retention</h2>
+          <ul class="list-disc ml-5 space-y-1">
+            <li>Active account data: retained for the lifetime of the account</li>
+            <li>Published papers: retained indefinitely as part of the scholarly record</li>
+            <li>Unpublished submissions &amp; reviews: retained for 7 years after final decision</li>
+            <li>Audit log: retained for 3 years</li>
+            <li>Deleted accounts: hard-deleted within 30 days of deletion request</li>
+          </ul>
+        </section>
+
+        <section>
+          <h2 class="font-display text-lg font-bold mb-3" style="color:var(--text-primary)">6. Your rights</h2>
+          <p class="mb-3">Under GDPR you have the right to access, rectify, or erase your personal data, and the right to data portability. Exercise these rights directly in the platform:</p>
+          <div class="flex flex-wrap gap-3">
+            <% if (currentUser) { %>
+              <a href="/author/profile/export" class="btn btn-secondary text-sm py-2 px-4">Download my data</a>
+              <a href="/author/profile" class="btn btn-secondary text-sm py-2 px-4">Edit my profile</a>
+              <a href="/author/profile#delete-account" class="btn btn-secondary text-sm py-2 px-4" style="border-color:rgba(220,38,38,0.3);color:#dc2626">Request account deletion</a>
+            <% } else { %>
+              <a href="/login" class="btn btn-secondary text-sm py-2 px-4">Sign in to access your rights</a>
+            <% } %>
+          </div>
+        </section>
+
+        <section>
+          <h2 class="font-display text-lg font-bold mb-3" style="color:var(--text-primary)">7. Third-party services</h2>
+          <ul class="list-disc ml-5 space-y-1">
+            <li><strong>ORCID</strong> — if you connect your ORCID iD, your ORCID record ID is stored and used only for identity verification</li>
+            <li><strong>Slack / Microsoft Teams</strong> — if you configure personal webhook URLs, event notifications are sent to those endpoints. No personal data beyond the event description is transmitted.</li>
+            <li><strong>Anthropic Claude API</strong> — if AI features are enabled, manuscript text may be sent to the Anthropic API for processing. Anthropic's data-use terms apply.</li>
+            <li><strong>Unsplash</strong> — decorative background images are loaded from Unsplash CDN; no personal data is transmitted.</li>
+          </ul>
+        </section>
+
+        <section>
+          <h2 class="font-display text-lg font-bold mb-3" style="color:var(--text-primary)">8. Security</h2>
+          <p>Passwords are hashed with bcrypt (cost factor 10). Sessions are encrypted and stored server-side. All traffic is served over HTTPS in production. An immutable audit log records every significant action. SQLite databases are backed up daily.</p>
+        </section>
+
+        <section>
+          <h2 class="font-display text-lg font-bold mb-3" style="color:var(--text-primary)">9. Contact</h2>
+          <p>For data-protection enquiries, contact your institution's Data Protection Officer or the PaperSub.AI system administrator for your institution.</p>
+        </section>
+
+      </div>
+    </div>
+  </main>
+  <%- include('partials/footer') %>
+</body>
+</html>

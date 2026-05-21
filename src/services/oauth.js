@@ -2,6 +2,7 @@
 
 const { Strategy: GoogleStrategy } = require('passport-google-oauth20');
 const { Strategy: GitHubStrategy } = require('passport-github2');
+const { Strategy: OAuth2Strategy } = require('passport-oauth2');
 const passport = require('passport');
 const User = require('../models/User');
 const { run, get } = require('../db/connection');
@@ -10,6 +11,7 @@ const logger = require('../utils/logger');
 
 const GOOGLE_ENABLED = Boolean(config.oauth && config.oauth.google.clientId && config.oauth.google.clientSecret);
 const GITHUB_ENABLED = Boolean(config.oauth && config.oauth.github.clientId && config.oauth.github.clientSecret);
+const ORCID_ENABLED  = Boolean(config.oauth && config.oauth.orcid && config.oauth.orcid.clientId && config.oauth.orcid.clientSecret);
 
 async function uniqueUsername(base) {
   let candidate = base;
@@ -107,6 +109,47 @@ function setupPassport() {
   } else {
     logger.info('GitHub OAuth not configured (GITHUB_CLIENT_ID/GITHUB_CLIENT_SECRET not set)');
   }
+
+  // ── ORCID OAuth 2.0 ──────────────────────────────────────────────────────────
+  if (ORCID_ENABLED) {
+    const orcidBase = config.oauth.orcid.sandbox
+      ? 'https://sandbox.orcid.org'
+      : 'https://orcid.org';
+    passport.use('orcid', new OAuth2Strategy(
+      {
+        authorizationURL: `${orcidBase}/oauth/authorize`,
+        tokenURL:         `${orcidBase}/oauth/token`,
+        clientID:         config.oauth.orcid.clientId,
+        clientSecret:     config.oauth.orcid.clientSecret,
+        callbackURL:      `${config.appUrl}/auth/orcid/callback`,
+        scope:            '/authenticate',
+        state:            true,
+      },
+      async (accessToken, refreshToken, params, profile, done) => {
+        try {
+          // ORCID returns orcid & name in the token response (params)
+          const orcidId   = params.orcid || (profile && profile.id) || null;
+          const name      = params.name  || (profile && profile.displayName) || '';
+          if (!orcidId) return done(new Error('ORCID ID not returned'));
+
+          // Check if already linked
+          let user = await get('SELECT * FROM users WHERE orcid_id = ?', [orcidId]);
+          if (user) return done(null, user);
+
+          // If session has a logged-in user, link ORCID to their account
+          // (handled in route callback — here we just pass orcidId via profile)
+          const syntheticProfile = { id: orcidId, displayName: name, orcidId };
+          return done(null, syntheticProfile);
+        } catch (err) {
+          logger.error({ err }, 'ORCID OAuth strategy error');
+          return done(err);
+        }
+      }
+    ));
+    logger.info('ORCID OAuth strategy registered');
+  } else {
+    logger.info('ORCID OAuth not configured (ORCID_CLIENT_ID/ORCID_CLIENT_SECRET not set)');
+  }
 }
 
-module.exports = { setupPassport, GOOGLE_ENABLED, GITHUB_ENABLED };
+module.exports = { setupPassport, GOOGLE_ENABLED, GITHUB_ENABLED, ORCID_ENABLED };

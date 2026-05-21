@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="en">
+<head><%- include('../partials/head') %></head>
+<body class="min-h-screen flex flex-col" style="background:var(--surface-0);color:var(--text-primary)">
+  <%- include('../partials/nav') %>
+  <main class="flex-1 relative overflow-hidden">
+    <div class="page-photo-bg" style="background-image:url('https://images.unsplash.com/photo-1521587760476-6c12a4b040da?auto=format&fit=crop&w=1920&q=80')" aria-hidden="true"></div>
+    <div class="max-w-7xl mx-auto px-6 py-8 relative z-10">
+
+      <div class="dashboard-hero mb-6 flex items-center justify-between flex-wrap gap-4">
+        <div>
+          <p class="eyebrow text-indigo-200">Security &amp; compliance</p>
+          <h1 class="font-display text-4xl font-extrabold text-white mt-2">Audit log</h1>
+          <p class="text-sm text-slate-300 mt-1">Immutable record of every significant action across the platform.</p>
+        </div>
+        <a href="/admin/audit-log.csv" class="inline-flex items-center gap-2 bg-white/10 hover:bg-white/20 text-white px-4 py-2 rounded-lg text-sm font-semibold transition">
+          <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
+          Export CSV
+        </a>
+      </div>
+
+      <!-- Filters -->
+      <form method="get" action="/admin/audit-log" class="glass-card p-4 mb-6 flex flex-wrap gap-3 items-end">
+        <div>
+          <label class="block text-xs font-semibold mb-1" style="color:var(--text-tertiary)">Action</label>
+          <input name="action" value="<%= filters.action || '' %>" placeholder="e.g. login.success"
+            class="auth-input rounded-lg border px-3 py-2 text-sm w-44"
+            style="background:var(--surface-1);border-color:var(--border-default);color:var(--text-primary)">
+        </div>
+        <div>
+          <label class="block text-xs font-semibold mb-1" style="color:var(--text-tertiary)">Resource type</label>
+          <input name="resourceType" value="<%= filters.resourceType || '' %>" placeholder="e.g. user, paper"
+            class="auth-input rounded-lg border px-3 py-2 text-sm w-36"
+            style="background:var(--surface-1);border-color:var(--border-default);color:var(--text-primary)">
+        </div>
+        <button type="submit" class="btn-gradient px-4 py-2 text-sm rounded-lg">Filter</button>
+        <a href="/admin/audit-log" class="text-sm font-medium" style="color:var(--text-tertiary)">Clear</a>
+      </form>
+
+      <!-- Table -->
+      <div class="glass-card overflow-x-auto">
+        <table class="w-full text-sm">
+          <thead>
+            <tr style="border-bottom:1px solid var(--border-default)">
+              <th class="px-4 py-3 text-left text-xs font-bold uppercase tracking-wider" style="color:var(--text-tertiary)">Time</th>
+              <th class="px-4 py-3 text-left text-xs font-bold uppercase tracking-wider" style="color:var(--text-tertiary)">User</th>
+              <th class="px-4 py-3 text-left text-xs font-bold uppercase tracking-wider" style="color:var(--text-tertiary)">Action</th>
+              <th class="px-4 py-3 text-left text-xs font-bold uppercase tracking-wider" style="color:var(--text-tertiary)">Resource</th>
+              <th class="px-4 py-3 text-left text-xs font-bold uppercase tracking-wider" style="color:var(--text-tertiary)">Details</th>
+              <th class="px-4 py-3 text-left text-xs font-bold uppercase tracking-wider" style="color:var(--text-tertiary)">IP</th>
+            </tr>
+          </thead>
+          <tbody>
+            <% if (!entries.length) { %>
+              <tr><td colspan="6" class="px-4 py-10 text-center" style="color:var(--text-tertiary)">No audit entries yet.</td></tr>
+            <% } %>
+            <% entries.forEach(function(e) { %>
+              <tr style="border-bottom:1px solid var(--border-subtle)" class="hover:bg-[var(--surface-1)] transition-colors">
+                <td class="px-4 py-3 whitespace-nowrap text-xs font-mono" style="color:var(--text-tertiary)"><%= e.created_at.replace('T',' ').slice(0,19) %></td>
+                <td class="px-4 py-3 whitespace-nowrap">
+                  <% if (e.username) { %>
+                    <a href="/admin/audit-log?userId=<%= e.user_id %>" class="font-semibold link-line" style="color:var(--brand-500)">@<%= e.username %></a>
+                  <% } else { %>
+                    <span style="color:var(--text-tertiary)">—</span>
+                  <% } %>
+                </td>
+                <td class="px-4 py-3 whitespace-nowrap">
+                  <%
+                    const actionColor = e.action.includes('failed') || e.action.includes('deactivate') ? 'var(--error-700,#b91c1c)'
+                      : e.action.includes('login') ? 'var(--success-700,#15803d)'
+                      : 'var(--text-primary)';
+                  %>
+                  <span class="font-mono text-xs font-semibold px-2 py-0.5 rounded" style="background:var(--surface-2);color:<%= actionColor %>"><%= e.action %></span>
+                </td>
+                <td class="px-4 py-3 whitespace-nowrap text-xs" style="color:var(--text-secondary)">
+                  <% if (e.resource_type) { %><%= e.resource_type %><% if (e.resource_id) { %>:<%= e.resource_id %><% } %><% } else { %>—<% } %>
+                </td>
+                <td class="px-4 py-3 max-w-xs truncate text-xs" style="color:var(--text-tertiary)" title="<%= e.details || '' %>">
+                  <%= e.details ? e.details.slice(0, 80) : '—' %>
+                </td>
+                <td class="px-4 py-3 whitespace-nowrap text-xs font-mono" style="color:var(--text-tertiary)"><%= e.ip || '—' %></td>
+              </tr>
+            <% }); %>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Pagination -->
+      <% if (filter.pageCount > 1) { %>
+        <div class="flex items-center justify-between mt-4 text-sm" style="color:var(--text-tertiary)">
+          <span>Page <%= filter.page %> of <%= filter.pageCount %> · <%= filter.total %> total entries</span>
+          <div class="flex gap-2">
+            <% if (filter.page > 1) { %>
+              <a href="?page=<%= filter.page - 1 %>&action=<%= filters.action||'' %>&resourceType=<%= filters.resourceType||'' %>" class="px-3 py-1 rounded glass-card font-semibold" style="color:var(--brand-500)">Previous</a>
+            <% } %>
+            <% if (filter.page < filter.pageCount) { %>
+              <a href="?page=<%= filter.page + 1 %>&action=<%= filters.action||'' %>&resourceType=<%= filters.resourceType||'' %>" class="px-3 py-1 rounded glass-card font-semibold" style="color:var(--brand-500)">Next</a>
+            <% } %>
+          </div>
+        </div>
+      <% } %>
+
+    </div>
+  </main>
+  <%- include('../partials/footer') %>
+</body>
+</html>

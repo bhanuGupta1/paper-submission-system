@@ -20,6 +20,8 @@ router.get('/', (req, res) => {
   });
 });
 
+router.get('/privacy', (req, res) => res.render('privacy', { title: 'Privacy policy' }));
+
 router.use(auth);
 router.use('/health', health);
 router.use('/author', author);

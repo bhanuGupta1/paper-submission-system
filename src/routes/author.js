@@ -61,5 +61,8 @@ router.get('/papers/:id/download', ctl.downloadPaper);
 router.get('/papers/:id/view', ctl.viewPaper);
 router.get('/profile', ctl.profile);
 router.post('/profile', ctl.updateProfile);
+router.post('/profile/notification-prefs', ctl.updateNotificationPrefs);
+router.get('/profile/export', ctl.exportMyData);
+router.post('/profile/request-deletion', ctl.requestDeletion);
 
 module.exports = router;
