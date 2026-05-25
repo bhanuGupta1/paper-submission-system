@@ -335,4 +335,41 @@ async function aiStatus(req, res, next) {
   }
 }
 
-module.exports = { dashboard, listUsers, updateUser, listTracks, createTrack, updateTrack, deleteTrack, exportXlsx, exportCsv, auditLogView, auditLogCsv, backupView, triggerBackup, downloadBackup, lmsView, createLmsIntegration, toggleLmsIntegration, deleteLmsIntegration, triggerDigest, aiStatus };
+// ── Re-run AI detection on papers missing scores ──────────────────────────────
+
+async function rerunAiDetection(req, res, next) {
+  try {
+    const plagiarism = require('../services/plagiarismDetector');
+    const Paper = require('../models/Paper');
+    const { all: runAll } = req.query; // ?all=1 to reprocess every paper, otherwise only null/zero scores
+
+    const papers = await Paper.listAll({ limit: 500 });
+    const targets = runAll === '1'
+      ? papers
+      : papers.filter(p => p.ai_text_likelihood == null || p.ai_text_likelihood === 0);
+
+    if (targets.length === 0) {
+      return res.json({ message: 'No papers need reprocessing.', updated: 0 });
+    }
+
+    // Process sequentially to avoid hammering the LLM rate limits
+    let updated = 0;
+    const errors = [];
+    for (const paper of targets) {
+      try {
+        const result = await plagiarism.analyse(paper);
+        await Paper.updateAiMetadata(paper.id, {
+          similarityScore: result.similarity_score,
+          aiTextLikelihood: result.ai_text_likelihood,
+        });
+        updated++;
+      } catch (err) {
+        errors.push({ id: paper.id, error: err.message });
+      }
+    }
+
+    res.json({ message: `Reprocessed ${updated} of ${targets.length} papers.`, updated, errors });
+  } catch (err) { next(err); }
+}
+
+module.exports = { dashboard, listUsers, updateUser, listTracks, createTrack, updateTrack, deleteTrack, exportXlsx, exportCsv, auditLogView, auditLogCsv, backupView, triggerBackup, downloadBackup, lmsView, createLmsIntegration, toggleLmsIntegration, deleteLmsIntegration, triggerDigest, aiStatus, rerunAiDetection };

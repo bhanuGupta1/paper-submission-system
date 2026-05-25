@@ -30,5 +30,6 @@ router.post('/lms/:id/delete', ctl.deleteLmsIntegration);
 
 router.post('/digest', ctl.triggerDigest);
 router.get('/ai-status', ctl.aiStatus);
+router.post('/rerun-ai-detection', ctl.rerunAiDetection);
 
 module.exports = router;

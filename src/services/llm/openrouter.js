@@ -387,6 +387,31 @@ async function generateRubric(paperType, domain, abstract) {
   catch (err) { logger.error({ err: err.message }, '[openrouter] generateRubric failed'); return null; }
 }
 
+// ── AI-generated text detector ───────────────────────────────────────────
+
+async function detectAiText(text) {
+  const sys = `You are an expert forensic linguist specialising in detecting AI-generated academic text.
+Analyse the provided text for signals of AI authorship and return ONLY valid JSON:
+{
+  "ai_probability": 0.0,
+  "verdict": "human"|"likely_human"|"uncertain"|"likely_ai"|"ai",
+  "signals": ["string"],
+  "confidence": 0-100
+}
+Calibration rules:
+- Score 0.0-0.25 = human/likely_human: distinct personal voice, irregular sentence rhythm, idiosyncratic phrasing, field-specific jargon used naturally.
+- Score 0.25-0.55 = uncertain: mixed signals, possibly AI-assisted editing of human text.
+- Score 0.55-0.75 = likely_ai: uniform rhythm, heavy use of transition phrases, hedging without specifics, overly balanced structure.
+- Score 0.75-1.0 = ai: strong uniformity, multiple LLM-favoured connectives, suspiciously polished grammar, lack of concrete detail.
+List up to 5 specific signals observed. Be conservative — most academic writing has some AI-like features.`;
+  try {
+    return safeJson(await complete(sys, sanitize(text, 3000), { maxTokens: 350, taskType: 'analysis' }), null);
+  } catch (err) {
+    logger.error({ err: err.message }, '[openrouter] detectAiText failed');
+    return null;
+  }
+}
+
 // ── Streaming support ─────────────────────────────────────────────────────
 
 async function streamToneImprove(text, res) {
@@ -433,5 +458,6 @@ module.exports = {
   reviewAssist, reviewQualityLlm,
   revisionSummarizer, responseToReviewers,
   analyticsInsights, generateRubric,
+  detectAiText,
   streamToneImprove,
 };
