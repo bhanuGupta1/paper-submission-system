@@ -44,8 +44,9 @@ A production-shaped, AI-augmented academic paper submission and peer-review plat
 
 All four go through a single provider switch (`src/services/llm/index.js`):
 
-- **`heuristic`** (default) — pure JS, fully offline, zero-cost.
-- **`claude`** — Anthropic Claude via `@anthropic-ai/sdk`. Activates only when `LLM_PROVIDER=claude` and `ANTHROPIC_API_KEY` is set.
+- **`groq`** (default) — hosted LLM via the Groq API (OpenAI-compatible). Activates when `LLM_PROVIDER=groq` and `GROQ_API_KEY` is set; per-task model routing with a fallback chain. Free key at https://console.groq.com/keys.
+- **`openrouter`** — hosted LLM via OpenRouter. Activates when `LLM_PROVIDER=openrouter` and `OPENROUTER_API_KEY` is set; free-tier models available.
+- **`heuristic`** — pure JS, fully offline, zero-cost. Automatic fallback whenever no API key is configured or a request fails.
 
 | Feature | Where | What it does | Provider |
 |---|---|---|---|
@@ -119,17 +120,27 @@ Without `TRUST_PROXY=1`, production secure session cookies may not be accepted a
 
 ---
 
-## 🔑 Switching to Claude
+## 🔑 Choosing an AI provider
+
+Groq is the default. Get a free key at https://console.groq.com/keys:
 
 ```bash
-echo 'LLM_PROVIDER=claude'              >> .env
-echo 'ANTHROPIC_API_KEY=sk-ant-...'      >> .env
-echo 'ANTHROPIC_MODEL=claude-sonnet-4-6' >> .env
-npm install @anthropic-ai/sdk
+echo 'LLM_PROVIDER=groq'                  >> .env
+echo 'GROQ_API_KEY=gsk_...'               >> .env
+echo 'GROQ_MODEL=llama-3.3-70b-versatile' >> .env
 npm start
 ```
 
-The heuristic backend remains the fallback if a Claude call fails.
+Prefer OpenRouter? Get a key at https://openrouter.ai (free-tier models available):
+
+```bash
+echo 'LLM_PROVIDER=openrouter'              >> .env
+echo 'OPENROUTER_API_KEY=sk-or-...'         >> .env
+echo 'OPENROUTER_MODEL=moonshotai/kimi-k2.6:free' >> .env
+npm start
+```
+
+No SDK install is required — both providers are called over their HTTP APIs. The heuristic backend remains the automatic fallback if a hosted call fails.
 
 ---
 
@@ -169,7 +180,7 @@ src/
                             · ai · notifications
   routes/                   one per controller (9 files)
   services/
-    llm/                    provider switch (heuristic | claude)
+    llm/                    provider switch (groq | openrouter | heuristic)
     embeddings.js           pure-JS TF-IDF
     embeddings-st.js        sentence-transformer adapter (lazy load)
     reviewerMatcher.js      TF-IDF + COI filter

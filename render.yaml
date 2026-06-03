@@ -48,17 +48,19 @@ services:
       # - key: GITHUB_CLIENT_SECRET
       #   sync: false
 
-      # OpenRouter AI (free-tier LLM — llama-3.3-70b by default)
-      # Value for OPENROUTER_API_KEY must be set in the Render dashboard; it is not committed here.
+      # AI provider. Default is Groq (fast, free key at https://console.groq.com/keys).
+      # Set the chosen provider's API key in the Render dashboard; keys are not committed here.
       - key: LLM_PROVIDER
-        value: openrouter
-      - key: OPENROUTER_MODEL
-        value: meta-llama/llama-3.3-70b-instruct:free
-      - key: OPENROUTER_API_KEY
+        value: groq
+      - key: GROQ_MODEL
+        value: llama-3.3-70b-versatile
+      - key: GROQ_API_KEY
         sync: false
 
-      # Optional — enable to use Claude AI features instead
-      # - key: ANTHROPIC_API_KEY
+      # Optional — use OpenRouter instead of Groq (set LLM_PROVIDER=openrouter)
+      # - key: OPENROUTER_MODEL
+      #   value: moonshotai/kimi-k2.6:free
+      # - key: OPENROUTER_API_KEY
       #   sync: false
 
       # Optional — SQLite data path (Render free tier uses ephemeral disk)

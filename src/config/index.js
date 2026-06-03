@@ -66,16 +66,11 @@ const config = {
       if (explicit) return explicit;
       if (process.env.GROQ_API_KEY) return 'groq';
       if (process.env.OPENROUTER_API_KEY) return 'openrouter';
-      if (process.env.ANTHROPIC_API_KEY) return 'claude';
       return 'heuristic';
     })(),
-    anthropic: {
-      apiKey: process.env.ANTHROPIC_API_KEY || '',
-      model: process.env.ANTHROPIC_MODEL || 'claude-sonnet-4-6',
-    },
     openrouter: {
       apiKey: process.env.OPENROUTER_API_KEY || '',
-      model: process.env.OPENROUTER_MODEL || 'meta-llama/llama-3.3-70b-instruct:free', // fallback chain in openrouter.js if this is rate-limited
+      model: process.env.OPENROUTER_MODEL || 'moonshotai/kimi-k2.6:free', // fallback chain in openrouter.js if this is rate-limited
     },
     groq: {
       apiKey: process.env.GROQ_API_KEY || '',

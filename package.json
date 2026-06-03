@@ -26,9 +26,7 @@
     "peer-review",
     "generative-ai",
     "llm",
-    "embeddings",
-    "claude",
-    "anthropic"
+    "embeddings"
   ],
   "author": "Bhanu Gupta",
   "license": "MIT",
@@ -57,9 +55,6 @@
     "pino-pretty": "^11.2.2",
     "sqlite3": "^5.1.7",
     "swagger-ui-express": "^5.0.1"
-  },
-  "optionalDependencies": {
-    "@anthropic-ai/sdk": "^0.27.0"
   },
   "devDependencies": {
     "eslint": "^9.10.0",

@@ -40,12 +40,13 @@ const MODELS = {
 
 // Ordered by capability; a wrong/decommissioned name (Groq returns 400/404)
 // is skipped automatically, and the offline heuristic is the final safety net.
+// Verified against https://console.groq.com/docs/models (June 2026).
 const FALLBACK_MODELS = [
-  'llama-3.3-70b-versatile',
-  'meta-llama/llama-4-maverick-17b-128e-instruct',
-  'meta-llama/llama-4-scout-17b-16e-instruct',
-  'llama-3.1-8b-instant',
-  'gemma2-9b-it',
+  'llama-3.3-70b-versatile',     // production, reliable JSON mode
+  'openai/gpt-oss-120b',         // production, flagship open-weight reasoning
+  'openai/gpt-oss-20b',          // production, very fast (~1000 t/s)
+  'llama-3.1-8b-instant',        // production, fast + low cost
+  'qwen/qwen3-32b',              // preview, capable extra fallback
 ];
 
 // Strip control characters and obvious prompt-injection attempts from user text
@@ -186,6 +187,33 @@ async function suggestTitles(abstract) {
     const arr = JSON.parse((raw.match(/\[[\s\S]*\]/) || ['[]'])[0]);
     return Array.isArray(arr) && arr.length ? arr.slice(0, 5) : heuristic.suggestTitles(abstract);
   } catch (err) { logger.error({ err: err.message }, '[groq] suggestTitles failed'); return heuristic.suggestTitles(abstract); }
+}
+
+// ── Manuscript metadata extraction (auto-fill the submission form) ─────────
+// Reads the start of an uploaded manuscript and returns title/authors/abstract/
+// keywords/tags so the submit form can pre-populate. Degrades to the offline
+// heuristic extractor on any error or empty input.
+async function extractMetadata(fullText) {
+  const body = String(fullText || '').trim();
+  if (!body) return heuristic.extractMetadata(body);
+  const sys = `You extract bibliographic metadata from the BEGINNING of an academic manuscript.
+Use ONLY information present in the text; never invent authors, titles, or results. If a field is absent, return an empty string or empty array.
+Return ONLY valid JSON:
+{
+  "title": "string",
+  "authors": ["First Last"],
+  "abstract": "string (verbatim or lightly cleaned)",
+  "keywords": ["string"],
+  "tags": ["string (3-6 short topical tags you infer)"],
+  "confidence": 0-100
+}`;
+  try {
+    const raw = await complete(sys, sanitize(body, 6000), { maxTokens: 900, taskType: 'analysis', json: true });
+    return safeJson(raw, null) || heuristic.extractMetadata(body);
+  } catch (err) {
+    logger.error({ err: err.message }, '[groq] extractMetadata failed');
+    return heuristic.extractMetadata(body);
+  }
 }
 
 async function generateDecisionLetter(paper, reviews, suggestion, explanation) {
@@ -557,6 +585,7 @@ async function streamToneImprove(text, res) {
 module.exports = {
   complete,
   draftReview, summarize, extractKeywords, polishAbstract, suggestTitles,
+  extractMetadata,
   generateDecisionLetter, summarizeReviews,
   deskRejectionCheck, ethicsCheck, citationHallucinationCheck,
   toneImprove, writingScore, sectionFeedback,

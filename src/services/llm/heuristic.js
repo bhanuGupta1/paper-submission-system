@@ -98,6 +98,56 @@ function polishAbstract(text) {
   return { revised, suggestions };
 }
 
+// Best-effort metadata extraction from raw manuscript text (offline).
+// Returns the same shape the LLM backends produce so the UI is provider-agnostic.
+function extractMetadata(fullText) {
+  const text = String(fullText || '').replace(/\r/g, '');
+  const empty = { title: '', authors: '', abstract: '', keywords: [], tags: [], confidence: 0, provider: 'heuristic' };
+  if (!text.trim()) return empty;
+  const nonEmpty = text.split('\n').map(l => l.trim()).filter(Boolean);
+
+  // Title: first plausible heading line (not a label, sane length).
+  let title = '';
+  for (const l of nonEmpty.slice(0, 15)) {
+    if (l.length >= 8 && l.length <= 250 && !/^(abstract|keywords?|index terms|introduction|doi|https?:|copyright|©|\d+\s*$)/i.test(l)) {
+      title = l.replace(/\s+/g, ' ');
+      break;
+    }
+  }
+
+  // Abstract: text after an "Abstract" heading up to the next section, else first long paragraph.
+  let abstract = '';
+  const absMatch = text.match(/\babstract\b[:.\s-]*\n?([\s\S]{40,3000}?)(?:\n\s*\n|\b(?:keywords?|index terms|1\.?\s+introduction|introduction)\b)/i);
+  if (absMatch) abstract = absMatch[1].replace(/\s+/g, ' ').trim();
+  if (!abstract) {
+    const paras = text.split(/\n\s*\n/).map(p => p.replace(/\s+/g, ' ').trim()).filter(p => p.length >= 200);
+    if (paras.length) abstract = paras[0].slice(0, 2000);
+  }
+
+  // Keywords: an explicit "Keywords:" line, else derive from the abstract.
+  let keywords = [];
+  const kwMatch = text.match(/\bkeywords?\b[:\-\s]*([^\n]{3,300})/i);
+  if (kwMatch) keywords = kwMatch[1].split(/[;,]/).map(k => k.replace(/\s+/g, ' ').trim()).filter(k => k && k.length <= 40).slice(0, 8);
+  if (!keywords.length && abstract) keywords = extractKeywords(abstract, 6);
+
+  // Authors: a names-looking line shortly after the title (skip emails/affiliations).
+  let authors = '';
+  if (title) {
+    const idx = nonEmpty.findIndex(l => l.replace(/\s+/g, ' ') === title);
+    for (let i = idx + 1; i >= 1 && i < Math.min(idx + 4, nonEmpty.length); i++) {
+      const cand = nonEmpty[i];
+      if (!cand || /@|university|institute|department|laboratory|abstract|\d{3}/i.test(cand)) continue;
+      if (/^[A-Z][a-zA-Z.'-]+(\s+[A-Z][a-zA-Z.'-]+)*((\s*,\s*|\s+and\s+)[A-Z][a-zA-Z.'-]+(\s+[A-Z][a-zA-Z.'-]+)*)+$/.test(cand) && cand.length <= 200) {
+        authors = cand.replace(/\s+and\s+/gi, ', ').replace(/\s+/g, ' ').trim();
+        break;
+      }
+    }
+  }
+
+  const got = [title, authors, abstract, keywords.length].filter(Boolean).length;
+  return { title, authors, abstract, keywords, tags: [], confidence: got >= 3 ? 40 : got >= 1 ? 25 : 0, provider: 'heuristic' };
+}
+
 // Null stubs for LLM-only features
 function generateDecisionLetter() { return null; }
 function summarizeReviews() { return null; }
@@ -121,6 +171,7 @@ function streamToneImprove(text, res) { res.write('data: ' + JSON.stringify({ er
 
 module.exports = {
   summarize, extractKeywords, draftReview, suggestTitles, polishAbstract,
+  extractMetadata,
   generateDecisionLetter, summarizeReviews,
   deskRejectionCheck, ethicsCheck, citationHallucinationCheck,
   toneImprove, writingScore, sectionFeedback,

@@ -5,9 +5,10 @@
  *
  * Three operations exposed to the author UI:
  *
- *   polish(text)       - tighten the abstract and surface concrete suggestions.
- *   titles(abstract)   - propose alternative titles.
- *   keywords(abstract) - extract keywords for indexing.
+ *   polish(text)         - tighten the abstract and surface concrete suggestions.
+ *   titles(abstract)     - propose alternative titles.
+ *   keywords(abstract)   - extract keywords for indexing.
+ *   extractMetadata(text)- pull title/authors/abstract/keywords/tags from a manuscript.
  */
 
 const llm = require('./llm');
@@ -31,6 +32,15 @@ async function keywords(abstract, userId, n = 6) {
   return out;
 }
 
+async function extractMetadata(fullText, userId) {
+  const extractor = typeof llm.extractMetadata === 'function'
+    ? llm.extractMetadata
+    : require('./llm/heuristic').extractMetadata;
+  const out = await extractor(fullText);
+  await audit(userId, 'metadata_extract');
+  return out;
+}
+
 async function audit(userId, action) {
   await run(
     'INSERT INTO ai_audit (user_id, action, provider) VALUES (?,?,?)',
@@ -38,4 +48,4 @@ async function audit(userId, action) {
   );
 }
 
-module.exports = { polish, titles, keywords };
+module.exports = { polish, titles, keywords, extractMetadata };

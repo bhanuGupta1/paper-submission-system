@@ -12,27 +12,28 @@ const heuristic = require('./heuristic');
 const API_URL = 'https://openrouter.ai/api/v1/chat/completions';
 const API_KEY = config.llm.openrouter.apiKey;
 
-// Task-specific free models — verified live as of 2026-05-22
+// Task-specific free models — verified live against https://openrouter.ai/api/v1/models (June 2026)
 const MODELS = {
-  analysis:      'meta-llama/llama-3.3-70b-instruct:free',
-  summarization: 'meta-llama/llama-3.2-3b-instruct:free',
+  analysis:      'moonshotai/kimi-k2.6:free',
+  summarization: 'google/gemma-4-26b-a4b-it:free',
   similarity:    'google/gemma-4-31b-it:free',
-  matching:      'meta-llama/llama-3.3-70b-instruct:free',
-  quality:       'meta-llama/llama-3.3-70b-instruct:free',
-  citation:      'meta-llama/llama-3.3-70b-instruct:free',
+  matching:      'moonshotai/kimi-k2.6:free',
+  quality:       'moonshotai/kimi-k2.6:free',
+  citation:      'deepseek/deepseek-v4-flash:free',
   tone:          'google/gemma-4-31b-it:free',
-  decision:      'meta-llama/llama-3.3-70b-instruct:free',
-  default:       config.llm.openrouter.model || 'meta-llama/llama-3.3-70b-instruct:free',
+  decision:      'moonshotai/kimi-k2.6:free',
+  default:       config.llm.openrouter.model || 'moonshotai/kimi-k2.6:free',
 };
 
-// Ordered by capability; all verified live 2026-05-22
+// Ordered by capability; all verified live against the OpenRouter models API (June 2026)
 const FALLBACK_MODELS = [
-  'meta-llama/llama-3.3-70b-instruct:free',
-  'nousresearch/hermes-3-llama-3.1-405b:free',
+  'moonshotai/kimi-k2.6:free',
+  'deepseek/deepseek-v4-flash:free',
   'nvidia/nemotron-3-super-120b-a12b:free',
-  'qwen/qwen3-next-80b-a3b-instruct:free',
   'google/gemma-4-31b-it:free',
-  'meta-llama/llama-3.2-3b-instruct:free',
+  'google/gemma-4-26b-a4b-it:free',
+  'nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free',
+  'poolside/laguna-m.1:free',
 ];
 
 // Strip control characters and obvious prompt-injection attempts from user text
@@ -156,6 +157,33 @@ async function suggestTitles(abstract) {
     const arr = JSON.parse((raw.match(/\[[\s\S]*\]/) || ['[]'])[0]);
     return Array.isArray(arr) && arr.length ? arr.slice(0, 5) : heuristic.suggestTitles(abstract);
   } catch (err) { logger.error({ err: err.message }, '[openrouter] suggestTitles failed'); return heuristic.suggestTitles(abstract); }
+}
+
+// ── Manuscript metadata extraction (auto-fill the submission form) ─────────
+// Reads the start of an uploaded manuscript and returns title/authors/abstract/
+// keywords/tags so the submit form can pre-populate. Degrades to the offline
+// heuristic extractor on any error or empty input.
+async function extractMetadata(fullText) {
+  const body = String(fullText || '').trim();
+  if (!body) return heuristic.extractMetadata(body);
+  const sys = `You extract bibliographic metadata from the BEGINNING of an academic manuscript.
+Use ONLY information present in the text; never invent authors, titles, or results. If a field is absent, return an empty string or empty array.
+Return ONLY valid JSON:
+{
+  "title": "string",
+  "authors": ["First Last"],
+  "abstract": "string (verbatim or lightly cleaned)",
+  "keywords": ["string"],
+  "tags": ["string (3-6 short topical tags you infer)"],
+  "confidence": 0-100
+}`;
+  try {
+    const raw = await complete(sys, sanitize(body, 6000), { maxTokens: 900, taskType: 'analysis' });
+    return safeJson(raw, null) || heuristic.extractMetadata(body);
+  } catch (err) {
+    logger.error({ err: err.message }, '[openrouter] extractMetadata failed');
+    return heuristic.extractMetadata(body);
+  }
 }
 
 async function generateDecisionLetter(paper, reviews, suggestion, explanation) {
@@ -523,6 +551,7 @@ async function streamToneImprove(text, res) {
 module.exports = {
   complete,
   draftReview, summarize, extractKeywords, polishAbstract, suggestTitles,
+  extractMetadata,
   generateDecisionLetter, summarizeReviews,
   deskRejectionCheck, ethicsCheck, citationHallucinationCheck,
   toneImprove, writingScore, sectionFeedback,

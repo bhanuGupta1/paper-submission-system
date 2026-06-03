@@ -8,7 +8,8 @@ services:
       - PORT=3000
       - SESSION_SECRET=${SESSION_SECRET:-please-change-me-in-production}
       - LLM_PROVIDER=${LLM_PROVIDER:-heuristic}
-      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY:-}
+      - GROQ_API_KEY=${GROQ_API_KEY:-}
+      - OPENROUTER_API_KEY=${OPENROUTER_API_KEY:-}
     volumes:
       - ./data:/app/data
       - ./uploads:/app/uploads

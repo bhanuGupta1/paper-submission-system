@@ -35,8 +35,8 @@ start().catch((err) => { logger.error({ err }, 'Startup failed'); process.exit(1
 // Log AI provider status on startup (never log the key value)
 const llmStatus = (() => {
   const p = config.llm.provider;
+  if (p === 'groq') return config.llm.groq.apiKey ? 'Groq: configured' : 'Groq: GROQ_API_KEY missing — heuristic fallback active';
   if (p === 'openrouter') return config.llm.openrouter.apiKey ? 'OpenRouter: configured' : 'OpenRouter: OPENROUTER_API_KEY missing — heuristic fallback active';
-  if (p === 'claude') return config.llm.anthropic.apiKey ? 'Claude: configured' : 'Claude: ANTHROPIC_API_KEY missing — heuristic fallback active';
   return 'heuristic (offline, zero-cost)';
 })();
 logger.info({ llmProvider: config.llm.provider }, `AI provider: ${llmStatus}`);

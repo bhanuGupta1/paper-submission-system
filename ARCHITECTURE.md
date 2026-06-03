@@ -27,8 +27,9 @@
     │   ├── writingAssistant           │
     │   └── llm/                       │
     │        ├── index.js (switch)     │
-    │        ├── heuristic.js (default)│
-    │        └── claude.js (optional)  │
+    │        ├── groq.js (default)     │
+    │        ├── openrouter.js         │
+    │        └── heuristic.js (offline)│
     └──────────────────────────────────┘
            │
            ▼
@@ -47,7 +48,7 @@
 
 ## Why these choices
 
-* **Provider switch over hard-coded SDK.** Lets the app run cost-free in demo / CI yet upgrade to Claude with one env var. The heuristic backend ships *the same return shape* as the LLM one, so controllers and views never branch on provider.
+* **Provider switch over hard-coded SDK.** Lets the app run cost-free in demo / CI yet upgrade to a hosted LLM (Groq or OpenRouter) with one env var. The heuristic backend ships *the same return shape* as the LLM one, so controllers and views never branch on provider.
 * **TF-IDF over neural embeddings.** Hundreds of papers is the realistic scale of a workshop-level system. Pure-JS TF-IDF is good enough, has zero install footprint, and explains itself to an examiner. The `embeddings` module already mirrors a `model.embed(text)` interface so swapping in a transformer is a one-file change.
 * **Audit log on every AI call.** Prepares the system for a real-world deployment where authors and reviewers must be told (and can audit) when AI assisted a decision.
 * **Separation of "draft" and "submit".** The AI never decides — it only proposes. `ai_assisted` is recorded on each review for transparency.

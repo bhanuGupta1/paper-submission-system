@@ -45,6 +45,20 @@ function handleUpload(redirectPath) {
 }
 
 router.post('/submit', handleUpload('/author/submit'), ctl.submit);
+
+// AJAX auto-fill: parse an uploaded manuscript and return metadata as JSON.
+// Returns JSON errors (not redirects) so the submit page can surface them inline.
+function handleUploadJson(req, res, next) {
+  upload.single('paperFile')(req, res, function (err) {
+    if (!err) return next();
+    const multer = require('multer');
+    const msg = err instanceof multer.MulterError && err.code === 'LIMIT_FILE_SIZE'
+      ? 'File is too large. Maximum size is 10 MB.'
+      : err.message || 'File upload failed.';
+    return res.status(400).json({ ok: false, metadata: null, message: msg });
+  });
+}
+router.post('/extract-metadata', handleUploadJson, ctl.extractMetadata);
 router.get('/papers/:id', ctl.paperDetail);
 router.get('/papers/:id/revise', ctl.showRevise);
 router.post('/papers/:id/revise', function (req, res, next) {

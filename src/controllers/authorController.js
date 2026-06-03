@@ -16,6 +16,7 @@ const audit = require('../services/auditLog');
 const logger = require('../utils/logger');
 const { all, run } = require('../db/connection');
 const path = require('path');
+const fs = require('fs');
 
 async function dashboard(req, res, next) {
   try {
@@ -69,6 +70,45 @@ async function submit(req, res, next) {
 
     res.redirect(`/author/papers/${paper.id}`);
   } catch (err) { next(err); }
+}
+
+// Auto-fill: extract title/authors/abstract/keywords/tags from an uploaded manuscript.
+// The file is parsed and discarded here — the real submit re-uploads it.
+async function extractMetadata(req, res, next) {
+  let filePath = null;
+  try {
+    if (!req.file) return res.status(400).json({ ok: false, message: 'No file received.' });
+    filePath = req.file.path;
+
+    const fileText = await textExtract.extract(filePath).catch(() => null);
+    fs.promises.unlink(filePath).catch(() => {});
+    filePath = null;
+
+    if (!fileText || fileText.trim().length < 20) {
+      return res.json({ ok: false, metadata: null, message: 'Could not read text from this file (a scanned-image PDF can\'t be parsed). Please fill the fields manually.' });
+    }
+
+    const llm = require('../services/llm');
+    const result = await writingAssistant.extractMetadata(fileText, req.user.id);
+    const provider = llm.providerName || (result && result.provider) || 'heuristic';
+
+    if (!result) {
+      return res.json({ ok: false, metadata: null, provider, message: 'Auto-fill is unavailable right now. Please fill the fields manually.' });
+    }
+
+    const toStr = (v) => Array.isArray(v) ? v.filter(Boolean).join(', ') : (v == null ? '' : String(v));
+    const metadata = {
+      title: toStr(result.title).trim().slice(0, 500),
+      authors: toStr(result.authors).trim().slice(0, 1000),
+      abstract: toStr(result.abstract).trim().slice(0, 8000),
+      keywords: toStr(result.keywords).trim().slice(0, 500),
+      tags: toStr(result.tags).trim().slice(0, 500),
+    };
+    res.json({ ok: true, metadata, confidence: result.confidence ?? null, provider });
+  } catch (err) {
+    if (filePath) fs.promises.unlink(filePath).catch(() => {});
+    next(err);
+  }
 }
 
 async function runAiPipeline(paper, userId) {
@@ -334,4 +374,4 @@ async function deleteApiKey(req, res, next) {
   } catch (err) { next(err); }
 }
 
-module.exports = { dashboard, showSubmit, submit, paperDetail, showRevise, submitRevision, downloadPaper, viewPaper, profile, updateProfile, updateNotificationPrefs, exportMyData, requestDeletion, listApiKeys, createApiKey, revokeApiKey, deleteApiKey };
+module.exports = { dashboard, showSubmit, submit, extractMetadata, paperDetail, showRevise, submitRevision, downloadPaper, viewPaper, profile, updateProfile, updateNotificationPrefs, exportMyData, requestDeletion, listApiKeys, createApiKey, revokeApiKey, deleteApiKey };
