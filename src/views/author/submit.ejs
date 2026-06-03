@@ -168,6 +168,26 @@
             </div>
           </div>
 
+          <!-- AI Insights (v3) -->
+          <div class="rounded-xl border p-5 space-y-3" style="background:var(--surface-1);border-color:var(--border-default)">
+            <div class="flex items-center justify-between flex-wrap gap-2">
+              <div>
+                <p class="text-sm font-semibold" style="color:var(--text-primary)">AI Insights</p>
+                <p class="text-xs mt-0.5" style="color:var(--text-tertiary)">AI Suggestion — uses title + abstract · review before submitting</p>
+              </div>
+              <div class="flex flex-wrap gap-2">
+                <button type="button" id="plainSummaryBtn" class="btn btn-sm" style="background:var(--brand-600);color:white;border-color:var(--brand-600)">Plain-language summary</button>
+                <button type="button" id="contribBtn" class="btn btn-sm" style="background:var(--surface-0);color:var(--text-secondary);border-color:var(--border-default)">Key contributions</button>
+                <button type="button" id="titleCheckBtn" class="btn btn-sm" style="background:var(--surface-0);color:var(--text-secondary);border-color:var(--border-default)">Title ↔ abstract</button>
+                <button type="button" id="limitationsBtn" class="btn btn-sm" style="background:var(--surface-0);color:var(--text-secondary);border-color:var(--border-default)">Limitations</button>
+              </div>
+            </div>
+            <div id="plainSummaryPanel" class="hidden text-sm space-y-2"></div>
+            <div id="contribPanel" class="hidden text-sm space-y-2"></div>
+            <div id="titleCheckPanel" class="hidden text-sm space-y-2"></div>
+            <div id="limitationsPanel" class="hidden text-sm space-y-2"></div>
+          </div>
+
           <div class="flex items-center justify-end pt-1">
             <button class="btn-gradient shimmer-btn">
               Submit for review
@@ -483,6 +503,133 @@
       } catch {
         sectionFeedbackPanel.innerHTML = '<p class="text-xs" style="color:var(--error-700)">Could not contact AI service.</p>';
       }
+    });
+
+    // ── AI Insights (v3): plain summary · key contributions · title↔abstract · limitations ──
+    const plainSummaryPanel = $('plainSummaryPanel');
+    const contribPanel      = $('contribPanel');
+    const titleCheckPanel   = $('titleCheckPanel');
+    const limitationsPanel  = $('limitationsPanel');
+
+    const ulList = (items, color) => (items && items.length)
+      ? '<ul class="text-xs space-y-1 mt-1 pl-1">' + items.map(i =>
+          '<li style="color:' + (color || 'var(--text-secondary)') + '">• ' +
+          escapeHtml(typeof i === 'string' ? i : (i.message || i.text || JSON.stringify(i))) + '</li>').join('') + '</ul>'
+      : '';
+    const providerFoot = (out) => {
+      const bits = [];
+      if (out.provider) bits.push('Provider: ' + escapeHtml(out.provider));
+      if (out.confidence != null && out.confidence !== 0) bits.push(out.confidence + '% confidence');
+      return bits.length
+        ? '<div class="text-xs mt-2 pt-2 border-t" style="color:var(--text-tertiary);border-color:var(--border-default)">' + bits.join(' · ') + '</div>'
+        : '';
+    };
+    const requireAbstract = (p) => {
+      const title = $('title').value.trim(), abstract = $('abstract').value.trim();
+      if (!abstract) { p.classList.remove('hidden'); p.innerHTML = '<p class="text-xs" style="color:var(--warning-700)">Write an abstract first.</p>'; return null; }
+      return { title, abstract };
+    };
+
+    $('plainSummaryBtn').addEventListener('click', async () => {
+      const v = requireAbstract(plainSummaryPanel); if (!v) return;
+      plainSummaryPanel.classList.remove('hidden');
+      plainSummaryPanel.innerHTML = '<p class="text-xs" style="color:var(--text-tertiary)">Writing a plain-language summary…</p>';
+      try {
+        const out = await callAI('/api/ai/plain-summary', v);
+        if (!out.plain_summary) {
+          plainSummaryPanel.innerHTML = '<p class="text-xs" style="color:var(--text-tertiary)">' + escapeHtml(out.summary || 'No summary available.') + '</p>' + providerFoot(out);
+          return;
+        }
+        const terms = (out.key_terms_explained || []).map(t =>
+          '<li style="color:var(--text-secondary)"><span class="font-semibold">' + escapeHtml(t.term || '') + '</span> — ' + escapeHtml(t.explanation || '') + '</li>').join('');
+        plainSummaryPanel.innerHTML =
+          '<div class="rounded-md p-3" style="background:var(--surface-0);border:1px solid var(--border-default);color:var(--text-primary)">' + escapeHtml(out.plain_summary) + '</div>' +
+          (out.why_it_matters ? '<div class="text-xs mt-1"><span class="font-semibold" style="color:var(--brand-600)">Why it matters:</span> <span style="color:var(--text-secondary)">' + escapeHtml(out.why_it_matters) + '</span></div>' : '') +
+          (terms ? '<div class="text-xs font-semibold mt-2" style="color:var(--text-tertiary)">Key terms</div><ul class="text-xs space-y-1 mt-1">' + terms + '</ul>' : '') +
+          (out.target_reading_level ? '<div class="text-xs mt-1" style="color:var(--text-tertiary)">Reading level: ' + escapeHtml(out.target_reading_level) + '</div>' : '') +
+          providerFoot(out);
+      } catch { plainSummaryPanel.innerHTML = '<p class="text-xs" style="color:var(--error-700)">Could not contact AI service.</p>'; }
+    });
+
+    $('contribBtn').addEventListener('click', async () => {
+      const v = requireAbstract(contribPanel); if (!v) return;
+      contribPanel.classList.remove('hidden');
+      contribPanel.innerHTML = '<p class="text-xs" style="color:var(--text-tertiary)">Extracting key contributions…</p>';
+      try {
+        const out = await callAI('/api/ai/key-contributions', v);
+        const items = out.contributions || [];
+        if (!items.length) {
+          contribPanel.innerHTML = '<p class="text-xs" style="color:var(--text-tertiary)">' + escapeHtml(out.summary || 'No contributions extracted.') + '</p>' + providerFoot(out);
+          return;
+        }
+        const li = items.map(c => {
+          const text = typeof c === 'string' ? c : (c.contribution || '');
+          const type = (c && typeof c === 'object' && c.type)
+            ? ' <span style="font-size:0.65rem;background:var(--brand-50);color:var(--brand-700);padding:1px 6px;border-radius:9999px;margin-left:4px">' + escapeHtml(c.type) + '</span>' : '';
+          const ungrounded = (c && typeof c === 'object' && c.grounded_in_text === false)
+            ? ' <span style="font-size:0.65rem;color:var(--warning-700)">⚠ not grounded</span>' : '';
+          return '<li style="color:var(--text-secondary)">• ' + escapeHtml(text) + type + ungrounded + '</li>';
+        }).join('');
+        contribPanel.innerHTML =
+          '<ul class="text-xs space-y-1.5">' + li + '</ul>' +
+          (out.novelty_assessment ? '<div class="text-xs mt-2"><span class="font-semibold" style="color:var(--brand-600)">Novelty:</span> <span style="color:var(--text-secondary)">' + escapeHtml(out.novelty_assessment) + '</span>' + (out.novelty_score != null ? ' <span class="font-semibold">(' + out.novelty_score + '/100)</span>' : '') + '</div>' : '') +
+          providerFoot(out);
+      } catch { contribPanel.innerHTML = '<p class="text-xs" style="color:var(--error-700)">Could not contact AI service.</p>'; }
+    });
+
+    $('titleCheckBtn').addEventListener('click', async () => {
+      const title = $('title').value.trim(), abstract = $('abstract').value.trim();
+      if (!title || !abstract) {
+        titleCheckPanel.classList.remove('hidden');
+        titleCheckPanel.innerHTML = '<p class="text-xs" style="color:var(--warning-700)">Fill in title and abstract first.</p>';
+        return;
+      }
+      titleCheckPanel.classList.remove('hidden');
+      titleCheckPanel.innerHTML = '<p class="text-xs" style="color:var(--text-tertiary)">Checking title vs. abstract…</p>';
+      try {
+        const out = await callAI('/api/ai/title-check', { title, abstract });
+        const aligned = out.aligned;
+        const badge = aligned === true ? verdictBadge('PASS')
+          : aligned === false ? verdictBadge('WARN')
+          : '<span class="text-xs font-bold px-2 py-0.5 rounded-full" style="background:#64748b;color:white">N/A</span>';
+        const score = out.consistency_score != null ? out.consistency_score + '/100' : '';
+        let html = '<div class="flex items-center gap-2 flex-wrap">' + badge +
+          '<span class="text-xs" style="color:var(--text-tertiary)">' + (score ? 'Consistency ' + escapeHtml(score) : escapeHtml(out.summary || '')) + '</span></div>';
+        if ((out.mismatches || []).length) html += '<div class="text-xs font-semibold mt-2" style="color:var(--warning-700)">Mismatches</div>' + ulList(out.mismatches, 'var(--warning-700)');
+        if ((out.overclaims || []).length) html += '<div class="text-xs font-semibold mt-2" style="color:var(--warning-700)">Over-claims</div>' + ulList(out.overclaims, 'var(--warning-700)');
+        if ((out.missing_from_title || []).length) html += '<div class="text-xs font-semibold mt-2" style="color:var(--text-tertiary)">Missing from title</div>' + ulList(out.missing_from_title);
+        if ((out.suggested_titles || []).length) {
+          html += '<div class="text-xs font-semibold mt-2" style="color:var(--brand-600)">Suggested titles</div><ul class="text-xs space-y-1 mt-1">' +
+            out.suggested_titles.map(t => '<li>• <button type="button" class="text-left hover:underline" data-sugtitle="' + escapeHtml(t) + '" style="color:var(--text-secondary)">' + escapeHtml(t) + '</button></li>').join('') + '</ul>';
+        }
+        html += providerFoot(out);
+        titleCheckPanel.innerHTML = html;
+        titleCheckPanel.querySelectorAll('button[data-sugtitle]').forEach(b => { b.onclick = () => { $('title').value = b.dataset.sugtitle; }; });
+      } catch { titleCheckPanel.innerHTML = '<p class="text-xs" style="color:var(--error-700)">Could not contact AI service.</p>'; }
+    });
+
+    $('limitationsBtn').addEventListener('click', async () => {
+      const v = requireAbstract(limitationsPanel); if (!v) return;
+      limitationsPanel.classList.remove('hidden');
+      limitationsPanel.innerHTML = '<p class="text-xs" style="color:var(--text-tertiary)">Finding limitations…</p>';
+      try {
+        const out = await callAI('/api/ai/limitations', { title: v.title, abstract: v.abstract });
+        const sevColors = { LOW: '#16a34a', MEDIUM: '#d97706', HIGH: '#dc2626' };
+        const sev = (out.severity || 'UNKNOWN').toUpperCase();
+        const sevBadge = '<span class="text-xs font-bold px-2 py-0.5 rounded-full" style="background:' + (sevColors[sev] || '#64748b') + ';color:white">' + escapeHtml(sev) + '</span>';
+        const hasAny = (out.stated_limitations || []).length || (out.potential_unstated_limitations || []).length;
+        if (!hasAny && out.summary) {
+          limitationsPanel.innerHTML = '<p class="text-xs" style="color:var(--text-tertiary)">' + escapeHtml(out.summary) + '</p>' + providerFoot(out);
+          return;
+        }
+        let html = '<div class="flex items-center gap-2 flex-wrap">' + sevBadge + '<span class="text-xs" style="color:var(--text-tertiary)">severity</span></div>';
+        if ((out.stated_limitations || []).length) html += '<div class="text-xs font-semibold mt-2" style="color:var(--text-tertiary)">Stated by authors</div>' + ulList(out.stated_limitations);
+        if ((out.potential_unstated_limitations || []).length) html += '<div class="text-xs font-semibold mt-2" style="color:var(--warning-700)">Likely unstated</div>' + ulList(out.potential_unstated_limitations, 'var(--warning-700)');
+        if ((out.reviewer_questions || []).length) html += '<div class="text-xs font-semibold mt-2" style="color:var(--brand-600)">Reviewer questions</div>' + ulList(out.reviewer_questions);
+        if ((out.suggestions || []).length) html += '<div class="text-xs font-semibold mt-2" style="color:var(--text-tertiary)">Suggestions</div>' + ulList(out.suggestions);
+        html += providerFoot(out);
+        limitationsPanel.innerHTML = html;
+      } catch { limitationsPanel.innerHTML = '<p class="text-xs" style="color:var(--error-700)">Could not contact AI service.</p>'; }
     });
   </script>
 </body>

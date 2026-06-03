@@ -1,38 +1,51 @@
-﻿'use strict';
+'use strict';
 
 /**
- * OpenRouter backend with task-specific model routing.
- * Each task uses the best free-tier model for that workload.
+ * Groq backend — OpenAI-compatible chat completions on Groq's LPU cloud.
+ *
+ * Activates when LLM_PROVIDER=groq (or auto-detected when GROQ_API_KEY is set)
+ * AND GROQ_API_KEY is non-empty. Exposes the SAME interface as openrouter.js so
+ * every call site keeps working when Groq is the default provider; every method
+ * degrades to the offline heuristic backend on error.
+ *
+ * Reliability features:
+ *   - Native JSON mode (response_format: json_object) for structured calls,
+ *     so we parse a contract instead of regex-scraping prose.
+ *   - Per-request hard timeout via AbortController (config.llm.groq.timeoutMs).
+ *   - Task-specific model routing + a fallback chain across models.
+ *   - 429 Retry-After handling and 4xx/5xx -> next-model fallback.
  */
 
 const config = require('../../config');
 const logger = require('../../utils/logger');
 const heuristic = require('./heuristic');
 
-const API_URL = 'https://openrouter.ai/api/v1/chat/completions';
-const API_KEY = config.llm.openrouter.apiKey;
+const API_URL = 'https://api.groq.com/openai/v1/chat/completions';
+const API_KEY = config.llm.groq.apiKey;
+const TIMEOUT_MS = config.llm.groq.timeoutMs || 30000;
 
-// Task-specific free models — verified live as of 2026-05-22
+// Task-specific models. 70b-versatile for reasoning-heavy work, 8b-instant for
+// cheap/fast summarisation. Any unavailable model just falls through the chain.
 const MODELS = {
-  analysis:      'meta-llama/llama-3.3-70b-instruct:free',
-  summarization: 'meta-llama/llama-3.2-3b-instruct:free',
-  similarity:    'google/gemma-4-31b-it:free',
-  matching:      'meta-llama/llama-3.3-70b-instruct:free',
-  quality:       'meta-llama/llama-3.3-70b-instruct:free',
-  citation:      'meta-llama/llama-3.3-70b-instruct:free',
-  tone:          'google/gemma-4-31b-it:free',
-  decision:      'meta-llama/llama-3.3-70b-instruct:free',
-  default:       config.llm.openrouter.model || 'meta-llama/llama-3.3-70b-instruct:free',
+  analysis:      'llama-3.3-70b-versatile',
+  summarization: 'llama-3.1-8b-instant',
+  similarity:    'llama-3.1-8b-instant',
+  matching:      'llama-3.3-70b-versatile',
+  quality:       'llama-3.3-70b-versatile',
+  citation:      'llama-3.3-70b-versatile',
+  tone:          'llama-3.3-70b-versatile',
+  decision:      'llama-3.3-70b-versatile',
+  default:       config.llm.groq.model || 'llama-3.3-70b-versatile',
 };
 
-// Ordered by capability; all verified live 2026-05-22
+// Ordered by capability; a wrong/decommissioned name (Groq returns 400/404)
+// is skipped automatically, and the offline heuristic is the final safety net.
 const FALLBACK_MODELS = [
-  'meta-llama/llama-3.3-70b-instruct:free',
-  'nousresearch/hermes-3-llama-3.1-405b:free',
-  'nvidia/nemotron-3-super-120b-a12b:free',
-  'qwen/qwen3-next-80b-a3b-instruct:free',
-  'google/gemma-4-31b-it:free',
-  'meta-llama/llama-3.2-3b-instruct:free',
+  'llama-3.3-70b-versatile',
+  'meta-llama/llama-4-maverick-17b-128e-instruct',
+  'meta-llama/llama-4-scout-17b-16e-instruct',
+  'llama-3.1-8b-instant',
+  'gemma2-9b-it',
 ];
 
 // Strip control characters and obvious prompt-injection attempts from user text
@@ -52,64 +65,81 @@ function safeJson(raw, fallback) {
   } catch (_) { return fallback; }
 }
 
-async function callModel(model, systemPrompt, userPrompt, maxTokens, stream = false) {
-  const res = await fetch(API_URL, {
-    method: 'POST',
-    headers: {
-      Authorization: 'Bearer ' + API_KEY,
-      'Content-Type': 'application/json',
-      'HTTP-Referer': config.appUrl || 'http://localhost:3000',
-      'X-Title': 'PaperSub.AI',
-    },
-    body: JSON.stringify({
-      model,
-      max_tokens: maxTokens,
-      stream,
-      messages: [
-        { role: 'system', content: systemPrompt },
-        { role: 'user', content: userPrompt },
-      ],
-    }),
-  });
-  if (!res.ok) {
-    const txt = await res.text().catch(() => res.statusText);
-    const err = new Error('OpenRouter ' + res.status + ': ' + txt);
-    err.status = res.status;
-    throw err;
-  }
-  if (stream) return res; // caller handles the ReadableStream
-  const data = await res.json();
-  if (!data.choices || !data.choices[0]) throw new Error('No choices in response');
-  return (data.choices[0].message.content || '').trim();
-}
-
 function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
 
-async function complete(systemPrompt, userPrompt, { maxTokens = 800, taskType = 'default' } = {}) {
+async function callModel(model, systemPrompt, userPrompt, maxTokens, { stream = false, json = false } = {}) {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), TIMEOUT_MS);
+  try {
+    const res = await fetch(API_URL, {
+      method: 'POST',
+      headers: {
+        Authorization: 'Bearer ' + API_KEY,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        model,
+        max_tokens: maxTokens,
+        temperature: 0.4,
+        stream,
+        // Groq JSON mode requires the literal word "JSON" in the prompt (all
+        // structured prompts include it) and a non-streaming request.
+        ...(json && !stream ? { response_format: { type: 'json_object' } } : {}),
+        messages: [
+          { role: 'system', content: systemPrompt },
+          { role: 'user', content: userPrompt },
+        ],
+      }),
+      signal: controller.signal,
+    });
+    if (!res.ok) {
+      const txt = await res.text().catch(() => res.statusText);
+      const err = new Error('Groq ' + res.status + ': ' + txt);
+      err.status = res.status;
+      err.retryAfter = res.headers.get('retry-after');
+      throw err;
+    }
+    if (stream) { clearTimeout(timer); return res; } // caller drains the stream
+    const data = await res.json();
+    if (!data.choices || !data.choices[0]) throw new Error('No choices in response');
+    return (data.choices[0].message.content || '').trim();
+  } catch (err) {
+    if (err.name === 'AbortError') {
+      const e = new Error('Groq request timed out after ' + TIMEOUT_MS + 'ms');
+      e.status = 408;
+      throw e;
+    }
+    throw err;
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
+async function complete(systemPrompt, userPrompt, { maxTokens = 800, taskType = 'default', json = false } = {}) {
   const primary = MODELS[taskType] || MODELS.default;
   const chain = [primary, ...FALLBACK_MODELS.filter(m => m !== primary)];
   let lastErr;
   let delay = 0;
   for (const model of chain) {
     if (delay > 0) await sleep(delay);
+    delay = 0;
     try {
-      const result = await callModel(model, systemPrompt, userPrompt, maxTokens);
-      if (model !== primary) logger.info({ model, taskType }, '[openrouter] fallback model used');
+      const result = await callModel(model, systemPrompt, userPrompt, maxTokens, { json });
+      if (model !== primary) logger.info({ model, taskType }, '[groq] fallback model used');
       return result;
     } catch (err) {
       lastErr = err;
       if (err.status === 429) {
-        // Parse Retry-After from OpenRouter error body if present
-        let wait = 4000;
-        try { const parsed = JSON.parse(err.message.split(': ').slice(1).join(': ')); wait = ((parsed.error?.metadata?.retry_after_seconds || 4) * 1000); } catch (_) {}
-        delay = Math.min(wait, 8000); // cap at 8s between retries
-        logger.warn({ model, taskType, delayMs: delay }, '[openrouter] 429 rate-limited, waiting before next fallback');
+        const ra = Math.ceil(parseFloat(err.retryAfter));
+        delay = Math.min((Number.isNaN(ra) ? 4 : ra) * 1000, 8000); // cap at 8s
+        logger.warn({ model, taskType, delayMs: delay }, '[groq] 429 rate-limited, waiting before next fallback');
         continue;
       }
-      // Transient upstream errors — keep trying other models
-      if (err.status === 404 || err.status === 500 || err.status === 502 || err.status === 503) {
-        logger.warn({ model, taskType, status: err.status }, '[openrouter] model unavailable, trying next');
-        delay = 1000;
+      // 400 = decommissioned/unknown model, 404 = not found, 408 = our timeout,
+      // 5xx = transient upstream — in all cases try the next model in the chain.
+      if ([400, 404, 408, 500, 502, 503].includes(err.status)) {
+        logger.warn({ model, taskType, status: err.status }, '[groq] model unavailable/timeout, trying next');
+        delay = 800;
         continue;
       }
       throw err;
@@ -118,19 +148,19 @@ async function complete(systemPrompt, userPrompt, { maxTokens = 800, taskType = 
   throw lastErr;
 }
 
-// ── Existing functions (keep backward compat) ──────────────────────────────
+// ── Core author tools (parity with heuristic + openrouter) ─────────────────
 
 async function draftReview(paper) {
   const sys = 'You are an expert academic peer reviewer. Output ONLY valid JSON: {"summary":"string","strengths":["string"],"weaknesses":["string"],"novelty_score":1,"clarity_score":1,"significance_score":1,"recommendation":"accept|reject|revisions","confidence":85}';
   const user = 'Title: ' + sanitize(paper.title, 200) + '\nAbstract: ' + sanitize(paper.abstract, 2000) + '\nKeywords: ' + sanitize(paper.keywords, 200);
-  try { const raw = await complete(sys, user, { maxTokens: 700, taskType: 'analysis' }); return safeJson(raw, heuristic.draftReview(paper)); }
-  catch (err) { logger.error({ err: err.message }, '[openrouter] draftReview failed'); return heuristic.draftReview(paper); }
+  try { const raw = await complete(sys, user, { maxTokens: 700, taskType: 'analysis', json: true }); return safeJson(raw, heuristic.draftReview(paper)); }
+  catch (err) { logger.error({ err: err.message }, '[groq] draftReview failed'); return heuristic.draftReview(paper); }
 }
 
 async function summarize(text, n = 3) {
   if (!text || text.length < 100) return heuristic.summarize(text, n);
   try { return await complete('Summarize in ' + n + ' sentences. Output only the summary.', sanitize(text, 4000), { maxTokens: 300, taskType: 'summarization' }); }
-  catch (err) { logger.error({ err: err.message }, '[openrouter] summarize failed'); return heuristic.summarize(text, n); }
+  catch (err) { logger.error({ err: err.message }, '[groq] summarize failed'); return heuristic.summarize(text, n); }
 }
 
 async function extractKeywords(text, n = 8) {
@@ -139,14 +169,14 @@ async function extractKeywords(text, n = 8) {
     const raw = await complete('Extract ' + n + ' academic keywords. Output ONLY a JSON array of strings.', sanitize(text, 3000), { maxTokens: 150, taskType: 'analysis' });
     const arr = JSON.parse((raw.match(/\[[\s\S]*\]/) || ['[]'])[0]);
     return Array.isArray(arr) && arr.length ? arr.slice(0, n) : heuristic.extractKeywords(text, n);
-  } catch (err) { logger.error({ err: err.message }, '[openrouter] extractKeywords failed'); return heuristic.extractKeywords(text, n); }
+  } catch (err) { logger.error({ err: err.message }, '[groq] extractKeywords failed'); return heuristic.extractKeywords(text, n); }
 }
 
 async function polishAbstract(text) {
   if (!text) return heuristic.polishAbstract(text);
   const sys = 'Polish this academic abstract. Return ONLY JSON: {"revised":"string","suggestions":["string"],"confidence":80}';
-  try { const raw = await complete(sys, sanitize(text, 2000), { maxTokens: 600, taskType: 'analysis' }); return safeJson(raw, heuristic.polishAbstract(text)); }
-  catch (err) { logger.error({ err: err.message }, '[openrouter] polishAbstract failed'); return heuristic.polishAbstract(text); }
+  try { const raw = await complete(sys, sanitize(text, 2000), { maxTokens: 600, taskType: 'analysis', json: true }); return safeJson(raw, heuristic.polishAbstract(text)); }
+  catch (err) { logger.error({ err: err.message }, '[groq] polishAbstract failed'); return heuristic.polishAbstract(text); }
 }
 
 async function suggestTitles(abstract) {
@@ -155,7 +185,7 @@ async function suggestTitles(abstract) {
     const raw = await complete('Suggest 5 academic paper titles. Output ONLY a JSON array of strings.', sanitize(abstract, 1500), { maxTokens: 200, taskType: 'analysis' });
     const arr = JSON.parse((raw.match(/\[[\s\S]*\]/) || ['[]'])[0]);
     return Array.isArray(arr) && arr.length ? arr.slice(0, 5) : heuristic.suggestTitles(abstract);
-  } catch (err) { logger.error({ err: err.message }, '[openrouter] suggestTitles failed'); return heuristic.suggestTitles(abstract); }
+  } catch (err) { logger.error({ err: err.message }, '[groq] suggestTitles failed'); return heuristic.suggestTitles(abstract); }
 }
 
 async function generateDecisionLetter(paper, reviews, suggestion, explanation) {
@@ -163,7 +193,7 @@ async function generateDecisionLetter(paper, reviews, suggestion, explanation) {
   const sys = 'You are an academic journal editor. Write a professional editorial decision letter body (2-4 paragraphs, no salutation or signature). Be specific and constructive.';
   const user = 'Paper: "' + sanitize(paper.title, 200) + '"\nDecision: ' + suggestion + '\nContext: ' + (explanation||[]).join(' ') + '\n\nReviewer feedback:\n' + sanitize(revText, 2000);
   try { return await complete(sys, user, { maxTokens: 600, taskType: 'decision' }); }
-  catch (err) { logger.error({ err: err.message }, '[openrouter] generateDecisionLetter failed'); return null; }
+  catch (err) { logger.error({ err: err.message }, '[groq] generateDecisionLetter failed'); return null; }
 }
 
 async function summarizeReviews(paper, reviews) {
@@ -172,10 +202,10 @@ async function summarizeReviews(paper, reviews) {
   const sys = 'Summarize peer review consensus and disagreements in 3-5 sentences.';
   const user = 'Paper: "' + sanitize(paper.title, 200) + '"\n\nReviews:\n' + sanitize(revText, 3000);
   try { return await complete(sys, user, { maxTokens: 350, taskType: 'summarization' }); }
-  catch (err) { logger.error({ err: err.message }, '[openrouter] summarizeReviews failed'); return null; }
+  catch (err) { logger.error({ err: err.message }, '[groq] summarizeReviews failed'); return null; }
 }
 
-// ── NEW: Pre-submission desk rejection check ──────────────────────────────
+// ── Pre-submission desk rejection check ────────────────────────────────────
 
 async function deskRejectionCheck(title, abstract, wordCount, sectionList, referenceCount, hasKeywords) {
   const sys = `You are an expert academic editor performing a desk rejection pre-check.
@@ -196,11 +226,11 @@ Be strict. Missing abstract, no keywords, or word count outside 3000-12000 shoul
     '\nReference count: ' + (referenceCount || 'unknown') +
     '\nKeywords provided: ' + (hasKeywords ? 'yes' : 'no') +
     '\nAbstract excerpt: ' + sanitize(abstract, 800);
-  try { return safeJson(await complete(sys, user, { maxTokens: 700, taskType: 'analysis' }), null); }
-  catch (err) { logger.error({ err: err.message }, '[openrouter] deskRejectionCheck failed'); return null; }
+  try { return safeJson(await complete(sys, user, { maxTokens: 700, taskType: 'analysis', json: true }), null); }
+  catch (err) { logger.error({ err: err.message }, '[groq] deskRejectionCheck failed'); return null; }
 }
 
-// ── NEW: Ethics & compliance checker ──────────────────────────────────────
+// ── Ethics & compliance checker ────────────────────────────────────────────
 
 async function ethicsCheck(title, abstract, fullText) {
   const sys = `You are a research ethics compliance expert. Analyze the manuscript excerpt and return ONLY valid JSON:
@@ -215,11 +245,11 @@ async function ethicsCheck(title, abstract, fullText) {
   "confidence": 0-100
 }`;
   const combined = 'Title: ' + sanitize(title, 200) + '\n\n' + sanitize((fullText || abstract || ''), 3000);
-  try { return safeJson(await complete(sys, combined, { maxTokens: 600, taskType: 'analysis' }), null); }
-  catch (err) { logger.error({ err: err.message }, '[openrouter] ethicsCheck failed'); return null; }
+  try { return safeJson(await complete(sys, combined, { maxTokens: 600, taskType: 'analysis', json: true }), null); }
+  catch (err) { logger.error({ err: err.message }, '[groq] ethicsCheck failed'); return null; }
 }
 
-// ── NEW: Citation hallucination detector ──────────────────────────────────
+// ── Citation hallucination detector ────────────────────────────────────────
 
 async function citationHallucinationCheck(references) {
   if (!references || !references.trim()) return null;
@@ -232,11 +262,11 @@ async function citationHallucinationCheck(references) {
   "summary": "string"
 }
 Flag: author names that look generated, journals that don't exist, inconsistent years, suspiciously perfect formatting.`;
-  try { return safeJson(await complete(sys, sanitize(references, 3000), { maxTokens: 700, taskType: 'citation' }), null); }
-  catch (err) { logger.error({ err: err.message }, '[openrouter] citationHallucinationCheck failed'); return null; }
+  try { return safeJson(await complete(sys, sanitize(references, 3000), { maxTokens: 700, taskType: 'citation', json: true }), null); }
+  catch (err) { logger.error({ err: err.message }, '[groq] citationHallucinationCheck failed'); return null; }
 }
 
-// ── NEW: Academic tone improver ───────────────────────────────────────────
+// ── Academic tone improver ─────────────────────────────────────────────────
 
 async function toneImprove(text) {
   const sys = `You are an expert academic writing coach. Improve the text for academic publication while preserving the author's meaning. Return ONLY valid JSON:
@@ -248,11 +278,11 @@ async function toneImprove(text) {
   "readability_improvement": "string",
   "confidence": 0-100
 }`;
-  try { return safeJson(await complete(sys, sanitize(text, 2000), { maxTokens: 900, taskType: 'tone' }), null); }
-  catch (err) { logger.error({ err: err.message }, '[openrouter] toneImprove failed'); return null; }
+  try { return safeJson(await complete(sys, sanitize(text, 2000), { maxTokens: 900, taskType: 'tone', json: true }), null); }
+  catch (err) { logger.error({ err: err.message }, '[groq] toneImprove failed'); return null; }
 }
 
-// ── NEW: Writing quality scorer ───────────────────────────────────────────
+// ── Writing quality scorer ─────────────────────────────────────────────────
 
 async function writingScore(text) {
   const sys = `You are an academic writing quality evaluator. Score the text on four dimensions and return ONLY valid JSON:
@@ -266,11 +296,11 @@ async function writingScore(text) {
   "strengths": ["string"],
   "confidence": 0-100
 }`;
-  try { return safeJson(await complete(sys, sanitize(text, 3000), { maxTokens: 600, taskType: 'analysis' }), null); }
-  catch (err) { logger.error({ err: err.message }, '[openrouter] writingScore failed'); return null; }
+  try { return safeJson(await complete(sys, sanitize(text, 3000), { maxTokens: 600, taskType: 'analysis', json: true }), null); }
+  catch (err) { logger.error({ err: err.message }, '[groq] writingScore failed'); return null; }
 }
 
-// ── NEW: Section-by-section feedback ─────────────────────────────────────
+// ── Section-by-section feedback ────────────────────────────────────────────
 
 async function sectionFeedback(sectionText, sectionType) {
   const sectionGuides = {
@@ -292,11 +322,11 @@ Return ONLY valid JSON:
   "pass_fail": "PASS"|"WARN"|"FAIL",
   "confidence": 0-100
 }`;
-  try { return safeJson(await complete(sys, sanitize(sectionText, 3000), { maxTokens: 600, taskType: 'analysis' }), null); }
-  catch (err) { logger.error({ err: err.message }, '[openrouter] sectionFeedback failed'); return null; }
+  try { return safeJson(await complete(sys, sanitize(sectionText, 3000), { maxTokens: 600, taskType: 'analysis', json: true }), null); }
+  catch (err) { logger.error({ err: err.message }, '[groq] sectionFeedback failed'); return null; }
 }
 
-// ── NEW: Review draft assistant ───────────────────────────────────────────
+// ── Review draft assistant ─────────────────────────────────────────────────
 
 async function reviewAssist(roughNotes, paperTitle, paperAbstract) {
   const sys = `You are an expert peer reviewer. Take these rough reviewer notes and reformat them into a professional, constructive peer review. Maintain all criticisms but ensure the tone is respectful and actionable.
@@ -314,11 +344,11 @@ Return ONLY valid JSON:
   "confidence": 0-100
 }`;
   const user = 'Paper: "' + sanitize(paperTitle, 200) + '"\nAbstract: ' + sanitize(paperAbstract, 500) + '\n\nRough notes:\n' + sanitize(roughNotes, 2500);
-  try { return safeJson(await complete(sys, user, { maxTokens: 1000, taskType: 'quality' }), null); }
-  catch (err) { logger.error({ err: err.message }, '[openrouter] reviewAssist failed'); return null; }
+  try { return safeJson(await complete(sys, user, { maxTokens: 1000, taskType: 'quality', json: true }), null); }
+  catch (err) { logger.error({ err: err.message }, '[groq] reviewAssist failed'); return null; }
 }
 
-// ── NEW: LLM-powered review quality check ─────────────────────────────────
+// ── LLM-powered review quality check ───────────────────────────────────────
 
 async function reviewQualityLlm(review, paperTitle) {
   const sys = `You are an editorial quality assessor evaluating a peer review submission. Return ONLY valid JSON:
@@ -333,11 +363,11 @@ async function reviewQualityLlm(review, paperTitle) {
   "confidence": 0-100
 }`;
   const user = 'Paper: "' + sanitize(paperTitle, 200) + '"\nReview summary: ' + sanitize(review.summary, 500) + '\nStrengths: ' + sanitize(review.strengths, 500) + '\nWeaknesses: ' + sanitize(review.weaknesses, 500) + '\nRecommendation: ' + (review.recommendation || '');
-  try { return safeJson(await complete(sys, user, { maxTokens: 500, taskType: 'quality' }), null); }
-  catch (err) { logger.error({ err: err.message }, '[openrouter] reviewQualityLlm failed'); return null; }
+  try { return safeJson(await complete(sys, user, { maxTokens: 500, taskType: 'quality', json: true }), null); }
+  catch (err) { logger.error({ err: err.message }, '[groq] reviewQualityLlm failed'); return null; }
 }
 
-// ── NEW: Author revision summarizer ──────────────────────────────────────
+// ── Author revision summarizer ─────────────────────────────────────────────
 
 async function revisionSummarizer(paperTitle, reviewsText) {
   const sys = `You are an expert academic editor helping an author understand peer review feedback. Analyze the reviews and return ONLY valid JSON:
@@ -350,11 +380,11 @@ async function revisionSummarizer(paperTitle, reviewsText) {
   "confidence": 0-100
 }`;
   const user = 'Paper: "' + sanitize(paperTitle, 200) + '"\n\nReviewer comments:\n' + sanitize(reviewsText, 3000);
-  try { return safeJson(await complete(sys, user, { maxTokens: 900, taskType: 'summarization' }), null); }
-  catch (err) { logger.error({ err: err.message }, '[openrouter] revisionSummarizer failed'); return null; }
+  try { return safeJson(await complete(sys, user, { maxTokens: 900, taskType: 'summarization', json: true }), null); }
+  catch (err) { logger.error({ err: err.message }, '[groq] revisionSummarizer failed'); return null; }
 }
 
-// ── NEW: Response-to-reviewers assistant ─────────────────────────────────
+// ── Response-to-reviewers assistant ────────────────────────────────────────
 
 async function responseToReviewers(paperTitle, reviewerComment) {
   const sys = `You are an expert academic author helping draft a point-by-point response to peer review. Return ONLY valid JSON:
@@ -366,28 +396,28 @@ async function responseToReviewers(paperTitle, reviewerComment) {
   "confidence": 0-100
 }`;
   const user = 'Paper: "' + sanitize(paperTitle, 200) + '"\nReviewer comment:\n' + sanitize(reviewerComment, 1500);
-  try { return safeJson(await complete(sys, user, { maxTokens: 600, taskType: 'analysis' }), null); }
-  catch (err) { logger.error({ err: err.message }, '[openrouter] responseToReviewers failed'); return null; }
+  try { return safeJson(await complete(sys, user, { maxTokens: 600, taskType: 'analysis', json: true }), null); }
+  catch (err) { logger.error({ err: err.message }, '[groq] responseToReviewers failed'); return null; }
 }
 
-// ── NEW: Analytics insights ───────────────────────────────────────────────
+// ── Analytics insights ─────────────────────────────────────────────────────
 
 async function analyticsInsights(stats) {
   const sys = 'You are an academic journal analytics expert. Analyze these platform statistics. Return ONLY valid JSON with exactly these keys: {"insights":["string"],"key_findings":["string"],"action_items":["string"],"trend_summary":"string","confidence":85}. Maximum 4 items per array. Reference actual numbers.';
-  try { return safeJson(await complete(sys, JSON.stringify(stats), { maxTokens: 700, taskType: 'analysis' }), null); }
-  catch (err) { logger.error({ err: err.message }, '[openrouter] analyticsInsights failed'); return null; }
+  try { return safeJson(await complete(sys, JSON.stringify(stats), { maxTokens: 700, taskType: 'analysis', json: true }), null); }
+  catch (err) { logger.error({ err: err.message }, '[groq] analyticsInsights failed'); return null; }
 }
 
-// ── NEW: Structured rubric generator ─────────────────────────────────────
+// ── Structured rubric generator ────────────────────────────────────────────
 
 async function generateRubric(paperType, domain, abstract) {
   const sys = 'You are a peer review coordinator. Generate a review rubric. Return ONLY valid JSON: {"rubric_title":"string","criteria":[{"criterion":"string","description":"string","weight":"string"}],"overall_guidance":"string","estimated_review_time_hours":3,"confidence":85}. Include 4-6 criteria.';
   const user = 'Paper type: ' + sanitize(paperType, 100) + '\nDomain: ' + sanitize(domain, 100) + '\nAbstract: ' + sanitize(abstract, 800);
-  try { return safeJson(await complete(sys, user, { maxTokens: 700, taskType: 'analysis' }), null); }
-  catch (err) { logger.error({ err: err.message }, '[openrouter] generateRubric failed'); return null; }
+  try { return safeJson(await complete(sys, user, { maxTokens: 700, taskType: 'analysis', json: true }), null); }
+  catch (err) { logger.error({ err: err.message }, '[groq] generateRubric failed'); return null; }
 }
 
-// ── AI-generated text detector ───────────────────────────────────────────
+// ── AI-generated text detector ─────────────────────────────────────────────
 
 async function detectAiText(text) {
   const sys = `You are an expert forensic linguist specialising in detecting AI-generated academic text.
@@ -405,14 +435,15 @@ Calibration rules:
 - Score 0.75-1.0 = ai: strong uniformity, multiple LLM-favoured connectives, suspiciously polished grammar, lack of concrete detail.
 List up to 5 specific signals observed. Be conservative — most academic writing has some AI-like features.`;
   try {
-    return safeJson(await complete(sys, sanitize(text, 3000), { maxTokens: 350, taskType: 'analysis' }), null);
+    return safeJson(await complete(sys, sanitize(text, 3000), { maxTokens: 350, taskType: 'analysis', json: true }), null);
   } catch (err) {
-    logger.error({ err: err.message }, '[openrouter] detectAiText failed');
+    logger.error({ err: err.message }, '[groq] detectAiText failed');
     return null;
   }
 }
 
 // ── NEW (v3): Plain-language summary ───────────────────────────────────────
+// Rewrites the abstract for a non-specialist audience and explains jargon.
 
 async function plainLanguageSummary(title, abstract) {
   if (!abstract || !abstract.trim()) return null;
@@ -425,11 +456,12 @@ async function plainLanguageSummary(title, abstract) {
   "confidence": 0-100
 }`;
   const user = 'Title: ' + sanitize(title, 200) + '\nAbstract: ' + sanitize(abstract, 2500);
-  try { return safeJson(await complete(sys, user, { maxTokens: 700, taskType: 'summarization' }), null); }
-  catch (err) { logger.error({ err: err.message }, '[openrouter] plainLanguageSummary failed'); return null; }
+  try { return safeJson(await complete(sys, user, { maxTokens: 700, taskType: 'summarization', json: true }), null); }
+  catch (err) { logger.error({ err: err.message }, '[groq] plainLanguageSummary failed'); return null; }
 }
 
 // ── NEW (v3): Key contributions extractor ──────────────────────────────────
+// Pulls the explicit claims/contributions so editors can assess novelty fast.
 
 async function keyContributions(title, abstract) {
   if (!abstract || !abstract.trim()) return null;
@@ -441,11 +473,12 @@ async function keyContributions(title, abstract) {
   "confidence": 0-100
 }`;
   const user = 'Title: ' + sanitize(title, 200) + '\nAbstract: ' + sanitize(abstract, 2500);
-  try { return safeJson(await complete(sys, user, { maxTokens: 700, taskType: 'analysis' }), null); }
-  catch (err) { logger.error({ err: err.message }, '[openrouter] keyContributions failed'); return null; }
+  try { return safeJson(await complete(sys, user, { maxTokens: 700, taskType: 'analysis', json: true }), null); }
+  catch (err) { logger.error({ err: err.message }, '[groq] keyContributions failed'); return null; }
 }
 
 // ── NEW (v3): Title ↔ abstract consistency check ───────────────────────────
+// Flags titles that over-claim or under-represent the abstract's content.
 
 async function titleAbstractConsistency(title, abstract) {
   if (!title || !abstract) return null;
@@ -460,11 +493,12 @@ async function titleAbstractConsistency(title, abstract) {
   "confidence": 0-100
 }`;
   const user = 'Title: ' + sanitize(title, 200) + '\nAbstract: ' + sanitize(abstract, 2500);
-  try { return safeJson(await complete(sys, user, { maxTokens: 600, taskType: 'analysis' }), null); }
-  catch (err) { logger.error({ err: err.message }, '[openrouter] titleAbstractConsistency failed'); return null; }
+  try { return safeJson(await complete(sys, user, { maxTokens: 600, taskType: 'analysis', json: true }), null); }
+  catch (err) { logger.error({ err: err.message }, '[groq] titleAbstractConsistency failed'); return null; }
 }
 
 // ── NEW (v3): Limitations finder ───────────────────────────────────────────
+// Surfaces stated limitations and likely unstated ones for reviewer prompts.
 
 async function limitationsFinder(title, abstract, fullText) {
   const body = (fullText || abstract || '').trim();
@@ -479,11 +513,11 @@ async function limitationsFinder(title, abstract, fullText) {
   "confidence": 0-100
 }`;
   const user = 'Title: ' + sanitize(title, 200) + '\n\n' + sanitize(body, 3000);
-  try { return safeJson(await complete(sys, user, { maxTokens: 700, taskType: 'quality' }), null); }
-  catch (err) { logger.error({ err: err.message }, '[openrouter] limitationsFinder failed'); return null; }
+  try { return safeJson(await complete(sys, user, { maxTokens: 700, taskType: 'quality', json: true }), null); }
+  catch (err) { logger.error({ err: err.message }, '[groq] limitationsFinder failed'); return null; }
 }
 
-// ── Streaming support ─────────────────────────────────────────────────────
+// ── Streaming support (plain text, no JSON mode) ───────────────────────────
 
 async function streamToneImprove(text, res) {
   const sys = 'You are an expert academic writing coach. Rewrite the following text with improved academic tone. Output only the improved text — no preamble, no JSON.';
@@ -492,7 +526,7 @@ async function streamToneImprove(text, res) {
   res.setHeader('Cache-Control', 'no-cache');
   res.setHeader('X-Accel-Buffering', 'no');
   try {
-    const streamRes = await callModel(primary, sys, sanitize(text, 2000), 800, true);
+    const streamRes = await callModel(primary, sys, sanitize(text, 2000), 800, { stream: true });
     const reader = streamRes.body.getReader();
     const decoder = new TextDecoder();
     let buf = '';
@@ -514,7 +548,7 @@ async function streamToneImprove(text, res) {
       }
     }
   } catch (err) {
-    logger.error({ err: err.message }, '[openrouter] streamToneImprove failed');
+    logger.error({ err: err.message }, '[groq] streamToneImprove failed');
     res.write('data: ' + JSON.stringify({ error: 'Stream failed' }) + '\n\n');
   }
   res.end();

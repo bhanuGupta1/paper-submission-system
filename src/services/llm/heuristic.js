@@ -113,7 +113,11 @@ function revisionSummarizer() { return null; }
 function responseToReviewers() { return null; }
 function analyticsInsights() { return null; }
 function generateRubric() { return null; }
-function streamToneImprove(text, res) { res.write('data: ' + JSON.stringify({ error: 'Streaming requires OpenRouter API' }) + '\n\n'); res.end(); }
+function plainLanguageSummary() { return null; }
+function keyContributions() { return null; }
+function titleAbstractConsistency() { return null; }
+function limitationsFinder() { return null; }
+function streamToneImprove(text, res) { res.write('data: ' + JSON.stringify({ error: 'Streaming requires an LLM provider (set LLM_PROVIDER=groq)' }) + '\n\n'); res.end(); }
 
 module.exports = {
   summarize, extractKeywords, draftReview, suggestTitles, polishAbstract,
@@ -122,5 +126,7 @@ module.exports = {
   toneImprove, writingScore, sectionFeedback,
   reviewAssist, reviewQualityLlm,
   revisionSummarizer, responseToReviewers,
-  analyticsInsights, generateRubric, streamToneImprove,
+  analyticsInsights, generateRubric,
+  plainLanguageSummary, keyContributions, titleAbstractConsistency, limitationsFinder,
+  streamToneImprove,
 };

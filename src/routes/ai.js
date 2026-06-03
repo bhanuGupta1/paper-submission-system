@@ -30,6 +30,10 @@ router.post('/writing-feedback', ctl.writingFeedback);
 router.post('/tone-improve', ctl.toneImprove);
 router.post('/writing-score', ctl.writingScore);
 router.post('/section-feedback', ctl.sectionFeedback);
+router.post('/plain-summary', ctl.plainSummary);
+router.post('/key-contributions', ctl.keyContributions);
+router.post('/title-check', ctl.titleCheck);
+router.post('/limitations', ctl.limitations);
 
 // ── Pre-submission screening ──────────────────────────────────────────────────
 router.post('/pre-submission-check', ctl.preSubmissionCheck);

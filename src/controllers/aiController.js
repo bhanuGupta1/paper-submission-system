@@ -495,6 +495,72 @@ async function generateRubric(req, res, next) {
   } catch (err) { next(err); }
 }
 
+// ── NEW (v3): Plain-language summary ──────────────────────────────────────────
+
+async function plainSummary(req, res, next) {
+  try {
+    const { title, abstract } = req.body;
+    if (!abstract || !abstract.trim()) return res.status(400).json({ error: 'abstract is required' });
+    if (abstract.length > 5000) return res.status(400).json({ error: 'Abstract too long (max 5000 chars)' });
+    const llm = require('../services/llm');
+    const result = await llm.plainLanguageSummary(title || '', abstract);
+    await run('INSERT INTO ai_audit (user_id, action, provider) VALUES (?,?,?)', [req.user.id, 'plain_summary', llm.providerName]);
+    if (!result) return res.json({ plain_summary: '', key_terms_explained: [], why_it_matters: '', confidence: 0, summary: 'Plain-language summary unavailable — set an LLM provider.', provider: 'heuristic' });
+    const plain = result.plain_summary || result.summary || result.plainSummary || '';
+    const terms = result.key_terms_explained || result.glossary || [];
+    res.json({ ...result, plain_summary: plain, key_terms_explained: terms, provider: llm.providerName });
+  } catch (err) { next(err); }
+}
+
+// ── NEW (v3): Key contributions extractor ─────────────────────────────────────
+
+async function keyContributions(req, res, next) {
+  try {
+    const { title, abstract } = req.body;
+    if (!abstract || !abstract.trim()) return res.status(400).json({ error: 'abstract is required' });
+    if (abstract.length > 5000) return res.status(400).json({ error: 'Abstract too long (max 5000 chars)' });
+    const llm = require('../services/llm');
+    const result = await llm.keyContributions(title || '', abstract);
+    await run('INSERT INTO ai_audit (user_id, action, provider) VALUES (?,?,?)', [req.user.id, 'key_contributions', llm.providerName]);
+    if (!result) return res.json({ contributions: [], novelty_assessment: '', novelty_score: 0, confidence: 0, summary: 'Contribution analysis unavailable — set an LLM provider.', provider: 'heuristic' });
+    const contributions = result.contributions || result.key_contributions || [];
+    res.json({ ...result, contributions, provider: llm.providerName });
+  } catch (err) { next(err); }
+}
+
+// ── NEW (v3): Title ↔ abstract consistency check ──────────────────────────────
+
+async function titleCheck(req, res, next) {
+  try {
+    const { title, abstract } = req.body;
+    if (!title || !title.trim()) return res.status(400).json({ error: 'title is required' });
+    if (!abstract || !abstract.trim()) return res.status(400).json({ error: 'abstract is required' });
+    const llm = require('../services/llm');
+    const result = await llm.titleAbstractConsistency(title, abstract);
+    await run('INSERT INTO ai_audit (user_id, action, provider) VALUES (?,?,?)', [req.user.id, 'title_consistency_check', llm.providerName]);
+    if (!result) return res.json({ consistency_score: 0, aligned: null, mismatches: [], suggested_titles: [], confidence: 0, summary: 'Title check unavailable — set an LLM provider.', provider: 'heuristic' });
+    const suggested = result.suggested_titles || result.suggestions || [];
+    const mismatches = result.mismatches || result.issues || [];
+    res.json({ ...result, suggested_titles: suggested, mismatches, provider: llm.providerName });
+  } catch (err) { next(err); }
+}
+
+// ── NEW (v3): Limitations finder ──────────────────────────────────────────────
+
+async function limitations(req, res, next) {
+  try {
+    const { title, abstract, fullText } = req.body;
+    if (!abstract && !fullText) return res.status(400).json({ error: 'abstract or fullText is required' });
+    const llm = require('../services/llm');
+    const result = await llm.limitationsFinder(title || '', abstract, fullText);
+    await run('INSERT INTO ai_audit (user_id, action, provider) VALUES (?,?,?)', [req.user.id, 'limitations_finder', llm.providerName]);
+    if (!result) return res.json({ stated_limitations: [], potential_unstated_limitations: [], severity: 'UNKNOWN', reviewer_questions: [], suggestions: [], confidence: 0, summary: 'Limitations analysis unavailable — set an LLM provider.', provider: 'heuristic' });
+    const stated = result.stated_limitations || result.stated || [];
+    const unstated = result.potential_unstated_limitations || result.unstated_limitations || result.potential_limitations || [];
+    res.json({ ...result, stated_limitations: stated, potential_unstated_limitations: unstated, provider: llm.providerName });
+  } catch (err) { next(err); }
+}
+
 module.exports = {
   polish, titles, keywords, writingFeedback,
   checkReviewQuality, predictAcceptance, search,
@@ -504,4 +570,5 @@ module.exports = {
   reviewAssist, reviewQualityLlm,
   revisionSummary, responseToReviewers,
   analyticsInsights, generateRubric,
+  plainSummary, keyContributions, titleCheck, limitations,
 };

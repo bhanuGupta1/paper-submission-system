@@ -64,6 +64,7 @@ const config = {
     provider: (() => {
       const explicit = (process.env.LLM_PROVIDER || '').toLowerCase();
       if (explicit) return explicit;
+      if (process.env.GROQ_API_KEY) return 'groq';
       if (process.env.OPENROUTER_API_KEY) return 'openrouter';
       if (process.env.ANTHROPIC_API_KEY) return 'claude';
       return 'heuristic';
@@ -75,6 +76,13 @@ const config = {
     openrouter: {
       apiKey: process.env.OPENROUTER_API_KEY || '',
       model: process.env.OPENROUTER_MODEL || 'meta-llama/llama-3.3-70b-instruct:free', // fallback chain in openrouter.js if this is rate-limited
+    },
+    groq: {
+      apiKey: process.env.GROQ_API_KEY || '',
+      // Default primary model; groq.js routes per-task and falls back across a chain.
+      model: process.env.GROQ_MODEL || 'llama-3.3-70b-versatile',
+      // Optional hard timeout per request (ms). Groq is fast, so this can be tight.
+      timeoutMs: parseInt(process.env.GROQ_TIMEOUT_MS, 10) || 30000,
     },
   },
   email: {
