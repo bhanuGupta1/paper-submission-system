@@ -3,12 +3,13 @@
 /**
  * Smart semantic search across all submissions.
  *
- * Uses TF-IDF cosine similarity for ranking + metadata filters.
- * Falls back gracefully if embeddings are unavailable.
+ * Default: offline inline TF cosine similarity + keyword boost + metadata filters.
+ * When EMBEDDINGS_PROVIDER selects a configured API backend, the semantic score
+ * is computed with real embeddings instead (auto TF-IDF fallback on failure).
  */
 
 const { all } = require('../db/connection');
-const embeddings = require('./embeddings');
+const embeddingsService = require('./embeddingsService');
 
 const STOPWORDS = new Set(['the','a','an','and','or','but','of','in','on','at','to','for','with','by','from','as','is','are','was','were','be','been','this','that','it','its','we','our','they','also','very','more','most','some','any','all','not','no','so','if','about','into','paper','study','using','used','use','show','shows','shown','method','approach','proposed','results']);
 
@@ -73,11 +74,23 @@ async function search(query, { status = null, trackId = null, limit = 20, author
     params
   );
 
+  const docTextOf = (paper) =>
+    `${paper.title} ${paper.title} ${paper.abstract} ${paper.keywords || ''} ${paper.ai_keywords || ''} ${paper.tags || ''}`;
+
+  // Semantic scores. Default path is the offline inline TF cosine below; when a
+  // real API embeddings provider is configured we score with it instead (one
+  // batched call over the candidates), keeping the keyword boost unchanged.
+  let apiSemantics = null;
+  if (embeddingsService.usingApiEmbeddings()) {
+    const space = await embeddingsService.buildSpace(papers.map(docTextOf));
+    const qVec = await space.query(query);
+    apiSemantics = space.vectors.map((v) => space.cosine(qVec, v));
+  }
+
   // Score each paper
-  const scored = papers.map((paper) => {
-    const docText = `${paper.title} ${paper.title} ${paper.abstract} ${paper.keywords || ''} ${paper.ai_keywords || ''} ${paper.tags || ''}`;
-    const docTf = termFreq(tokenize(docText));
-    const semantic = cosineSimilarity(queryTf, docTf);
+  const scored = papers.map((paper, i) => {
+    const docText = docTextOf(paper);
+    const semantic = apiSemantics ? apiSemantics[i] : cosineSimilarity(queryTf, termFreq(tokenize(docText)));
 
     // Keyword exact match boost
     const docLower = docText.toLowerCase();

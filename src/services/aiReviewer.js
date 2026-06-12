@@ -13,15 +13,16 @@ const llm = require('./llm');
 const { run } = require('../db/connection');
 
 async function draftReviewFor(paper, userId) {
-  const draft = await llm.draftReview(paper);
-  await audit(userId, 'draft_review');
+  const be = llm.forFeature('review');
+  const draft = await be.draftReview(paper);
+  await audit(userId, 'draft_review', be);
   return draft;
 }
 
-async function audit(userId, action) {
+async function audit(userId, action, be) {
   await run(
     'INSERT INTO ai_audit (user_id, action, provider) VALUES (?,?,?)',
-    [userId || null, action, llm.providerName || 'heuristic']
+    [userId || null, action, (be && be.providerName) || llm.providerName || 'heuristic']
   );
 }
 

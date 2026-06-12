@@ -144,6 +144,54 @@ No SDK install is required — both providers are called over their HTTP APIs. T
 
 ---
 
+## ⚙️ API vs offline: the feature switches
+
+Every AI capability can run on a hosted API or on a zero-cost offline backend, and you choose per feature. There are two independent switches.
+
+**1. Text features → LLM or heuristic.** Summary, keywords, titles, abstract polish, metadata extraction, review draft, and AI-text detection each route through `llm.forFeature(name)`. The global default is `AI_PREFER_API` (auto-ON when an LLM key is present, OFF otherwise); per-feature `AI_FEATURE_*` overrides win over it. Leave an override blank to inherit the global default.
+
+```bash
+# Force the API for everything, then keep just AI-text detection offline:
+echo 'AI_PREFER_API=true'        >> .env
+echo 'AI_FEATURE_AI_TEXT=false'  >> .env
+```
+
+| Env var | Feature |
+|---|---|
+| `AI_FEATURE_SUMMARY` | paper summary |
+| `AI_FEATURE_KEYWORDS` | keyword extraction |
+| `AI_FEATURE_TITLES` | title suggestions |
+| `AI_FEATURE_ABSTRACT` | abstract polish |
+| `AI_FEATURE_METADATA` | metadata extraction |
+| `AI_FEATURE_REVIEW` | AI reviewer draft |
+| `AI_FEATURE_AI_TEXT` | AI-text likelihood |
+
+`true` = hosted LLM · `false` = offline heuristic · blank = inherit `AI_PREFER_API`. If the API call fails for any reason, the heuristic still runs as the fallback, so these features never break.
+
+**2. Similarity features → API embeddings or offline TF-IDF.** Reviewer matching, plagiarism similarity, and smart search rank text by vector similarity. The default is offline pure-JS TF-IDF (no key, no network). Set `EMBEDDINGS_PROVIDER` + `EMBEDDINGS_API_KEY` to switch to real API embeddings; any API failure falls back to TF-IDF automatically.
+
+```bash
+echo 'EMBEDDINGS_PROVIDER=openai'  >> .env
+echo 'EMBEDDINGS_API_KEY=sk-...'   >> .env
+npm start
+```
+
+Provider presets (OpenAI-compatible `/embeddings`, model IDs verified working June 2026 — override with `EMBEDDINGS_MODEL` / `EMBEDDINGS_BASE_URL`):
+
+| `EMBEDDINGS_PROVIDER` | Default model | Notes |
+|---|---|---|
+| `tfidf` *(default)* | — | offline pure-JS, no key, no network |
+| `st` | `Xenova/all-MiniLM-L6-v2` | local sentence-transformers (`npm i @xenova/transformers`) |
+| `openai` | `text-embedding-3-small` | https://api.openai.com/v1 |
+| `jina` | `jina-embeddings-v3` | https://api.jina.ai/v1 |
+| `voyage` | `voyage-3.5-lite` | https://api.voyageai.com/v1 |
+| `mistral` | `mistral-embed` | https://api.mistral.ai/v1 |
+| `gemini` | `gemini-embedding-001` | https://generativelanguage.googleapis.com/v1beta/openai |
+| `nomic` | `nomic-embed-text-v1.5` | https://api-atlas.nomic.ai/v1 |
+| `custom` | — | any OpenAI-compatible endpoint (set `EMBEDDINGS_BASE_URL` + `EMBEDDINGS_MODEL`) |
+
+---
+
 ## 🔬 Sentence-transformer upgrade (optional)
 
 ```bash

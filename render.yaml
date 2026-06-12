@@ -63,6 +63,48 @@ services:
       # - key: OPENROUTER_API_KEY
       #   sync: false
 
+      # Optional — API vs offline (heuristic) switch for the text features.
+      # AI_PREFER_API is the global default (auto-ON when an LLM key is present).
+      # The per-feature AI_FEATURE_* vars win over it; leave blank to inherit.
+      #   true  = use the hosted LLM   false = use the offline heuristic
+      # - key: AI_PREFER_API
+      #   value: "true"
+      # - key: AI_FEATURE_SUMMARY
+      #   value: "true"
+      # - key: AI_FEATURE_KEYWORDS
+      #   value: "true"
+      # - key: AI_FEATURE_TITLES
+      #   value: "true"
+      # - key: AI_FEATURE_ABSTRACT
+      #   value: "true"
+      # - key: AI_FEATURE_METADATA
+      #   value: "true"
+      # - key: AI_FEATURE_REVIEW
+      #   value: "true"
+      # - key: AI_FEATURE_AI_TEXT
+      #   value: "true"
+
+      # Optional — embeddings provider for the similarity features (reviewer
+      # matching, plagiarism similarity, smart search). Default is offline TF-IDF
+      # (no key, no network). Switch to a real API by setting EMBEDDINGS_PROVIDER +
+      # EMBEDDINGS_API_KEY; any failure falls back to TF-IDF automatically.
+      # Verified June 2026 — provider: model
+      #   openai: text-embedding-3-small · jina: jina-embeddings-v3
+      #   voyage: voyage-3.5-lite · mistral: mistral-embed
+      #   gemini: gemini-embedding-001 · nomic: nomic-embed-text-v1.5
+      # - key: EMBEDDINGS_PROVIDER
+      #   value: tfidf
+      # - key: EMBEDDINGS_API_KEY
+      #   sync: false
+      # - key: EMBEDDINGS_MODEL
+      #   sync: false
+      # - key: EMBEDDINGS_BASE_URL
+      #   sync: false
+      # - key: EMBEDDINGS_TIMEOUT_MS
+      #   value: "15000"
+      # - key: EMBEDDINGS_MAX_BATCH
+      #   value: "64"
+
       # Optional — SQLite data path (Render free tier uses ephemeral disk)
       # For persistent data, upgrade to Starter and use a mounted disk
       - key: DB_PATH

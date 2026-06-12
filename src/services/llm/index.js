@@ -12,6 +12,18 @@
  *
  * Every backend exposes: draftReview, summarize, extractKeywords,
  *                        polishAbstract, suggestTitles
+ *
+ * Per-feature API/offline routing
+ * -------------------------------
+ * `forFeature(feature)` returns the backend that should handle a given feature,
+ * honouring the global `AI_PREFER_API` default and per-feature `AI_FEATURE_*`
+ * overrides (resolved by config.useApiFor). When no hosted provider is active
+ * (LLM_PROVIDER=heuristic or the key is missing) every feature resolves to the
+ * offline heuristic, so the switch can never break the zero-cost default.
+ *
+ *   const be = llm.forFeature('review');   // groq | openrouter | heuristic
+ *   const out = await be.draftReview(paper);
+ *   audit(be.providerName);                // 'groq' | 'openrouter' | 'heuristic'
  */
 
 const config = require('../../config');
@@ -41,5 +53,26 @@ if (config.llm.provider === 'groq') {
   logger.info('LLM provider: heuristic (offline, zero-cost)');
 }
 
+// True when a hosted API backend is active (i.e. not the offline heuristic).
+const usingApi = providerName !== 'heuristic';
+
+// Tag both modules so callers can audit which provider actually ran.
+heuristic.providerName = 'heuristic';
+backend.providerName = providerName;
+
+/**
+ * Resolve the backend for a single feature.
+ *   - No API provider active -> heuristic for everything.
+ *   - API active             -> API backend when config.useApiFor(feature) is
+ *                               true, otherwise the heuristic fallback.
+ */
+function forFeature(feature) {
+  if (!usingApi) return heuristic;
+  return config.useApiFor(feature) ? backend : heuristic;
+}
+
 module.exports = backend;
 module.exports.providerName = providerName;
+module.exports.usingApi = usingApi;
+module.exports.heuristic = heuristic;
+module.exports.forFeature = forFeature;

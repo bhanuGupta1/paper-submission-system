@@ -14,22 +14,24 @@
 
 const Paper = require('../models/Paper');
 const logger = require('../utils/logger');
-const { buildModel, embed, cosine } = require('./embeddings');
+// Unified embeddings: offline TF-IDF by default, real API embeddings when
+// EMBEDDINGS_PROVIDER opts in (with automatic TF-IDF fallback on any failure).
+const embeddingsService = require('./embeddingsService');
 
-// ── Corpus similarity (TF-IDF) ────────────────────────────────────────────
+// ── Corpus similarity ─────────────────────────────────────────────────────
 
 async function similarityToCorpus(paper) {
   const all = (await Paper.listAll()).filter((p) => p.id !== paper.id);
   if (all.length === 0) return { score: 0, mostSimilarId: null, mostSimilarTitle: null };
 
   const corpus = all.map((p) => `${p.title} ${p.abstract}`);
-  const { vectors, idf } = buildModel(corpus);
-  const target = embed(`${paper.title} ${paper.abstract}`, idf);
+  const space = await embeddingsService.buildSpace(corpus);
+  const target = await space.query(`${paper.title} ${paper.abstract}`);
 
   let bestScore = 0;
   let bestIdx = -1;
-  for (let i = 0; i < vectors.length; i++) {
-    const s = cosine(target, vectors[i]);
+  for (let i = 0; i < space.vectors.length; i++) {
+    const s = space.cosine(target, space.vectors[i]);
     if (s > bestScore) { bestScore = s; bestIdx = i; }
   }
   return {
@@ -120,8 +122,12 @@ function aiTextLikelihoodHeuristic(text) {
 async function aiTextLikelihoodLlm(text) {
   try {
     const llm = require('./llm');
-    if (typeof llm.detectAiText !== 'function') return null;
-    const result = await llm.detectAiText(text);
+    // Honour the AI/offline switch: forFeature('aiTextDetect') returns the API
+    // backend only when enabled, otherwise the heuristic (which has no
+    // detectAiText) so we fall through to the local stylometric signal below.
+    const be = llm.forFeature('aiTextDetect');
+    if (typeof be.detectAiText !== 'function') return null;
+    const result = await be.detectAiText(text);
     if (!result || typeof result.ai_probability !== 'number') return null;
     return {
       score: Number(Math.max(0, Math.min(1, result.ai_probability)).toFixed(3)),

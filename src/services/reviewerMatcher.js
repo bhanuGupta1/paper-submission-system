@@ -15,7 +15,9 @@
 const User = require('../models/User');
 const Review = require('../models/Review');
 const coi = require('./conflictOfInterest');
-const { buildModel, embed, cosine } = require('./embeddings');
+// Routed through the unified embeddings service: offline TF-IDF by default,
+// real API embeddings when EMBEDDINGS_PROVIDER opts in (auto TF-IDF fallback).
+const embeddingsService = require('./embeddingsService');
 
 async function rankReviewers(paper, { excludeUserId = null, topK = 5, filterCoi = true } = {}) {
   const all = (await User.listReviewers()).filter((r) => r.id !== excludeUserId);
@@ -32,10 +34,10 @@ async function rankReviewers(paper, { excludeUserId = null, topK = 5, filterCoi 
   }
 
   const corpus = pool.map((r) => r.expertise || '');
-  const { vectors, idf } = buildModel(corpus);
-  const paperVec = embed(`${paper.title} ${paper.abstract} ${paper.keywords || ''} ${paper.tags || ''}`, idf);
+  const space = await embeddingsService.buildSpace(corpus);
+  const paperVec = await space.query(`${paper.title} ${paper.abstract} ${paper.keywords || ''} ${paper.tags || ''}`);
   const ranked = pool
-    .map((r, i) => ({ ...r, score: Number(cosine(paperVec, vectors[i]).toFixed(4)) }))
+    .map((r, i) => ({ ...r, score: Number(space.cosine(paperVec, space.vectors[i]).toFixed(4)) }))
     .sort((a, b) => b.score - a.score)
     .slice(0, topK);
   return ranked;
